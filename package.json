@@ -9,7 +9,8 @@
     "test": "ng test",
     "prepare": "husky",
     "format": "prettier --write ./src",
-    "format:check": "prettier --check ./src"
+    "format:check": "prettier --check ./src",
+    "lint": "ng lint"
   },
   "private": true,
   "packageManager": "npm@10.8.2",
@@ -27,11 +28,21 @@
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.7.1",
+    "@eslint/js": "^10.0.1",
+    "@ngrx/eslint-plugin": "^21.1.0",
+    "angular-eslint": "^21.3.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-rxjs-angular-x": "^1.0.1",
+    "eslint-plugin-rxjs-x": "^1.0.2",
     "husky": "^9.1.7",
     "jsdom": "^28.0.0",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
+    "typescript-eslint": "8.56.1",
     "vitest": "^4.0.8"
   }
 }
