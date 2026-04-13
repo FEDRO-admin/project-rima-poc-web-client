@@ -1,11 +1,19 @@
 {
-  "printWidth": 100,
+  "printWidth": 120,
   "singleQuote": true,
   "overrides": [
     {
+      "files": "*.ts",
+      "options": {
+        "endOfLine": "auto",
+        "singleQuote": true
+      }
+    },
+    {
       "files": "*.html",
       "options": {
-        "parser": "angular"
+        "parser": "angular",
+        "endOfLine": "auto"
       }
     }
   ]

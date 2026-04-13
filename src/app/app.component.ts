@@ -1,12 +1,4 @@
-import {
-  Component,
-  CUSTOM_ELEMENTS_SCHEMA,
-  effect,
-  ElementRef,
-  signal,
-  viewChild,
-  untracked,
-} from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, signal, viewChild, untracked } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import '@arcgis/map-components/dist/components/arcgis-map';
 import Basemap from '@arcgis/core/Basemap';
@@ -19,10 +11,10 @@ import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReferen
   selector: 'rima-root',
   imports: [RouterOutlet],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  templateUrl: './app.html',
-  styleUrl: './app.scss',
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
 })
-export class App {
+export class AppComponent {
   protected readonly title = signal('project-rima-poc-web-client');
   protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 

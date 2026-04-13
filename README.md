@@ -2,6 +2,23 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
 
+## Coding Standards
+
+This project follows the [Angular Style Guide](https://angular.dev/style-guide) with traditional naming conventions.
+
+### Naming Conventions (exception to Angular Style Guide)
+
+All files follow the `feature.type.ts` pattern as per Angular CLI defaults:
+
+- **Components**: `*.component.ts` (e.g., `user-profile.component.ts`)
+  - Class name: `UserProfileComponent`
+- **Services**: `*.service.ts` (e.g., `hero-data.service.ts`)
+  - Class name: `HeroDataService`
+- **Directives**: `*.directive.ts` (e.g., `validation.directive.ts`)
+  - Class name: `ValidationDirective`
+
+File names use kebab-case (words separated by hyphens), while class names use UpperCamelCase with the appropriate suffix (Component, Service, Directive, Pipe, etc.).
+
 ## Development server
 
 To start a local development server, run:
