@@ -2,6 +2,15 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
 
+## About This Project
+
+This is a **Proof of Concept (PoC)** project focused on solving specific problems and exploring solutions rather than producing production-ready code. As such, the testing strategy is intentionally streamlined:
+
+- **Limited Unit Testing**: Unit tests are written only for services and other constructs containing significant business logic
+- **Component Tests**: Most component tests are excluded to keep development focused on problem-solving
+
+This approach allows rapid iteration and experimentation while maintaining test coverage for critical business logic.
+
 ## Coding Standards
 
 This project follows the [Angular Style Guide](https://angular.dev/style-guide) with traditional naming conventions.

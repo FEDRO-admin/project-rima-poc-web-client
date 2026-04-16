@@ -20,6 +20,9 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
+    ignores: ['transloco.config.ts'],
+  },
+  {
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,
@@ -139,11 +142,7 @@ export default tseslint.config(
   },
   {
     files: ['**/*.html'],
-    extends: [
-      ...angular.configs.templateRecommended,
-      ...angular.configs.templateAccessibility,
-      prettierRecommended,
-    ],
+    extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility, prettierRecommended],
     rules: {
       '@angular-eslint/template/eqeqeq': [
         'error',

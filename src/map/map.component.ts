@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, signal, viewChild, untracked } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, viewChild, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
 import Basemap from '@arcgis/core/Basemap';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
@@ -14,7 +14,6 @@ import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReferen
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
-  protected readonly title = signal('project-rima-poc-web-client');
   protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 
   protected readonly spatialReference: SpatialReferenceProperties = { wkid: 2056 };

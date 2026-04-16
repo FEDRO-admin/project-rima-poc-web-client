@@ -1,0 +1,7 @@
+{
+  "language.de": "Deutsch",
+  "language.fr": "Français",
+  "language.it": "Italiano",
+  "language-switcher.aria-label": "Zu {{language}} wechseln",
+  "app.title": "RIMA Applikation (PoC)"
+}
