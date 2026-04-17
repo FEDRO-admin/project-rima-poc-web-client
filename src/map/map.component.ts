@@ -5,6 +5,7 @@ import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
+import { MapLoadError } from './map-error';
 
 @Component({
   selector: 'rima-map',
@@ -39,8 +40,7 @@ export class MapComponent {
   private async initializeMap(mapElement: HTMLArcgisMapElement): Promise<void> {
     await mapElement.viewOnReady();
     if (!mapElement.view.map) {
-      console.error('Map view is not available');
-      return;
+      throw new MapLoadError();
     }
 
     const swisstopoLayer = new WMTSLayer({

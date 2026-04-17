@@ -134,10 +134,11 @@ export default tseslint.config(
       semi: 'error',
       'prefer-template': 'warn',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@eslint-community/eslint-comments/require-description': 'error',
+      '@angular-eslint/prefer-signals': 'error',
     },
   },
   {

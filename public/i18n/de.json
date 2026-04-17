@@ -3,5 +3,11 @@
   "language.fr": "Français",
   "language.it": "Italiano",
   "language-switcher.aria-label": "Zu {{language}} wechseln",
-  "app.title": "RIMA Applikation (PoC)"
+  "fatal-error-page.title": "Ein Fehler ist aufgetreten",
+  "fatal-error-page.info": "Es ist ein unerwarteter Fehler aufgetreten.",
+  "fatal-error-page.error-message": "Fehlermeldung: {{errorMessage}}",
+  "fatal-error-page.home": "Zur Startseite",
+  "app.title": "RIMA Applikation (PoC)",
+  "map.load.error": "Die Karte konnte nicht geladen werden.",
+  "error.unknown": "Unbekannter Fehler"
 }

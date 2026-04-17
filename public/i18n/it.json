@@ -3,5 +3,11 @@
   "language.fr": "Français",
   "language.it": "Italiano",
   "language-switcher.aria-label": "Passa a {{language}}",
-  "app.title": "Applicazione RIMA (PoC)"
+  "fatal-error-page.title": "Si è verificato un errore",
+  "fatal-error-page.info": "Si è verificato un errore imprevisto.",
+  "fatal-error-page.error-message": "Messaggio di errore: {{errorMessage}}",
+  "fatal-error-page.home": "Torna alla home",
+  "app.title": "Applicazione RIMA (PoC)",
+  "map.load.error": "La mappa non è stata caricata.",
+  "error.unknown": "Errore sconosciuto"
 }
