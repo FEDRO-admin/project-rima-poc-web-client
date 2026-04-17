@@ -2,10 +2,10 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, viewChild, untra
 import '@arcgis/map-components/dist/components/arcgis-map';
 import Basemap from '@arcgis/core/Basemap';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
 import { MapLoadError } from './map-error';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
 @Component({
   selector: 'rima-map',
@@ -56,9 +56,9 @@ export class MapComponent {
     });
     mapElement.view.map.basemap = swisstopoBasemap;
 
-    const mapImageLayer = new MapImageLayer({
-      url: 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis/rest/services/Achsen_Test/MapServer',
+    const featureLayer = new FeatureLayer({
+      url: 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis/rest/services/NewFolder/Achsen_Test2/FeatureServer',
     });
-    mapElement.view.map.add(mapImageLayer);
+    mapElement.view.map.add(featureLayer);
   }
 }
