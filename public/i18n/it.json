@@ -8,6 +8,5 @@
   "fatal-error-page.error-message": "Messaggio di errore: {{errorMessage}}",
   "fatal-error-page.home": "Torna alla home",
   "app.title": "Applicazione RIMA (PoC)",
-  "map.load.error": "La mappa non è stata caricata.",
-  "error.unknown": "Errore sconosciuto"
+  "map.load.error": "La mappa non è stata caricata."
 }
