@@ -3,6 +3,11 @@ name: Checks
 on:
   pull_request:
   workflow_call:
+    inputs:
+      skip-build:
+        description: 'Skip the build job when the caller already builds (e.g. deployment)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -116,6 +121,7 @@ jobs:
 
   build:
     name: Build
+    if: '!inputs.skip-build'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
