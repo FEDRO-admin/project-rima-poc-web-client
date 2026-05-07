@@ -232,7 +232,7 @@ The application has currently one environment:
 
 - **Dev** \
   This is the development environment. It is used for testing and development purposes and is hosted on Github Pages. \
-  URL: TBD
+  URL: https://fedro-admin.github.io/project-rima-poc-web-client/
 
 ## External Resources
 
