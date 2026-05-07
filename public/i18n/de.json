@@ -8,6 +8,5 @@
   "fatal-error-page.error-message": "Fehlermeldung: {{errorMessage}}",
   "fatal-error-page.home": "Zur Startseite",
   "app.title": "RIMA Applikation (PoC)",
-  "map.load.error": "Die Karte konnte nicht geladen werden.",
-  "error.unknown": "Unbekannter Fehler"
+  "map.load.error": "Die Karte konnte nicht geladen werden."
 }
