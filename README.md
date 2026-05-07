@@ -215,6 +215,25 @@ LayerLoadError: layer.load.error
 "Der Layers 'Axes_NSKS_de' konnte nicht geladen werden."
 ```
 
+## Deployment
+
+### Trigger
+
+The deployment process is done using Github actions. There are two kinds of deployments:
+
+- **Automatic deployment** \
+  where the deployment is triggered by a push to the `main` branch. This will deploy the application to the dev environment.
+- **Manual deployment** \
+  where the deployment is triggered manually. One can decide to deploy to the any available environment.
+
+### Environments
+
+The application has currently one environment:
+
+- **Dev** \
+  This is the development environment. It is used for testing and development purposes and is hosted on Github Pages. \
+  URL: TBD
+
 ## External Resources
 
 ### Official Documentation
