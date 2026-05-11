@@ -6,10 +6,11 @@ import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
 import { MapLoadError } from './map-error';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { SearchComponent } from '../search/search.component';
 
 @Component({
   selector: 'rima-map',
-  imports: [],
+  imports: [SearchComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
