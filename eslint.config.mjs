@@ -20,7 +20,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['transloco.config.ts'],
+    ignores: ['transloco.config.ts', 'vitest.config.ts'],
   },
   {
     files: ['**/*.ts'],

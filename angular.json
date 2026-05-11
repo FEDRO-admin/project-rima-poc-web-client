@@ -42,7 +42,8 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/styles.scss"],
+            "outputPath": "dist"
           },
           "configurations": {
             "production": {
@@ -81,7 +82,8 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": { "runnerConfig": "vitest.config.ts" }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",
