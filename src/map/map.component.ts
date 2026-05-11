@@ -1,12 +1,12 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, viewChild, untracked } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, viewChild, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
 import Basemap from '@arcgis/core/Basemap';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
 import { MapLoadError } from './map-error';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { SearchComponent } from '../search/search.component';
+import { RimaLayersService } from './layers/rima-layers.service';
 
 @Component({
   selector: 'rima-map',
@@ -16,6 +16,8 @@ import { SearchComponent } from '../search/search.component';
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
+  private readonly rimaLayers = inject(RimaLayersService);
+
   protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 
   protected readonly spatialReference: SpatialReferenceProperties = { wkid: 2056 };
@@ -57,9 +59,7 @@ export class MapComponent {
     });
     mapElement.view.map.basemap = swisstopoBasemap;
 
-    const featureLayer = new FeatureLayer({
-      url: 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis/rest/services/NewFolder/Achsen_Test2/FeatureServer',
-    });
-    mapElement.view.map.add(featureLayer);
+    // this now gets all the layers defined in the RimaLayersService and adds them to the map. In the future we might want to have different sets of layers (e.g. for different languages) and then we could easily switch between them here.
+    this.rimaLayers.all.forEach((config) => mapElement.view.map!.add(config.layer));
   }
 }
