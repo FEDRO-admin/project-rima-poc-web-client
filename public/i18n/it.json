@@ -9,5 +9,6 @@
   "fatal-error-page.home": "Torna alla home",
   "app.title": "Applicazione RIMA (PoC)",
   "map.load.error": "La mappa non è stata caricata.",
-  "search.placeholder": "Cerca (luogo, oggetto, coordinate)"
+  "search.placeholder": "Cerca (luogo, oggetto, coordinate)",
+  "search.current-location": "Usa la posizione attuale"
 }
