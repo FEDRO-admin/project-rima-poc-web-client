@@ -1,0 +1,26 @@
+name: Auto deploy main branch
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  test-application:
+    name: Test application
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/code-quality-checks.yml
+    with:
+      skip-build: true
+
+  deploy-main:
+    name: Deploy main branch
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - test-application
+    uses: ./.github/workflows/deploy-to-github.yml

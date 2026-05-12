@@ -1,0 +1,21 @@
+name: Manual deploy a branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: environment
+        description: 'The environment to deploy to'
+        default: 'github-pages'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy-github-pages:
+    name: Deploy main branch to GitHub Pages
+    if: inputs.environment == 'github-pages'
+    uses: ./.github/workflows/deploy-to-github.yml
