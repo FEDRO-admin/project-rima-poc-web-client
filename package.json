@@ -28,6 +28,7 @@
     "@arcgis/core": "^5.0.16",
     "@arcgis/map-components": "^5.0.16",
     "@jsverse/transloco": "^8.3.0",
+    "@ngrx/signals": "^21.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
