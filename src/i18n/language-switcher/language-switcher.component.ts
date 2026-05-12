@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
-import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { TranslocoModule } from '@jsverse/transloco';
 import { Language } from '../language';
-import { languageConfig } from '../language.config';
+import { LanguageStore } from '../../stores/language.store';
 
 @Component({
   selector: 'rima-language-switcher',
@@ -11,14 +10,12 @@ import { languageConfig } from '../language.config';
   styleUrl: './language-switcher.component.scss',
 })
 export class LanguageSwitcherComponent {
-  private readonly translocoService = inject(TranslocoService);
+  protected readonly languageStore = inject(LanguageStore);
 
-  protected readonly languages = languageConfig.availableLanguages;
-  protected readonly activeLanguage = toSignal(this.translocoService.langChanges$, {
-    initialValue: this.translocoService.getActiveLang(),
-  });
+  protected readonly languages = this.languageStore.availableLanguages;
+  protected readonly activeLanguage = this.languageStore.activeLanguage;
 
   protected changeLanguage(language: Language): void {
-    this.translocoService.setActiveLang(language);
+    this.languageStore.setLanguage(language);
   }
 }

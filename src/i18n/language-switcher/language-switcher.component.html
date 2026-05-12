@@ -1,5 +1,5 @@
 <nav class="language-switcher" *transloco="let t">
-  @for (language of languages; track language) {
+  @for (language of languages(); track language) {
     <button
       type="button"
       [class.active]="activeLanguage() === language"

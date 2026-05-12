@@ -6,7 +6,7 @@ import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
 import { MapLoadError } from './map-error';
 import { SearchComponent } from '../search/search.component';
-import { RimaLayersService } from './layers/rima-layers.service';
+import { LayersStore } from '../stores/layers.store';
 
 @Component({
   selector: 'rima-map',
@@ -16,7 +16,7 @@ import { RimaLayersService } from './layers/rima-layers.service';
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
-  private readonly rimaLayers = inject(RimaLayersService);
+  private readonly layersStore = inject(LayersStore);
 
   protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 
@@ -59,7 +59,6 @@ export class MapComponent {
     });
     mapElement.view.map.basemap = swisstopoBasemap;
 
-    // this now gets all the layers defined in the RimaLayersService and adds them to the map. In the future we might want to have different sets of layers (e.g. for different languages) and then we could easily switch between them here.
-    this.rimaLayers.all.forEach((config) => mapElement.view.map!.add(config.layer));
+    this.layersStore.featureLayers().forEach((layer) => mapElement.view.map!.add(layer));
   }
 }
