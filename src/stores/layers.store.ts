@@ -5,7 +5,7 @@ import LayerSearchSource from '@arcgis/core/widgets/Search/LayerSearchSource';
 import { RimaLayerConfig } from '../map/layers/rima-layer';
 import { achsenLayer } from '../map/layers/definitions/achsen.layer';
 
-interface ResolvedLayer {
+export interface ResolvedLayer {
   featureLayer: FeatureLayer;
   searchSource?: LayerSearchSource;
 }
@@ -21,44 +21,38 @@ function resolveLayers(configs: RimaLayerConfig[]): ResolvedLayer[] {
 }
 
 interface LayersState {
-  de: RimaLayerConfig[];
-  fr: RimaLayerConfig[];
-  it: RimaLayerConfig[];
+  de: ResolvedLayer[];
+  fr: ResolvedLayer[];
+  it: ResolvedLayer[];
 }
 
 const initialState: LayersState = {
-  de: [achsenLayer],
-  fr: [achsenLayer],
-  it: [achsenLayer],
+  de: resolveLayers([achsenLayer]),
+  fr: resolveLayers([achsenLayer]),
+  it: resolveLayers([achsenLayer]),
 };
 
 export const LayersStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withComputed((store) => {
-    const deResolved = computed(() => resolveLayers(store.de()));
-    const frResolved = computed(() => resolveLayers(store.fr()));
-    const itResolved = computed(() => resolveLayers(store.it()));
-
-    return {
-      deLayers: deResolved,
-      frLayers: frResolved,
-      itLayers: itResolved,
-      all: computed(() => {
-        const unique = new Set<ResolvedLayer>();
-        [...deResolved(), ...frResolved(), ...itResolved()].forEach((r) => unique.add(r));
-        return [...unique];
-      }),
-      featureLayers: computed(() => {
-        const unique = new Set<ResolvedLayer>();
-        [...deResolved(), ...frResolved(), ...itResolved()].forEach((r) => unique.add(r));
-        return [...unique].map((r) => r.featureLayer);
-      }),
-      searchSources: computed(() => {
-        const unique = new Set<ResolvedLayer>();
-        [...deResolved(), ...frResolved(), ...itResolved()].forEach((r) => unique.add(r));
-        return [...unique].map((r) => r.searchSource).filter((s) => s !== undefined);
-      }),
-    };
-  }),
+  withComputed((store) => ({
+    deLayers: computed(() => store.de()),
+    frLayers: computed(() => store.fr()),
+    itLayers: computed(() => store.it()),
+    all: computed(() => {
+      const unique = new Set<ResolvedLayer>();
+      [...store.de(), ...store.fr(), ...store.it()].forEach((r) => unique.add(r));
+      return [...unique];
+    }),
+    featureLayers: computed(() => {
+      const unique = new Set<ResolvedLayer>();
+      [...store.de(), ...store.fr(), ...store.it()].forEach((r) => unique.add(r));
+      return [...unique].map((r) => r.featureLayer);
+    }),
+    searchSources: computed(() => {
+      const unique = new Set<ResolvedLayer>();
+      [...store.de(), ...store.fr(), ...store.it()].forEach((r) => unique.add(r));
+      return [...unique].map((r) => r.searchSource).filter((s) => s !== undefined);
+    }),
+  })),
 );
