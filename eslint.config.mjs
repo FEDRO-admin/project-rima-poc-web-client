@@ -153,4 +153,10 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['**/*.store.ts', '**/*.reducers.ts', '**/*.events.ts', '**/*.selectors.ts', '**/*.effects.ts'],
+    rules: {
+      'max-lines-per-function': 'off',
+    },
+  },
 );
