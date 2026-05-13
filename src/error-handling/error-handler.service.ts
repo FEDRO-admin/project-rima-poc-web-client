@@ -18,23 +18,7 @@ export class ErrorHandlerService implements ErrorHandler {
   }
 
   private async handleErrorAsync(error: unknown): Promise<void> {
-    let message: string;
-    try {
-      if (error instanceof Error) {
-        if (isOfTypeRimaError(error)) {
-          // Ensure Transloco has loaded a language before attempting translation
-          await firstValueFrom(this.translocoService.langChanges$);
-          message = this.translocoService.translate(error.message, error.translationArguments);
-        } else {
-          message = error.message;
-        }
-      } else {
-        message = JSON.stringify(error);
-      }
-    } catch {
-      // no translation - this is the worst case. Keep the logic as simple as possible
-      message = 'Unknown error';
-    }
+    const message = await this.extractErrorMessage(error);
 
     if (isDevMode()) {
       console.error(error, message);
@@ -49,6 +33,25 @@ export class ErrorHandlerService implements ErrorHandler {
       // At the moment, recoverable errors are treated the same as silent errors.
     } else {
       await this.routeToErrorPage(message);
+    }
+  }
+
+  private async extractErrorMessage(error: unknown): Promise<string> {
+    try {
+      if (error instanceof Error) {
+        if (isOfTypeRimaError(error)) {
+          // Ensure Transloco has loaded a language before attempting translation
+          await firstValueFrom(this.translocoService.langChanges$);
+          return this.translocoService.translate(error.message);
+        } else {
+          return error.message;
+        }
+      } else {
+        return JSON.stringify(error);
+      }
+    } catch {
+      // an error within an error - this is the worst case. Keep the logic as simple as possible
+      return 'Unknown error';
     }
   }
 
