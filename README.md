@@ -1,4 +1,4 @@
-﻿# ProjectRimaPocWebClient
+﻿# Project RIMA PoC WebClient
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
 
@@ -198,9 +198,9 @@ Translation keys must follow **kebab-case** (dashes) with a hierarchical structu
 
 **Avoid:**
 
-- âŒ camelCase: `languageSwitcher.switchTo`
-- âŒ Overly generic keys: `button.label`
-- âŒ Unnecessary nesting: `language-switcher.button.switch-to.aria-label`
+- ❌ camelCase: `languageSwitcher.switchTo`
+- ❌ Overly generic keys: `button.label`
+- ❌ Unnecessary nesting: `language-switcher.button.switch-to.aria-label`
 
 #### Configuration Files
 
@@ -412,7 +412,7 @@ The application has currently one environment:
 
 ## Contributors
 
-The project was developed for the **[Bundesamt fÃ¼r Strassen ASTRA](https://www.astra.admin.ch)**.
+The project was developed for the **[Bundesamt für Strassen ASTRA](https://www.astra.admin.ch)**.
 
 <img src="./.readme/ebp.png" width="150"/>
 
