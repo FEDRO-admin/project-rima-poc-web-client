@@ -1,4 +1,4 @@
-# ProjectRimaPocWebClient
+﻿# Project RIMA PoC WebClient
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
 
@@ -25,6 +25,7 @@ This approach allows rapid iteration and experimentation while maintaining test 
 > - [Development server](#development-server)
 > - [Conventions](#conventions)
 > - [Error Handling](#error-handling)
+> - [State Management](#state-management)
 
 ### Project Structure
 
@@ -266,6 +267,113 @@ LayerLoadError: layer.load.error
 "Der Layers 'Axes_NSKS_de' konnte nicht geladen werden."
 ```
 
+### State Management
+
+All application state is managed with [NgRx Signals](https://ngrx.io/guide/signals) (`@ngrx/signals`) combined with
+the `withImmutableState` feature from `@angular-architects/ngrx-toolkit`.
+
+For more information on how to use NgRx Signals, refer to the official documentation: https://ngrx.io/guide/signals
+
+#### File Types
+
+| File          | Purpose                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `*.store.ts`  | The store itself contains the state, initial state, methods, computed signals, reducers and effects |
+| `*.state.ts`  | State interface                                                                                     |
+| `*.events.ts` | Event definitions created with `eventGroup()`                                                       |
+
+#### Store Structure
+
+Every store follows this composition order inside `signalStore()`:
+
+```typescript
+// example.state.ts
+export interface ExampleState {
+  field: string | undefined;
+}
+```
+
+```typescript
+// example.store.ts
+export const initialState = {
+  field: undefined,
+} as const satisfies ExampleState;
+
+export const ExampleStore = signalStore(
+  { providedIn: 'root' },
+  // creation of the state with initial values
+  withImmutableState<ExampleState>(() => initialState),
+  // reducer with events
+  withReducer(
+    on(exampleEvents.setUpperCaseField, ({ payload: value }) => ({ field: value.toUpperCase() })),
+    on(exampleEvents.resetField, () => ({ field: undefined })),
+  ),
+  // computed signals derived from state
+  withComputed((store) => ({
+    derivedValue: computed((): string => `derived: ${store.field() ?? ''}`),
+  })),
+  // methods to update the state
+  withMethods((store) => ({
+    setField: (field: string): void => patchState(store, { field }),
+  })),
+);
+```
+
+Not every feature block is required; therefore, use only what the store needs.
+
+#### Events
+
+Events are plain, typed messages that describe something that happened in the application (e.g. "the user set a field"). Any part of the app can dispatch an event; stores and effects react to them independently. This decouples the code that triggers a change from the code that handles it.
+
+Define them with `eventGroup()` and dispatch via `Dispatcher`, react via `withReducer(on(...))` in the store or via `events.on(...)` in a service/component:
+
+```typescript
+// example.events.ts
+export const exampleEvents = eventGroup({
+  source: 'Example',
+  events: {
+    setUpperCaseField: type<string>(),
+    resetField: type<void>(),
+  },
+});
+
+// dispatching
+inject(Dispatcher).dispatch(exampleEvents.setUpperCaseField('test'));
+
+// reacting in a store
+withReducer(
+  on(exampleEvents.setUpperCaseField, ({ payload: value }) => ({ field: value.toUpperCase() })),
+),
+
+// reacting in an effects service
+inject(Events)
+  .on(exampleEvents.somethingHappened)
+  .pipe(takeUntilDestroyed(this.destroyRef))
+  .subscribe(({ payload }) => { ... });
+```
+
+#### Using a Store in a Component
+
+Inject the store with `inject()` and consume signals directly in the template:
+
+```typescript
+@Component({
+  template: `
+    <div>
+      <p>{{ exampleStore.field() }}</p>
+      <button (click)="runTest()">Test</button>
+    </div>
+  `,
+})
+export class ExampleComponent {
+  protected readonly exampleStore = inject(ExampleStore);
+
+  protected runTest(): void {
+    this.exampleStore.setField('new value');
+  }
+}
+```
+
 ## Deployment
 
 ### Trigger
@@ -296,6 +404,11 @@ The application has currently one environment:
 
 - **Main Documentation**: https://developers.arcgis.com/javascript/latest/
 - **Map Components Reference**: https://developers.arcgis.com/javascript/latest/references/map-components/
+
+### NgRx Signals
+
+- **Official Documentation**: https://ngrx.io/guide/signals
+- **NgRx Toolkit with Immutable State**: https://ngrx-toolkit.angulararchitects.io/docs/with-immutable-state
 
 ## Contributors
 
