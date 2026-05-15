@@ -1,65 +1,73 @@
-import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
+import { computed } from '@angular/core';
+import WebMap from '@arcgis/core/WebMap';
+import Portal from '@arcgis/core/portal/Portal';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { MapServerService } from '../map/layers/map-server.service';
-import { FeatureServerService } from '../map/layers/feature-server.service';
-import { MAP_SERVER_URL } from '../map/layers/map-server.config';
-import { type LayerTreeNode, type LayerTreeLeaf, isLeafNode, isGroupNode, findLeaf } from '../map/layers/layer-tree';
-
-export type { LayerTreeNode, LayerTreeLeaf };
+import type Layer from '@arcgis/core/layers/Layer';
+import type Collection from '@arcgis/core/core/Collection';
+import { PORTAL_URL, WEB_MAP_ITEM_ID } from '../map/layers/web-map.config';
 
 interface LayersState {
-  tree: LayerTreeNode[];
-  mapImageLayer: MapImageLayer | null;
+  loaded: boolean;
 }
 
 export const LayersStore = signalStore(
   { providedIn: 'root' },
-  withState<LayersState>({ tree: [], mapImageLayer: null }),
-  withMethods(
-    (store, mapServerService = inject(MapServerService), featureServerService = inject(FeatureServerService)) => {
-      const markFeatureServerAvailability = (tree: LayerTreeNode[], availableIds: Set<number>): LayerTreeNode[] =>
-        tree.map((node) => {
-          if (isLeafNode(node)) {
-            return { ...node, hasFeatureServer: availableIds.has(node.id) };
-          }
-          return { ...node, children: markFeatureServerAvailability(node.children, availableIds) };
-        });
+  withState<LayersState>({ loaded: false }),
+  withMethods((store) => {
+    let webMap: WebMap | null = null;
 
-      return {
-        async initialize(): Promise<void> {
-          try {
-            const [tree, featureServerIds] = await Promise.all([
-              mapServerService.getLayerTree(),
-              featureServerService.getAvailableLayerIds(),
-            ]);
+    return {
+      async initialize(): Promise<void> {
+        try {
+          webMap = new WebMap({
+            portalItem: {
+              id: WEB_MAP_ITEM_ID,
+              portal: new Portal({ url: PORTAL_URL }),
+            },
+          });
 
-            const enrichedTree = markFeatureServerAvailability(tree, featureServerIds);
+          await webMap.load();
+          patchState(store, { loaded: true });
 
-            const mapImageLayer = new MapImageLayer({ url: MAP_SERVER_URL });
+          console.warn('[LayersStore] WebMap loaded successfully', {
+            layers: webMap.layers.map((layer) => layer.title).toArray(),
+          });
+        } catch (error) {
+          console.error('[LayersStore] Failed to load WebMap', error);
+        }
+      },
 
-            patchState(store, { tree: enrichedTree, mapImageLayer });
+      getWebMap(): WebMap | null {
+        return webMap;
+      },
 
-            console.warn('[LayersStore] Layers loaded successfully', { tree: enrichedTree });
-          } catch (error) {
-            console.error('[LayersStore] Failed to load layers from server', error);
-          }
-        },
+      getHierarchy(): Collection<Layer> | undefined {
+        return webMap?.layers;
+      },
 
-        getLeaf(id: number): LayerTreeLeaf | undefined {
-          return findLeaf(store.tree(), id);
-        },
+      findLayerById(id: string): Layer | undefined {
+        return webMap?.findLayerById(id) ?? undefined;
+      },
 
-        getFeatureLayer(leafId: number): FeatureLayer | undefined {
-          const leaf = findLeaf(store.tree(), leafId);
-          if (!leaf?.hasFeatureServer) return undefined;
-          return featureServerService.getFeatureLayer(leafId);
-        },
-      };
-    },
-  ),
+      findLayerByTitle(title: string): Layer | undefined {
+        return webMap?.allLayers.find((layer) => layer.title === title) ?? undefined;
+      },
+
+      getFeatureLayer(id: string): FeatureLayer | undefined {
+        const layer = webMap?.findLayerById(id) ?? undefined;
+        return layer instanceof FeatureLayer ? layer : undefined;
+      },
+
+      toggleLayerVisibility(id: string): void {
+        const layer = webMap?.findLayerById(id);
+        if (layer) {
+          layer.visible = !layer.visible;
+        }
+      },
+    };
+  }),
   withComputed((store) => ({
-    hierarchy: computed(() => store.tree()),
+    isLoaded: computed(() => store.loaded()),
   })),
 );
