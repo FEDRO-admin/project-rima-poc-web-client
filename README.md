@@ -231,8 +231,8 @@ The application defines custom errors extending the native `Error` object for ea
 
 All errors should extend from the following abstract classes, extending `RimaError`. They have different behaviour in the error handler:
 
-- `**FatalError**`: Prevents the current screen from being used by redirecting to a fatal error page
-- `**RecoverableError**` and `**SilentError**`: Do nothing except log to console in dev mode. Use for errors that should not be communicated to the user
+- **`FatalError`**: Prevents the current screen from being used by redirecting to a fatal error page
+- **`RecoverableError`** and **`SilentError`**: Do nothing except log to console in dev mode. Use for errors that should not be communicated to the user
 
 Uncaught errors that don't extend these classes are treated as `FatalError` since their criticality cannot be reliably determined.
 
@@ -380,30 +380,30 @@ export class ExampleComponent {
 
 The deployment process is done using Github actions. There are two kinds of deployments:
 
-- **Automatic deployment**  
+- **Automatic deployment** \
   where the deployment is triggered by a push to the `main` branch. This will deploy the application to the dev environment.
-- **Manual deployment**  
+- **Manual deployment** \
   where the deployment is triggered manually. One can decide to deploy to the any available environment.
 
 ### Environments
 
 The application has currently one environment:
 
-- **Dev**  
-  This is the development environment. It is used for testing and development purposes and is hosted on Github Pages.  
-  URL: [https://fedro-admin.github.io/project-rima-poc-web-client/](https://fedro-admin.github.io/project-rima-poc-web-client/)
+- **Dev** \
+  This is the development environment. It is used for testing and development purposes and is hosted on Github Pages. \
+  URL: https://fedro-admin.github.io/project-rima-poc-web-client/
 
 ## External Resources
 
 ### Official Documentation
 
-- **Angular Style Guide**: [https://angular.dev/style-guide](https://angular.dev/style-guide)
-- **Google TypeScript Style Guide**: [https://google.github.io/styleguide/tsguide.html](https://google.github.io/styleguide/tsguide.html)
+- **Angular Style Guide**: https://angular.dev/style-guide
+- **Google TypeScript Style Guide**: https://google.github.io/styleguide/tsguide.html
 
 ### ArcGIS Maps SDK for JavaScript
 
-- **Main Documentation**: [https://developers.arcgis.com/javascript/latest/](https://developers.arcgis.com/javascript/latest/)
-- **Map Components Reference**: [https://developers.arcgis.com/javascript/latest/references/map-components/](https://developers.arcgis.com/javascript/latest/references/map-components/)
+- **Main Documentation**: https://developers.arcgis.com/javascript/latest/
+- **Map Components Reference**: https://developers.arcgis.com/javascript/latest/references/map-components/
 
 ### NgRx Signals
 
@@ -414,8 +414,14 @@ The application has currently one environment:
 
 The project was developed for the **[Bundesamt für Strassen ASTRA](https://www.astra.admin.ch)**.
 
+<img src="./.readme/ebp.png" width="150"/>
+
 It has been initially developed by [EBP Schweiz AG](https://ebp.ch) as an open-source project.
 
 ### Individual contributors
 
 The following people have contributed to this project:
+
+<a href="https://github.com/FEDRO-admin/project-rima-poc-web-client/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=FEDRO-admin/project-rima-poc-web-client" />
+</a>
