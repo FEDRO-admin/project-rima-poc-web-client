@@ -5,12 +5,10 @@ import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
 import { MapLoadError } from './map-error';
-import { SearchComponent } from '../search/search.component';
 import { LayersStore } from '../stores/layers.store';
 
 @Component({
   selector: 'rima-map',
-  imports: [SearchComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

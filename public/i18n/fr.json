@@ -8,7 +8,5 @@
   "fatal-error-page.error-message": "Message d'erreur: {{errorMessage}}",
   "fatal-error-page.home": "Retour à l'accueil",
   "app.title": "Application RIMA (PoC)",
-  "map.load.error": "La carte n'a pas pu être chargée.",
-  "search.placeholder": "Recherche (lieu, objet, coordonnées)",
-  "search.current-location": "Utiliser la position actuelle"
+  "map.load.error": "La carte n'a pas pu être chargée."
 }

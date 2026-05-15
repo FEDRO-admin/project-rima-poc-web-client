@@ -8,7 +8,5 @@
   "fatal-error-page.error-message": "Fehlermeldung: {{errorMessage}}",
   "fatal-error-page.home": "Zur Startseite",
   "app.title": "RIMA Applikation (PoC)",
-  "map.load.error": "Die Karte konnte nicht geladen werden.",
-  "search.placeholder": "Suche (Ort, Objekt, Koordinaten)",
-  "search.current-location": "Aktueller Standort verwenden"
+  "map.load.error": "Die Karte konnte nicht geladen werden."
 }

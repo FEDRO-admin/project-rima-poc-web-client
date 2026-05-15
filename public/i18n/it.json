@@ -8,7 +8,5 @@
   "fatal-error-page.error-message": "Messaggio di errore: {{errorMessage}}",
   "fatal-error-page.home": "Torna alla home",
   "app.title": "Applicazione RIMA (PoC)",
-  "map.load.error": "La mappa non è stata caricata.",
-  "search.placeholder": "Cerca (luogo, oggetto, coordinate)",
-  "search.current-location": "Usa la posizione attuale"
+  "map.load.error": "La mappa non è stata caricata."
 }
