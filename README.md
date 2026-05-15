@@ -1,6 +1,14 @@
-# ProjectRimaPocWebClient
+﻿# Project RIMA PoC WebClient
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+
+> ## Table of Contents
+>
+> - [About This Project](#about-this-project)
+> - [Development](#development)
+> - [Deployment](#deployment)
+> - [External Resources](#external-resources)
+> - [Contributors](#contributors)
 
 ## About This Project
 
@@ -11,7 +19,15 @@ This is a **Proof of Concept (PoC)** project focused on solving specific problem
 
 This approach allows rapid iteration and experimentation while maintaining test coverage for critical business logic.
 
-## Project Structure
+## Development
+
+> - [Project Structure](#project-structure)
+> - [Development server](#development-server)
+> - [Conventions](#conventions)
+> - [Error Handling](#error-handling)
+> - [State Management](#state-management)
+
+### Project Structure
 
 This project follows the [Angular Style Guide](https://angular.dev/style-guide#organize-your-project-by-feature-areas) and organizes code by **feature areas** rather than by code type.
 
@@ -20,7 +36,7 @@ This project follows the [Angular Style Guide](https://angular.dev/style-guide#o
 - **Shared code**: Place code used across multiple features in the `shared/` directory
 - **Co-located component files**: Keep component files (TS, HTML, CSS) and their unit tests together in the same directory
 
-## Development server
+### Development server
 
 To start a local development server, run:
 
@@ -30,7 +46,7 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
-### Code scaffolding
+#### Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
@@ -44,7 +60,7 @@ For a complete list of available schematics (such as `components`, `directives`,
 ng generate --help
 ```
 
-### Building
+#### Building
 
 To build the project run:
 
@@ -54,7 +70,7 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-### Running unit tests
+#### Running unit tests
 
 Unit tests should be written for services and other logic-heavy classes. Components are intentionally excluded to maintain focus on business logic testing.
 
@@ -64,23 +80,59 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
-### Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+To run tests once without watch mode and with coverage (used in CI), run:
 
 ```bash
-ng e2e
+npm run test-ci
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+#### i18n: Translation keys
 
-### Additional Resources
+To extract all translation keys from the source code, run:
+
+```bash
+npm run i18n:extract
+```
+
+And if you want to check if all keys are used and none missing, run:
+
+```bash
+npm run i18n:find
+```
+
+#### Formatting and linting
+
+To format the code, you can use the following commands:
+
+```bash
+npm run format
+```
+
+And if you want to check for formatting issues, run:
+
+```bash
+npm run format:check
+```
+
+To check the linting of the code, you can use the following command:
+
+```bash
+npm run lint
+```
+
+as well as
+
+```bash
+npm run type:check
+```
+
+#### Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
 
-## Conventions
+### Conventions
 
-### Angular and TypeScript Conventions
+#### Angular and TypeScript Conventions
 
 This project follows Angular and TypeScript best practices:
 
@@ -100,7 +152,7 @@ ESLint is enabled in the pre-commit hook to enforce most conventions. In rare ca
 public handleError(error: any): void {
 ```
 
-### Branch Names and Commit Messages
+#### Branch Names and Commit Messages
 
 Whenever possible, a GitHub issue should be referenced in both branch name and commit message:
 
@@ -109,7 +161,7 @@ Whenever possible, a GitHub issue should be referenced in both branch name and c
 
 Git hooks check for both branch name and commit message format, but will only output warnings.
 
-#### Git Commit Message Guidelines
+##### Git Commit Message Guidelines
 
 Write meaningful commit messages (see [this blog post](https://cbea.ms/git-commit/) for details)
 
@@ -125,7 +177,7 @@ extracts the geometry value first for proper value comparison. Add
 tests to verify duplicate filtering works correctly.
 ```
 
-### Internationalization (i18n) with Transloco
+#### Internationalization (i18n) with Transloco
 
 Translation keys must follow **kebab-case** (dashes) with a hierarchical structure:
 
@@ -150,7 +202,7 @@ Translation keys must follow **kebab-case** (dashes) with a hierarchical structu
 - ❌ Overly generic keys: `button.label`
 - ❌ Unnecessary nesting: `language-switcher.button.switch-to.aria-label`
 
-### Configuration Files
+#### Configuration Files
 
 Configuration files combine the interface definition and static config in one file:
 
@@ -168,7 +220,7 @@ export const languageConfig = {
 
 This pattern ensures type safety while keeping related code together. Always use `as const satisfies [ConfigInterface]` to maintain both immutability and type checking.
 
-## Error Handling
+### Error Handling
 
 The global error handler catches all errors and delegates them to type-specific handlers. In development mode, errors are logged to the console.
 
@@ -184,7 +236,7 @@ All errors should extend from the following abstract classes, extending `RimaErr
 
 Uncaught errors that don't extend these classes are treated as `FatalError` since their criticality cannot be reliably determined.
 
-### Example:
+#### Example:
 
 ```typescript
 // layer-error.ts
@@ -213,6 +265,113 @@ LayerLoadError: layer.load.error
     at ...
     (...)
 "Der Layers 'Axes_NSKS_de' konnte nicht geladen werden."
+```
+
+### State Management
+
+All application state is managed with [NgRx Signals](https://ngrx.io/guide/signals) (`@ngrx/signals`) combined with
+the `withImmutableState` feature from `@angular-architects/ngrx-toolkit`.
+
+For more information on how to use NgRx Signals, refer to the official documentation: https://ngrx.io/guide/signals
+
+#### File Types
+
+| File          | Purpose                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `*.store.ts`  | The store itself contains the state, initial state, methods, computed signals, reducers and effects |
+| `*.state.ts`  | State interface                                                                                     |
+| `*.events.ts` | Event definitions created with `eventGroup()`                                                       |
+
+#### Store Structure
+
+Every store follows this composition order inside `signalStore()`:
+
+```typescript
+// example.state.ts
+export interface ExampleState {
+  field: string | undefined;
+}
+```
+
+```typescript
+// example.store.ts
+export const initialState = {
+  field: undefined,
+} as const satisfies ExampleState;
+
+export const ExampleStore = signalStore(
+  { providedIn: 'root' },
+  // creation of the state with initial values
+  withImmutableState<ExampleState>(() => initialState),
+  // reducer with events
+  withReducer(
+    on(exampleEvents.setUpperCaseField, ({ payload: value }) => ({ field: value.toUpperCase() })),
+    on(exampleEvents.resetField, () => ({ field: undefined })),
+  ),
+  // computed signals derived from state
+  withComputed((store) => ({
+    derivedValue: computed((): string => `derived: ${store.field() ?? ''}`),
+  })),
+  // methods to update the state
+  withMethods((store) => ({
+    setField: (field: string): void => patchState(store, { field }),
+  })),
+);
+```
+
+Not every feature block is required; therefore, use only what the store needs.
+
+#### Events
+
+Events are plain, typed messages that describe something that happened in the application (e.g. "the user set a field"). Any part of the app can dispatch an event; stores and effects react to them independently. This decouples the code that triggers a change from the code that handles it.
+
+Define them with `eventGroup()` and dispatch via `Dispatcher`, react via `withReducer(on(...))` in the store or via `events.on(...)` in a service/component:
+
+```typescript
+// example.events.ts
+export const exampleEvents = eventGroup({
+  source: 'Example',
+  events: {
+    setUpperCaseField: type<string>(),
+    resetField: type<void>(),
+  },
+});
+
+// dispatching
+inject(Dispatcher).dispatch(exampleEvents.setUpperCaseField('test'));
+
+// reacting in a store
+withReducer(
+  on(exampleEvents.setUpperCaseField, ({ payload: value }) => ({ field: value.toUpperCase() })),
+),
+
+// reacting in an effects service
+inject(Events)
+  .on(exampleEvents.somethingHappened)
+  .pipe(takeUntilDestroyed(this.destroyRef))
+  .subscribe(({ payload }) => { ... });
+```
+
+#### Using a Store in a Component
+
+Inject the store with `inject()` and consume signals directly in the template:
+
+```typescript
+@Component({
+  template: `
+    <div>
+      <p>{{ exampleStore.field() }}</p>
+      <button (click)="runTest()">Test</button>
+    </div>
+  `,
+})
+export class ExampleComponent {
+  protected readonly exampleStore = inject(ExampleStore);
+
+  protected runTest(): void {
+    this.exampleStore.setField('new value');
+  }
+}
 ```
 
 ## Deployment
@@ -245,3 +404,24 @@ The application has currently one environment:
 
 - **Main Documentation**: https://developers.arcgis.com/javascript/latest/
 - **Map Components Reference**: https://developers.arcgis.com/javascript/latest/references/map-components/
+
+### NgRx Signals
+
+- **Official Documentation**: https://ngrx.io/guide/signals
+- **NgRx Toolkit with Immutable State**: https://ngrx-toolkit.angulararchitects.io/docs/with-immutable-state
+
+## Contributors
+
+The project was developed for the **[Bundesamt für Strassen ASTRA](https://www.astra.admin.ch)**.
+
+<img src="./.readme/ebp.png" width="150"/>
+
+It has been initially developed by [EBP Schweiz AG](https://ebp.ch) as an open-source project.
+
+### Individual contributors
+
+The following people have contributed to this project:
+
+<a href="https://github.com/FEDRO-admin/project-rima-poc-web-client/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=FEDRO-admin/project-rima-poc-web-client" />
+</a>
