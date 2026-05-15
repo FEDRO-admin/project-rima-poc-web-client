@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import esriRequest from '@arcgis/core/request';
 import { MAP_SERVER_URL } from './map-server.config';
+import type { LayerTreeNode } from './layer-tree';
 
 interface MapServerLayerEntry {
   id: number;
@@ -9,53 +10,47 @@ interface MapServerLayerEntry {
   parentLayerId: number;
   subLayerIds: number[] | null;
   defaultVisibility: boolean;
+  geometryType?: string;
 }
 
 interface MapServerResponse {
   layers: MapServerLayerEntry[];
 }
 
-export interface LanguageGroups {
-  de: number[];
-  fr: number[];
-  it: number[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class MapServerService {
-  async getLanguageGroups(): Promise<LanguageGroups> {
+  async getLayerTree(): Promise<LayerTreeNode[]> {
     const response = await esriRequest(MAP_SERVER_URL, { query: { f: 'json' } });
     const { layers } = response.data as MapServerResponse;
 
-    return {
-      de: this.collectFeatureLayerIds('DE', layers),
-      fr: this.collectFeatureLayerIds('FR', layers),
-      it: this.collectFeatureLayerIds('IT', layers),
-    };
+    const rootLayer = layers.find((layer) => layer.parentLayerId === -1);
+    if (!rootLayer) return [];
+
+    return this.buildChildren(rootLayer.id, layers);
   }
 
-  private collectFeatureLayerIds(groupName: string, allLayers: MapServerLayerEntry[]): number[] {
-    const layerById = new Map(allLayers.map((layer) => [layer.id, layer]));
-    const groupLayer = allLayers.find(
-      (layer) => layer.name.toUpperCase() === groupName && layer.type === 'Group Layer',
-    );
+  private buildChildren(parentId: number, allLayers: MapServerLayerEntry[]): LayerTreeNode[] {
+    const children = allLayers.filter((layer) => layer.parentLayerId === parentId);
 
-    if (!groupLayer) return [];
-
-    const featureLayerIds: number[] = [];
-
-    const collectRecursively = (layer: MapServerLayerEntry): void => {
+    return children.map((layer) => {
       if (layer.type === 'Feature Layer') {
-        featureLayerIds.push(layer.id);
-      } else {
-        layer.subLayerIds?.forEach((childId) => {
-          const child = layerById.get(childId);
-          if (child) collectRecursively(child);
-        });
+        return {
+          id: layer.id,
+          name: layer.name,
+          type: 'feature' as const,
+          visible: layer.defaultVisibility,
+          geometryType: layer.geometryType ?? '',
+          hasFeatureServer: false,
+        };
       }
-    };
 
-    collectRecursively(groupLayer);
-    return featureLayerIds;
+      return {
+        id: layer.id,
+        name: layer.name,
+        type: 'group' as const,
+        visible: layer.defaultVisibility,
+        children: this.buildChildren(layer.id, allLayers),
+      };
+    });
   }
 }

@@ -38,6 +38,13 @@ export class MapComponent {
         }
       });
     });
+
+    effect(() => {
+      const mapImageLayer = this.layersStore.mapImageLayer();
+      const mapRef = this.mapElement();
+      if (!mapImageLayer || !mapRef?.nativeElement?.view?.map) return;
+      mapRef.nativeElement.view.map.add(mapImageLayer);
+    });
   }
 
   private async initializeMap(mapElement: HTMLArcgisMapElement): Promise<void> {
@@ -58,7 +65,5 @@ export class MapComponent {
       id: 'swisstopo',
     });
     mapElement.view.map.basemap = swisstopoBasemap;
-
-    this.layersStore.featureLayers().forEach((layer) => mapElement.view.map!.add(layer));
   }
 }
