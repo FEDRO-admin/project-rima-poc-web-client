@@ -50,13 +50,29 @@ export const LayersStore = signalStore(
         return webMap?.findLayerById(id) ?? undefined;
       },
 
-      findLayerByTitle(title: string): Layer | undefined {
-        return webMap?.allLayers.find((layer) => layer.title === title) ?? undefined;
-      },
-
-      getFeatureLayer(id: string): FeatureLayer | undefined {
+      getFeatureLayerById(id: string): FeatureLayer | undefined {
         const layer = webMap?.findLayerById(id) ?? undefined;
         return layer instanceof FeatureLayer ? layer : undefined;
+      },
+
+      // e.g. DE/Achsen/Bezugspunkt
+      getFeatureLayerByPath(path: string): FeatureLayer | undefined {
+        if (!webMap || !path) return undefined;
+
+        let currentLayers: Collection<Layer> = webMap.layers;
+        let current: Layer | undefined;
+
+        for (const segment of path.split('/')) {
+          current = currentLayers.find((l) => l.title === segment);
+          if (!current) return undefined;
+
+          const sublayers = (current as { layers?: Collection<Layer> }).layers;
+          if (sublayers) {
+            currentLayers = sublayers;
+          }
+        }
+
+        return current instanceof FeatureLayer ? current : undefined;
       },
 
       toggleLayerVisibility(id: string): void {
