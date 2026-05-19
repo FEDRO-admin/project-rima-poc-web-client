@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { LanguageService } from '../i18n/language.service';
+import { LanguageEffect } from '../i18n/language.effect';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +10,6 @@ export class AppEffectsService {
      * The Effect Services are all registering their effects in their constructors.
      * @private
      */
-    inject(LanguageService);
+    inject(LanguageEffect);
   }
 }
