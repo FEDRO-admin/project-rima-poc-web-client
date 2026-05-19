@@ -1,6 +1,6 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, viewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
-import { LayersStore } from '../stores/layers.store';
+import { MapViewService } from './mapview/mapview.service';
 
 @Component({
   selector: 'rima-map',
@@ -9,20 +9,10 @@ import { LayersStore } from '../stores/layers.store';
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
-  private readonly layersStore = inject(LayersStore);
+  private readonly mapViewService = inject(MapViewService);
 
-  protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
-
-  constructor() {
-    effect(() => {
-      const isLoaded = this.layersStore.isLoaded();
-      const mapRef = this.mapElement();
-      if (!isLoaded || !mapRef?.nativeElement) return;
-
-      const webMap = this.layersStore.getWebMap();
-      if (!webMap) return;
-
-      mapRef.nativeElement.map = webMap;
-    });
+  protected async onViewReady(event: Event): Promise<void> {
+    const mapElement = event.target as HTMLArcgisMapElement;
+    await this.mapViewService.registerMapView(mapElement.view);
   }
 }
