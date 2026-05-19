@@ -1,8 +1,8 @@
 <nav class="language-switcher" *transloco="let t">
-  @for (language of languages; track language) {
+  @for (language of languageStore.availableLanguages(); track language) {
     <button
       type="button"
-      [class.active]="activeLanguage() === language"
+      [class.active]="languageStore.activeLanguage() === language"
       (click)="changeLanguage(language)"
       [attr.aria-label]="t('language-switcher.aria-label', { language: t(`language.${language}`) })"
     >
