@@ -9,6 +9,10 @@ export class MapElementLoadError extends FatalError {
   public override message = 'Map element could not be loaded';
 }
 
+export class MapViewInitialiseError extends FatalError {
+  public override message = 'Map view could not be loaded';
+}
+
 export class MapViewLoadError extends FatalError {
   public override message = 'Map view could not be loaded';
 }
