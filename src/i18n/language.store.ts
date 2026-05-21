@@ -1,6 +1,6 @@
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import { Language } from './language.type';
-import { languageConfig } from './language.config';
+import { Language } from './language-types';
+import { languageConfig } from './language-config';
 
 interface LanguageState {
   activeLanguage: Language;

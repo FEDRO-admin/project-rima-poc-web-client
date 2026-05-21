@@ -1,7 +1,7 @@
 import { provideTransloco } from '@jsverse/transloco';
 import { isDevMode } from '@angular/core';
-import { TranslocoHttpLoader } from './transloco/language.transloco.loader';
-import { Language, languages } from './language.type';
+import { TranslocoHttpLoader } from './transloco/transloco-loader';
+import { Language, languages } from './language-types';
 
 interface LanguageConfig {
   availableLanguages: Language[];

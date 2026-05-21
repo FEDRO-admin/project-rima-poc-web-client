@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { TranslocoModule } from '@jsverse/transloco';
 import { LanguageStore } from '../language.store';
-import { Language } from '../language.type';
+import { Language } from '../language-types';
 
 @Component({
   selector: 'rima-language-switcher',

@@ -1,5 +1,5 @@
 import { inject, Injectable, signal, Signal } from '@angular/core';
-import { Language, languageInfos } from '../../i18n/language.type';
+import { Language, languageInfos } from '../../i18n/language-types';
 import {
   RawWebmapLayer,
   WebmapFeatureLayer,
