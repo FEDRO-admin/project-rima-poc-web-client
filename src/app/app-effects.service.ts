@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { LanguageEffect } from '../i18n/language.effect';
+import { LanguageEffect } from '../i18n/language-effects';
 
 @Injectable({
   providedIn: 'root',
