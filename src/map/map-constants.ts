@@ -12,7 +12,8 @@ export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
 export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = true;
 
 // BASEMAP
-export const RIMA_BASEMAP_DEFAULT_ID = '7bd6e81998384d5b89c090cfcae88aca';
+export const RIMA_SWISSTOPO_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';
+export const RIMA_SWISSTOPO_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
 
 // SPATIAL REFERENCES
 export const RIMA_SPATIAL_REFERENCE_LV95_EPSG = 2056;

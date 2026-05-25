@@ -1,10 +1,9 @@
-import { inject, Injectable, signal, Signal } from '@angular/core';
+import { Injectable, signal, Signal } from '@angular/core';
 import MapView from '@arcgis/core/views/MapView';
-import { MapViewAlreadyRegisteredError } from '../map-errors';
-import { RIMA_BASEMAP_DEFAULT_ID, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
+import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import Basemap from '@arcgis/core/Basemap';
-import PortalItem from '@arcgis/core/portal/PortalItem';
-import { PortalService } from '../portal/portal.service';
+import { MapViewAlreadyRegisteredError } from '../map-errors';
+import { RIMA_SWISSTOPO_WMTS_URL, RIMA_SWISSTOPO_BASEMAP_LAYER_ID, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +11,6 @@ import { PortalService } from '../portal/portal.service';
 export class MapViewService {
   public readonly mapView: Signal<MapView | undefined>;
   private readonly writableMapView = signal<MapView | undefined>(undefined);
-  private readonly portalService = inject(PortalService);
 
   constructor() {
     this.mapView = this.writableMapView.asReadonly();
@@ -23,18 +21,22 @@ export class MapViewService {
     this.writableMapView.set(mapView);
   }
 
-  public async addBasemap(): Promise<void> {
+  public addBasemap(): void {
     const view = this.mapView();
     if (!view) throw new Error('Map view not registered');
     if (!view.map) throw new Error('Map view has no map');
 
-    const portal = await this.portalService.getPortal();
-    const basemap = new Basemap({
-      portalItem: new PortalItem({ id: RIMA_BASEMAP_DEFAULT_ID, portal }),
+    const swisstopoLayer = new WMTSLayer({
+      url: RIMA_SWISSTOPO_WMTS_URL,
+      activeLayer: { id: RIMA_SWISSTOPO_BASEMAP_LAYER_ID },
     });
-    await basemap.load();
 
-    view.map.basemap = basemap;
+    view.map.basemap = new Basemap({
+      baseLayers: [swisstopoLayer],
+      title: 'Swisstopo Pixelkarte',
+      id: 'swisstopo',
+    });
+
     view.extent = RIMA_SWITZERLAND_EXTENT;
   }
 }

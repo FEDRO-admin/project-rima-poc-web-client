@@ -54,7 +54,7 @@ export class MapComponent {
 
   protected async onViewReady(view: MapView): Promise<void> {
     await this.viewService.registerMapView(view);
-    await this.viewService.addBasemap();
+    this.viewService.addBasemap();
     const catalog = await this.catalogService.buildMapCatalog();
     this.layerService.addCatalogToMap(catalog);
   }
