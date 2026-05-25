@@ -1,5 +1,10 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, viewChild, untracked } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effect, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
+import { MapViewService } from './view/view.service';
+import { CatalogService } from './catalog/catalog.service';
+import { LanguageStore } from '../i18n/language.store';
+import MapView from '@arcgis/core/views/MapView';
+import { MapViewInitialiseError } from './map-errors';
 import Basemap from '@arcgis/core/Basemap';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
@@ -24,13 +29,14 @@ const RIMA_ACHSEN_FEATURESERVICE_URL =
 
 @Component({
   selector: 'rima-map',
-  imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
-  protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
+  private readonly viewService = inject(MapViewService);
+  private readonly catalogService = inject(CatalogService);
+  public readonly languageStore = inject(LanguageStore);
 
   private readonly initializedMapHosts = new WeakSet<HTMLArcgisMapElement>();
 
@@ -42,85 +48,25 @@ export class MapComponent {
     ymax: 1308000,
     spatialReference: this.spatialReference,
   };
+  private readonly mapElement = viewChild<ElementRef>('arcgisMap');
 
   constructor() {
     effect(() => {
-      const mapRef = this.mapElement();
+      const mapElement = this.mapElement();
       untracked(() => {
-        if (mapRef?.nativeElement) {
-          void this.initializeMap(mapRef.nativeElement);
+        if (mapElement?.nativeElement) {
+          const view = mapElement.nativeElement.view as MapView;
+          this.onViewReady(view).catch((error) => {
+            throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
+          });
         }
       });
     });
   }
 
-  private async initializeMap(mapElement: HTMLArcgisMapElement): Promise<void> {
-    if (this.initializedMapHosts.has(mapElement)) {
-      return;
-    }
-
-    await mapElement.viewOnReady();
-    if (!mapElement.view.map) {
-      throw new MapLoadError();
-    }
-
-    const swisstopoLayer = new WMTSLayer({
-      url: SWISSTOPO_WMTS_CAPABILITIES_URL,
-      activeLayer: {
-        id: SWISSTOPO_WMTS_PIXELKARTE_LAYER_ID,
-      },
-      opacity: 0.5,
-    });
-    const swisstopoBasemap = new Basemap({
-      baseLayers: [swisstopoLayer],
-      title: 'Pixelkarte Farbig',
-      id: 'swisstopo',
-    });
-    mapElement.view.map.basemap = swisstopoBasemap;
-
-    const sampleGroup = new GroupLayer({
-      title: 'Group Layer',
-      visibilityMode: 'independent',
-      //visibility: true,
-      listMode: 'show',
-      layers: [
-        new FeatureLayer({
-          title: 'Europe NUTS 3 demographics & boundaries',
-          url: ESRI_EUROPE_NUTS_3_DEMOGRAPHICS_URL,
-          opacity: 0.5,
-          visible: false,
-          listMode: 'show',
-        }),
-        new FeatureLayer({
-          title: 'World urban areas',
-          url: ESRI_WORLD_URBAN_AREAS_URL,
-          listMode: 'show',
-        }),
-        new WMSLayer({
-          title: 'Baulinien WMS',
-          url: SWISSTOPO_WMS_URL,
-          sublayers: [{ name: SWISSTOPO_WMS_BAULINIEN_LAYER_NAME, title: 'Baulinien Nationalstrassen' }],
-          listMode: 'show',
-        }),
-      ],
-    });
-    mapElement.view.map.add(sampleGroup);
-
-    const axisWms = new WMSLayer({
-      title: 'Achsen WMS',
-      url: SWISSTOPO_WMS_URL,
-      sublayers: [{ name: SWISSTOPO_WMS_ACHSEN_LAYER_NAME, title: 'National Strassen Achsen' }],
-      listMode: 'show',
-    });
-    mapElement.view.map.add(axisWms);
-
-    const achsenLayer = new FeatureLayer({
-      title: 'Achsen (RIMA POC)',
-      url: RIMA_ACHSEN_FEATURESERVICE_URL,
-      listMode: 'show',
-    });
-    mapElement.view.map.add(achsenLayer);
-
-    this.initializedMapHosts.add(mapElement);
+  protected async onViewReady(view: MapView): Promise<void> {
+    await this.viewService.registerMapView(view);
+    await this.viewService.addBasemap();
+    await this.catalogService.buildMapCatalog();
   }
 }
