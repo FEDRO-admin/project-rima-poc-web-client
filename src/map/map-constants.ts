@@ -6,7 +6,7 @@ export const RIMA_PORTAL_URL = 'https://rima-poc.switzerlandnorth.cloudapp.azure
 
 export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
   'ArcGISFeatureLayer',
-  'ArcGISMapServiceLayer',
+  //'ArcGISMapServiceLayer',
   'WebTiledLayer',
 ];
 export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = false;
