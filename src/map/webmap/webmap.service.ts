@@ -70,6 +70,8 @@ export class WebmapService {
       categories: [`/Categories/${languageCategory}`],
       query: 'type:"Web Map"',
       num: 100,
+      sortField: 'title',
+      sortOrder: 'asc',
     });
 
     const items: PortalItem[] = await this.portalService.queryItems(query);
@@ -104,8 +106,8 @@ export class WebmapService {
     const webmapData: WebmapData = {
       portalItemId: item.id!,
       title: item.title ?? '',
-      categories: item.categories ?? [],
-      layers: this.parseRawWebmapLayers(rawWebmapLayers, item.id!),
+      categorySegments: this.extractCategorySegments(item.categories ?? []),
+      layers: this.parseRawWebmapLayers([...rawWebmapLayers].reverse(), item.id!), // reverse to keep webmap layer order
     };
 
     return webmapData;
@@ -115,7 +117,7 @@ export class WebmapService {
     const result: WebmapLayer[] = [];
     for (const layer of rawWebmapLayers) {
       if (layer.layerType === 'GroupLayer' && layer.layers) {
-        const childLayers = this.parseRawWebmapLayers(layer.layers, webmapId);
+        const childLayers = this.parseRawWebmapLayers([...layer.layers].reverse(), webmapId);
         if (childLayers.length === 0) continue;
         const group: WebmapGroupLayer = {
           id: `grouplayer:${webmapId}/${layer.id}`,
@@ -180,5 +182,13 @@ export class WebmapService {
       }
     }
     return result;
+  }
+
+  private extractCategorySegments(categories: string[]): string[] {
+    if (!categories.length) return [];
+    return categories[0]
+      .split('/')
+      .filter((s) => s.length > 0)
+      .slice(2); // skip "Categories" and language segment
   }
 }

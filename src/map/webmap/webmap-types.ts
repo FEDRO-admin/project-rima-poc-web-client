@@ -9,7 +9,7 @@ export interface WebmapCollection {
 export interface WebmapData {
   readonly title: string;
   readonly portalItemId: string;
-  readonly categories: string[];
+  readonly categorySegments: string[];
   readonly layers: WebmapLayer[];
 }
 
