@@ -1,0 +1,48 @@
+@if (store.visible()) {
+  <div
+    class="popup-container"
+    [class.popup-container--docked]="store.docked()"
+    [style.left.px]="store.docked() ? null : store.screenPoint()?.x"
+    [style.top.px]="store.docked() ? null : store.screenPoint()?.y"
+  >
+    <div class="popup-card">
+      <div class="popup-header" (mousedown)="onDragStart($event)">
+        <button class="popup-header-btn" (click)="store.toggleDocked()" aria-label="Dock popup">
+          {{ store.docked() ? 'Float' : 'Dock' }}
+        </button>
+        <button class="popup-header-btn popup-close" (click)="close()" aria-label="Close popup">✕</button>
+      </div>
+
+      @if (store.showList()) {
+        <h3 class="popup-list-title">Features ({{ store.graphics().length }})</h3>
+        <ul class="popup-feature-list">
+          @for (graphic of store.graphics(); track $index) {
+            <li>
+              <button
+                class="popup-feature-item"
+                (click)="store.selectFeature($index)"
+                (mouseenter)="store.hoverFeature($index)"
+                (mouseleave)="store.hoverFeature(undefined)"
+              >
+                <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
+                <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (store.showDetail() && store.selectedGraphic()) {
+        <div class="popup-toolbar">
+          @if (store.graphics().length > 1) {
+            <button class="popup-toolbar-btn" (click)="store.backToList()" aria-label="Back to feature list">
+              Back
+            </button>
+          }
+          <button class="popup-toolbar-btn" (click)="zoomTo()" aria-label="Zoom to feature">Zoom to</button>
+        </div>
+        <rima-popup-content [graphic]="store.selectedGraphic()!" />
+      }
+    </div>
+  </div>
+}

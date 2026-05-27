@@ -2,12 +2,12 @@ export type CatalogItemType = 'section' | 'feature-layer' | 'map-image-layer' | 
 export type CatalogSectionOrigin = 'category' | 'webmap' | 'group-layer';
 
 // BASE INTERFACES
-export interface BaseCatalog {
+interface BaseCatalog {
   loading: boolean;
   error: unknown | null;
 }
 
-export interface BaseCatalogItem extends BaseCatalog {
+interface BaseCatalogItem extends BaseCatalog {
   readonly id: string;
   readonly title: string;
   readonly type: CatalogItemType;
@@ -39,7 +39,7 @@ export interface CatalogSection extends BaseCatalogItem {
 }
 
 // CATALOG LAYER DISCRIMINATED UNION
-export interface BaseCatalogLayer extends BaseCatalogItem {
+interface BaseCatalogLayer extends BaseCatalogItem {
   readonly webMapItemId: string;
   readonly layerId: string;
   readonly url: string;

@@ -86,6 +86,7 @@ export class LayerService {
       url: catalogLayer.url,
       title: catalogLayer.title,
       visible: catalogLayer.visible,
+      outFields: ['*'],
     });
   }
 

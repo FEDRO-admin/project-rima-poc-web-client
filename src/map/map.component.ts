@@ -8,10 +8,14 @@ import MapView from '@arcgis/core/views/MapView';
 import { MapViewInitialiseError } from './map-errors';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
+import { PopupComponent } from './popup/popup.component';
+import { PopupClickService } from './popup/popup-click.service';
+import { PopupHighlightService } from './popup/popup-highlight.service';
 
 @Component({
   selector: 'rima-map',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  imports: [PopupComponent],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
 })
@@ -20,6 +24,8 @@ export class MapComponent {
   private readonly catalogService = inject(CatalogService);
   private readonly layerService = inject(LayerService);
   public readonly languageStore = inject(LanguageStore);
+  private readonly popupClickService = inject(PopupClickService);
+  private readonly popupHighlightService = inject(PopupHighlightService);
 
   private readonly initializedMapHosts = new WeakSet<HTMLArcgisMapElement>();
 

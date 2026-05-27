@@ -1,0 +1,47 @@
+<div class="popup-content">
+  <h3 class="popup-title">{{ title() }}</h3>
+  <div class="popup-tabs">
+    <button
+      class="popup-tab"
+      [class.popup-tab--active]="activeTab() === 'attributes'"
+      (click)="selectTab('attributes')"
+    >
+      Attributes
+    </button>
+    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
+      Hierarchy
+    </button>
+    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'documents'" (click)="selectTab('documents')">
+      Documents
+    </button>
+  </div>
+
+  @switch (activeTab()) {
+    @case ('attributes') {
+      <div class="popup-panel">
+        @if (fields().length === 0) {
+          <p class="popup-placeholder">No attributes available.</p>
+        } @else {
+          <table class="popup-attr-table">
+            @for (field of fields(); track field.label) {
+              <tr>
+                <td class="popup-attr-key">{{ field.label }}</td>
+                <td class="popup-attr-value">{{ field.value }}</td>
+              </tr>
+            }
+          </table>
+        }
+      </div>
+    }
+    @case ('hierarchy') {
+      <div class="popup-panel">
+        <p class="popup-placeholder">Hierarchy view coming soon.</p>
+      </div>
+    }
+    @case ('documents') {
+      <div class="popup-panel">
+        <p class="popup-placeholder">Documents view coming soon.</p>
+      </div>
+    }
+  }
+</div>
