@@ -1,21 +1,27 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, viewChild, untracked } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effect, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
-import Basemap from '@arcgis/core/Basemap';
-import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
+import { MapViewService } from './view/view.service';
+import { CatalogService } from './catalog/catalog.service';
+import { LayerService } from './layer/layer.service';
+import { LanguageStore } from '../i18n/language.store';
+import MapView from '@arcgis/core/views/MapView';
+import { MapViewInitialiseError } from './map-errors';
 import { ExtentProperties } from '@arcgis/core/geometry/Extent';
 import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
-import { MapLoadError } from './map-error';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
 @Component({
   selector: 'rima-map',
-  imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
 })
 export class MapComponent {
-  protected readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
+  private readonly viewService = inject(MapViewService);
+  private readonly catalogService = inject(CatalogService);
+  private readonly layerService = inject(LayerService);
+  public readonly languageStore = inject(LanguageStore);
+
+  private readonly initializedMapHosts = new WeakSet<HTMLArcgisMapElement>();
 
   protected readonly spatialReference: SpatialReferenceProperties = { wkid: 2056 };
   protected readonly extent: ExtentProperties = {
@@ -25,40 +31,31 @@ export class MapComponent {
     ymax: 1308000,
     spatialReference: this.spatialReference,
   };
+  private readonly mapElement = viewChild<ElementRef>('arcgisMap');
 
   constructor() {
     effect(() => {
-      const mapRef = this.mapElement();
+      const mapElement = this.mapElement();
       untracked(() => {
-        if (mapRef?.nativeElement) {
-          void this.initializeMap(mapRef.nativeElement);
+        if (mapElement?.nativeElement) {
+          const el = mapElement.nativeElement as HTMLArcgisMapElement;
+          if (this.initializedMapHosts.has(el)) return;
+          this.initializedMapHosts.add(el);
+
+          el.viewOnReady()
+            .then(() => this.onViewReady(el.view))
+            .catch((error) => {
+              throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
+            });
         }
       });
     });
   }
 
-  private async initializeMap(mapElement: HTMLArcgisMapElement): Promise<void> {
-    await mapElement.viewOnReady();
-    if (!mapElement.view.map) {
-      throw new MapLoadError();
-    }
-
-    const swisstopoLayer = new WMTSLayer({
-      url: 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml',
-      activeLayer: {
-        id: 'ch.swisstopo.pixelkarte-farbe',
-      },
-    });
-    const swisstopoBasemap = new Basemap({
-      baseLayers: [swisstopoLayer],
-      title: 'Pixelkarte Farbig',
-      id: 'swisstopo',
-    });
-    mapElement.view.map.basemap = swisstopoBasemap;
-
-    const featureLayer = new FeatureLayer({
-      url: 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis/rest/services/NewFolder/Achsen_Test2/FeatureServer',
-    });
-    mapElement.view.map.add(featureLayer);
+  protected async onViewReady(view: MapView): Promise<void> {
+    await this.viewService.registerMapView(view);
+    this.viewService.addBasemap();
+    const catalog = await this.catalogService.buildMapCatalog();
+    this.layerService.addCatalogToMap(catalog);
   }
 }

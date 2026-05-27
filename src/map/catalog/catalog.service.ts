@@ -1,0 +1,210 @@
+import { inject, Injectable, signal, Signal } from '@angular/core';
+import {
+  CatalogSection,
+  CatalogSectionOrigin,
+  CatalogItem,
+  CatalogLayer,
+  CatalogFeatureLayer,
+  CatalogMapImageLayer,
+  CatalogWebTiledLayer,
+  Catalog,
+  CatalogLeafEntry,
+  CatalogPathSegment,
+} from './catalog-types';
+import { WebmapService } from '../webmap/webmap.service';
+import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
+import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class CatalogService {
+  private readonly webmapService = inject(WebmapService);
+
+  public readonly catalog: Signal<Catalog | undefined>;
+  public readonly loading: Signal<boolean>;
+  public readonly error: Signal<unknown | null>;
+
+  private readonly writableCatalog = signal<Catalog | undefined>(undefined);
+  private readonly writableLoading = signal(false);
+  private readonly writableError = signal<unknown | null>(null);
+
+  constructor() {
+    this.catalog = this.writableCatalog.asReadonly();
+    this.loading = this.writableLoading.asReadonly();
+    this.error = this.writableError.asReadonly();
+  }
+
+  async buildMapCatalog(): Promise<Catalog> {
+    this.writableLoading.set(true);
+    this.writableError.set(null);
+    try {
+      const webmapCollection = await this.webmapService.getWebmapCollection();
+      const catalog = this.buildMapCatalogFromCollection(webmapCollection);
+      this.writableCatalog.set(catalog);
+      return catalog;
+    } catch (error) {
+      this.writableError.set(error);
+      throw error;
+    } finally {
+      this.writableLoading.set(false);
+    }
+  }
+
+  private buildMapCatalogFromCollection(webmapCollection: WebmapCollection): Catalog {
+    const catalog: Catalog = {
+      loading: false,
+      error: null,
+      items: [],
+    };
+
+    if (!webmapCollection.webmaps) {
+      return catalog;
+    }
+
+    const entries: CatalogLeafEntry[] = this.collectLeafEntries(webmapCollection);
+
+    for (const entry of entries) {
+      this.depositAtPath(catalog.items, entry.path, entry.leaf);
+    }
+
+    return catalog;
+  }
+
+  private collectLeafEntries(webmapCollection: WebmapCollection): CatalogLeafEntry[] {
+    const entries: CatalogLeafEntry[] = [];
+
+    for (const webmap of webmapCollection.webmaps) {
+      const categorySegments = this.extractCategorySegments(webmap.categories);
+      const basePath: CatalogPathSegment[] = [];
+
+      // first, push category segments as path segments
+      for (const seg of categorySegments) {
+        basePath.push({ id: `category:${seg}`, title: seg, origin: 'category' });
+      }
+
+      // then push the webmap itself as a path segment
+      if (RIMA_CATALOG_WEBMAP_NAME_AS_SECTION) {
+        basePath.push({ id: `webmap:${webmap.portalItemId}`, title: webmap.title, origin: 'webmap' });
+      }
+
+      this.collectLayerEntries(webmap.layers, webmap.portalItemId, basePath, entries);
+    }
+
+    return entries;
+  }
+
+  private collectLayerEntries(
+    layers: WebmapLayer[],
+    webMapItemId: string,
+    currentPath: CatalogPathSegment[],
+    entries: CatalogLeafEntry[],
+  ): void {
+    for (const layer of layers) {
+      switch (layer.type) {
+        case 'GroupLayer': {
+          const groupSegment: CatalogPathSegment = {
+            id: `group:${webMapItemId}/${layer.layerId}`,
+            title: layer.title,
+            origin: 'group-layer',
+          };
+          this.collectLayerEntries(layer.layers, webMapItemId, [...currentPath, groupSegment], entries);
+          break;
+        }
+        case 'ArcGISFeatureLayer': {
+          const leaf: CatalogFeatureLayer = {
+            id: `layer:${webMapItemId}/${layer.layerId}`,
+            title: layer.title,
+            type: 'feature-layer',
+            webMapItemId,
+            layerId: layer.layerId,
+            url: layer.url,
+            items: undefined,
+            visible: layer.visible,
+            loading: false,
+            error: null,
+          };
+          entries.push({ path: currentPath, leaf });
+          break;
+        }
+        case 'ArcGISMapServiceLayer': {
+          const leaf: CatalogMapImageLayer = {
+            id: `layer:${webMapItemId}/${layer.layerId}`,
+            title: layer.title,
+            type: 'map-image-layer',
+            webMapItemId,
+            layerId: layer.layerId,
+            url: layer.url,
+            items: undefined,
+            visible: layer.visible,
+            loading: false,
+            error: null,
+          };
+          entries.push({ path: currentPath, leaf });
+          break;
+        }
+        case 'WebTiledLayer': {
+          const leaf: CatalogWebTiledLayer = {
+            id: `layer:${webMapItemId}/${layer.layerId}`,
+            title: layer.title,
+            type: 'web-tiled-layer',
+            webMapItemId,
+            layerId: layer.layerId,
+            url: layer.url,
+            wmtsLayerIdentifier: layer.wmtsLayerIdentifier,
+            items: undefined,
+            visible: layer.visible,
+            loading: false,
+            error: null,
+          };
+          entries.push({ path: currentPath, leaf });
+          break;
+        }
+      }
+    }
+  }
+
+  private depositAtPath(currentItems: CatalogItem[], path: CatalogPathSegment[], leaf: CatalogLayer): void {
+    if (path.length === 0) {
+      currentItems.push(leaf);
+      return;
+    }
+
+    const [segment, ...rest] = path;
+    const section = this.getOrCreateSection(currentItems, segment.id, segment.title, segment.origin);
+    this.depositAtPath(section.items, rest, leaf);
+  }
+
+  private getOrCreateSection(
+    currentItems: CatalogItem[],
+    id: string,
+    title: string,
+    origin: CatalogSectionOrigin,
+  ): CatalogSection {
+    const existing = currentItems.find((item) => item.id === id);
+    if (existing) {
+      return existing as CatalogSection;
+    }
+
+    const section: CatalogSection = {
+      id,
+      title,
+      type: 'section',
+      origin,
+      items: [],
+      visible: true,
+      loading: false,
+      error: null,
+    };
+    currentItems.push(section);
+    return section;
+  }
+
+  private extractCategorySegments(categories: string[]): string[] {
+    if (!categories.length) return [];
+    return categories[0]
+      .split('/')
+      .filter((s) => s.length > 0)
+      .slice(2); // skip "Categories" and language segment
+  }
+}

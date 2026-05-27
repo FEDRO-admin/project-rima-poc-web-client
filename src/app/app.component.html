@@ -1,5 +1,12 @@
-<header class="app-header" *transloco="let t">
-  <h1>{{ t('app.title') }}</h1>
-  <rima-language-switcher />
-</header>
-<router-outlet />
+<div class="app-shell">
+  <header class="app-header" *transloco="let t">
+    <h1>{{ t('app.title') }}</h1>
+    <rima-language-switcher />
+  </header>
+  <div class="app-content">
+    <div class="app-outlet-wrap">
+      <router-outlet />
+    </div>
+    <rima-toc />
+  </div>
+</div>
