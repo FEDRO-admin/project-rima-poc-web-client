@@ -75,11 +75,10 @@ export class CatalogService {
     const entries: CatalogLeafEntry[] = [];
 
     for (const webmap of webmapCollection.webmaps) {
-      const categorySegments = this.extractCategorySegments(webmap.categories);
       const basePath: CatalogPathSegment[] = [];
 
       // first, push category segments as path segments
-      for (const seg of categorySegments) {
+      for (const seg of webmap.categorySegments) {
         basePath.push({ id: `category:${seg}`, title: seg, origin: 'category' });
       }
 
@@ -198,13 +197,5 @@ export class CatalogService {
     };
     currentItems.push(section);
     return section;
-  }
-
-  private extractCategorySegments(categories: string[]): string[] {
-    if (!categories.length) return [];
-    return categories[0]
-      .split('/')
-      .filter((s) => s.length > 0)
-      .slice(2); // skip "Categories" and language segment
   }
 }
