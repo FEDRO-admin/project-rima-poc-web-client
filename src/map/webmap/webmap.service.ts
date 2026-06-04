@@ -95,7 +95,7 @@ export class WebmapService {
   private async loadWebmapNode(item: PortalItem): Promise<WebmapData | undefined> {
     if (!item.id) return undefined;
 
-    const itemEndpoint: string = this.portalService.portalItemEndpoint();
+    const itemEndpoint = await this.portalService.getPortalItemEndpoint();
     const response = await esriRequest(`${itemEndpoint}/${item.id}/data`, { query: { f: 'json' } });
 
     const rawWebmapLayers: RawWebmapLayer[] = response.data?.operationalLayers;

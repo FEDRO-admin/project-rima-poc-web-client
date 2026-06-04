@@ -1,43 +1,22 @@
-import { computed, Injectable, signal, Signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import Portal from '@arcgis/core/portal/Portal';
 import { RIMA_PORTAL_URL } from '../map-constants';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalQueryResult from '@arcgis/core/portal/PortalQueryResult';
 import PortalItem from '@arcgis/core/portal/PortalItem';
-import { PortalRestUrlMissingError as PortalInvalidError } from './portal-errors';
+import { isOfTypeRimaError } from '../../error-handling/base-error';
+import { PortalLoadError, PortalRestUrlMissingError as PortalInvalidError } from './portal-errors';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PortalService {
-  public readonly portal: Signal<Portal | undefined>;
-  private readonly writablePortal = signal<Portal | undefined>(undefined);
-
-  public readonly restUrl: Signal<string> = computed(() => {
-    const restUrl = this.portal()?.restUrl;
-    if (restUrl) {
-      return restUrl;
-    }
-    throw new PortalInvalidError();
-  });
-
-  public readonly portalEndpoint: Signal<string> = computed(() => {
-    return `${this.restUrl()}/portals/${this.portal()?.id}`;
-  });
-
-  public readonly portalItemEndpoint: Signal<string> = computed(() => {
-    return `${this.restUrl()}/content/items`;
-  });
-
+  private cachedPortal: Portal | undefined;
   private loadPromise: Promise<Portal> | undefined;
 
-  constructor() {
-    this.portal = this.writablePortal.asReadonly();
-  }
-
   async getPortal(): Promise<Portal> {
-    if (this.portal()) {
-      return this.portal()!;
+    if (this.cachedPortal) {
+      return this.cachedPortal;
     }
 
     if (this.loadPromise) {
@@ -49,19 +28,34 @@ export class PortalService {
 
     try {
       await this.loadPromise;
-    } catch (e) {
-      this.loadPromise = undefined; // allow retry on next call
-      throw e;
+    } catch (error) {
+      this.loadPromise = undefined;
+      if (isOfTypeRimaError(error)) {
+        throw error;
+      }
+      throw new PortalLoadError(error);
     }
 
-    this.writablePortal.set(portal);
+    this.cachedPortal = portal;
     return portal;
   }
 
+  async getPortalItemEndpoint(): Promise<string> {
+    return `${await this.getRestUrl()}/content/items`;
+  }
+
   async queryItems(query: PortalQueryParams): Promise<PortalItem[]> {
-    const portal = this.portal() ?? (await this.getPortal());
+    const portal = await this.getPortal();
     const result: PortalQueryResult<object> = await portal.queryItems(query);
     const items: PortalItem[] = result.results as PortalItem[];
     return items;
+  }
+
+  private async getRestUrl(): Promise<string> {
+    const restUrl = (await this.getPortal()).restUrl;
+    if (!restUrl) {
+      throw new PortalInvalidError();
+    }
+    return restUrl;
   }
 }
