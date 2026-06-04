@@ -16,18 +16,6 @@ interface BaseCatalogItem extends BaseCatalog {
   items: CatalogItem[] | undefined;
 }
 
-// CATALOG PARSING INTERFACES
-export interface CatalogPathSegment {
-  id: string;
-  title: string;
-  origin: CatalogSectionOrigin;
-}
-
-export interface CatalogLeafEntry {
-  path: CatalogPathSegment[];
-  leaf: CatalogLayer;
-}
-
 // CATALOG-SPECIFIC INTERFACES
 export interface Catalog extends BaseCatalog {
   items: CatalogItem[];

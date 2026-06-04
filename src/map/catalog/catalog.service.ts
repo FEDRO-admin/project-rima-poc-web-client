@@ -8,10 +8,10 @@ import {
   CatalogMapImageLayer,
   CatalogWebTiledLayer,
   Catalog,
-  CatalogLeafEntry,
-  CatalogPathSegment,
   LoadingState,
 } from './catalog-types';
+import { CatalogLeafEntry } from './catalog-leaf-entry';
+import { CatalogPathSegment } from './catalog-path-segment';
 import { WebmapService } from '../webmap/webmap.service';
 import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
 import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
