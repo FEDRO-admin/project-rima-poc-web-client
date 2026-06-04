@@ -2,7 +2,6 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effec
 import '@arcgis/map-components/dist/components/arcgis-map';
 import { MapViewService } from './view/view.service';
 import { CatalogService } from './catalog/catalog.service';
-import { LanguageStore } from '../i18n/language.store';
 import MapView from '@arcgis/core/views/MapView';
 import { MapViewInitialiseError } from './map-errors';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
@@ -16,7 +15,6 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
-  public readonly languageStore = inject(LanguageStore);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
