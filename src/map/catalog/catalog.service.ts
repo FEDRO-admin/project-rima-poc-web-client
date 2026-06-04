@@ -52,7 +52,7 @@ export class CatalogService {
       return catalog;
     }
 
-    const entries: CatalogLeafEntry[] = this.collectLeafEntries(webmapCollection);
+    const entries = this.collectLeafEntries(webmapCollection);
 
     for (const entry of entries) {
       this.depositAtPath(catalog.items, entry.path, entry.leaf);
@@ -62,7 +62,7 @@ export class CatalogService {
   }
 
   private collectLeafEntries(webmapCollection: WebmapCollection): CatalogLeafEntry[] {
-    const entries: CatalogLeafEntry[] = [];
+    const entries = [];
 
     for (const webmap of webmapCollection.webmaps) {
       const basePath: CatalogPathSegment[] = [];
