@@ -11,6 +11,8 @@ import {
 } from './catalog-types';
 import { CatalogLeafEntry } from './catalog-leaf-entry';
 import { CatalogPathSegment } from './catalog-path-segment';
+import { isOfTypeRimaError } from '../../error-handling/base-error';
+import { CatalogWebMapLoadError } from './catalog-errors';
 import { CatalogStore } from './catalog.store';
 import { WebmapService } from '../webmap/webmap.service';
 import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
@@ -33,7 +35,10 @@ export class CatalogService {
       return catalog;
     } catch (error) {
       this.catalogStore.setLoadState('error');
-      throw error;
+      if (isOfTypeRimaError(error)) {
+        throw error;
+      }
+      throw new CatalogWebMapLoadError(error);
     }
   }
 
