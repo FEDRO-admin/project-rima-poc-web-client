@@ -18,6 +18,7 @@ import esriRequest from '@arcgis/core/request';
 import { PortalService } from '../portal/portal.service';
 import { LanguageStore } from '../../i18n/language.store';
 import { RIMA_CATALOG_INCLUDED_LAYER_TYPES } from '../map-constants';
+import { WebmapLanguageCategoryMissingError } from './webmap-errors';
 
 @Injectable({
   providedIn: 'root',
@@ -27,13 +28,10 @@ export class WebmapService {
   public readonly webmapCollection: Signal<WebmapCollection | undefined>;
   private readonly writableWebmapCollection = signal<WebmapCollection | undefined>(undefined);
 
-  // stores
   public readonly languageStore = inject(LanguageStore);
 
-  // promise
   private loadPromise: Promise<WebmapCollection> | undefined;
 
-  // services
   private readonly portalService = inject(PortalService);
 
   constructor() {
@@ -63,8 +61,10 @@ export class WebmapService {
   }
 
   private async loadWebmapCollection(language: Language): Promise<WebmapCollection> {
-    // get the language category name for the query
     const languageCategory = languageInfos.find((info) => info.code === language)?.catalogId;
+    if (!languageCategory) {
+      throw new WebmapLanguageCategoryMissingError(language);
+    }
 
     // query the portal for web maps in the language category
     const query = new PortalQueryParams({
