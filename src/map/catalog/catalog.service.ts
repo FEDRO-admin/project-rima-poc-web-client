@@ -54,18 +54,18 @@ export class CatalogService {
 
     const entries = this.collectLeafEntries(webmapCollection);
 
-    for (const entry of entries) {
+    entries.forEach((entry) => {
       this.depositAtPath(catalog.items, entry.path, entry.leaf);
-    }
+    });
 
     return catalog;
   }
 
   private collectLeafEntries(webmapCollection: WebmapCollection): CatalogLeafEntry[] {
-    const entries = [];
+    const entries = [] as CatalogLeafEntry[];
 
     for (const webmap of webmapCollection.webmaps) {
-      const basePath: CatalogPathSegment[] = [];
+      const basePath = [] as CatalogPathSegment[];
 
       // first, push category segments as path segments
       for (const seg of webmap.categorySegments) {
