@@ -12,7 +12,7 @@ import { provideTransloco } from '@jsverse/transloco';
 import { routes } from './app.routes';
 import { ErrorHandlerService } from '../error-handling/error-handler.service';
 import { AppEffectsService } from './app-effects.service';
-import { languageConfig } from '../i18n/language-types';
+import { languageConfig } from '../i18n/language';
 import { TranslocoHttpLoader } from '../i18n/transloco/transloco-loader';
 
 export const appConfig: ApplicationConfig = {
