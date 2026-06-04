@@ -1,4 +1,4 @@
-import { inject, Injectable, signal, Signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   CatalogSection,
   CatalogSectionOrigin,
@@ -8,10 +8,10 @@ import {
   CatalogMapImageLayer,
   CatalogWebTiledLayer,
   Catalog,
-  LoadingState,
 } from './catalog-types';
 import { CatalogLeafEntry } from './catalog-leaf-entry';
 import { CatalogPathSegment } from './catalog-path-segment';
+import { CatalogStore } from './catalog.store';
 import { WebmapService } from '../webmap/webmap.service';
 import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
 import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
@@ -21,28 +21,18 @@ import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
 })
 export class CatalogService {
   private readonly webmapService = inject(WebmapService);
-
-  public readonly catalog: Signal<Catalog | undefined>;
-  public readonly loadState: Signal<LoadingState>;
-
-  private readonly writableCatalog = signal<Catalog | undefined>(undefined);
-  private readonly writableLoadState = signal<LoadingState>(undefined);
-
-  constructor() {
-    this.catalog = this.writableCatalog.asReadonly();
-    this.loadState = this.writableLoadState.asReadonly();
-  }
+  private readonly catalogStore = inject(CatalogStore);
 
   async buildMapCatalog(): Promise<Catalog> {
-    this.writableLoadState.set('loading');
+    this.catalogStore.setLoadState('loading');
     try {
       const webmapCollection = await this.webmapService.getWebmapCollection();
       const catalog = this.buildMapCatalogFromCollection(webmapCollection);
-      this.writableCatalog.set(catalog);
-      this.writableLoadState.set('loaded');
+      this.catalogStore.setCatalog(catalog);
+      this.catalogStore.setLoadState('loaded');
       return catalog;
     } catch (error) {
-      this.writableLoadState.set('error');
+      this.catalogStore.setLoadState('error');
       throw error;
     }
   }
