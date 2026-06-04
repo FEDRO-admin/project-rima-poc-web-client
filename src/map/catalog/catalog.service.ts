@@ -15,7 +15,8 @@ import { isOfTypeRimaError } from '../../error-handling/base-error';
 import { CatalogWebMapLoadError } from './catalog-errors';
 import { CatalogStore } from './catalog.store';
 import { WebmapService } from '../webmap/webmap.service';
-import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
+import { WebmapCollection } from '../webmap/webmap-collection';
+import { WebmapLayer } from '../webmap/webmap-layer';
 import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
 
 @Injectable({

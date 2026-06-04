@@ -1,7 +1,7 @@
+import { LoadingState } from '../loading-state';
+
 export type CatalogItemType = 'section' | 'feature-layer' | 'map-image-layer' | 'web-tiled-layer' | 'document';
 export type CatalogSectionOrigin = 'category' | 'webmap' | 'group-layer';
-
-export type LoadingState = 'loading' | 'loaded' | 'error' | undefined;
 
 // BASE INTERFACES
 interface BaseCatalog {

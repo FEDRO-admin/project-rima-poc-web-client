@@ -1,23 +1,23 @@
 import { inject, Injectable, signal, Signal } from '@angular/core';
 import { Language } from '../../i18n/language';
 import { languageInfos } from '../../i18n/language-info-config';
+import { WebmapCollection } from './webmap-collection';
+import { WebmapData } from './webmap-data';
 import {
-  RawWebmapLayer,
   WebmapFeatureLayer,
   WebmapGroupLayer,
+  WebmapLayer,
   WebmapMapServiceLayer,
   WebmapWebTiledLayer,
-  WebmapLayer,
-  WebmapData,
-  WebmapCollection,
-} from './webmap-types';
+} from './webmap-layer';
+import { WebmapLayerType } from './webmap-layer-type';
+import { RawWebmapLayer } from './raw-webmap-layer';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import esriRequest from '@arcgis/core/request';
 import { PortalService } from '../portal/portal.service';
 import { LanguageStore } from '../../i18n/language.store';
 import { RIMA_CATALOG_INCLUDED_LAYER_TYPES } from '../map-constants';
-import { WebmapLayerType } from './webmap-types';
 
 @Injectable({
   providedIn: 'root',
@@ -84,8 +84,7 @@ export class WebmapService {
     );
 
     const webmapCollection: WebmapCollection = {
-      loading: false,
-      error: null,
+      loadState: 'loaded',
       webmaps: children,
     };
 
@@ -115,7 +114,7 @@ export class WebmapService {
   }
 
   private parseRawWebmapLayers(rawWebmapLayers: RawWebmapLayer[], webmapId: string): WebmapLayer[] {
-    const result: WebmapLayer[] = [];
+    const result = [] as WebmapLayer[];
     for (const layer of rawWebmapLayers) {
       if (layer.layerType === 'GroupLayer' && layer.layers) {
         const childLayers = this.parseRawWebmapLayers([...layer.layers].reverse(), webmapId);
@@ -127,8 +126,7 @@ export class WebmapService {
           title: layer.title,
           layers: childLayers,
           visible: layer.visibility ?? true,
-          loading: false,
-          error: null,
+          loadState: 'loaded',
         };
         result.push(group);
       } else if (RIMA_CATALOG_INCLUDED_LAYER_TYPES.includes(layer.layerType as WebmapLayerType)) {
@@ -142,8 +140,7 @@ export class WebmapService {
               title: layer.title,
               layers: undefined,
               visible: layer.visibility ?? true,
-              loading: false,
-              error: null,
+              loadState: 'loaded',
             };
             result.push(featureLayer);
             break;
@@ -157,8 +154,7 @@ export class WebmapService {
               title: layer.title,
               layers: undefined,
               visible: layer.visibility ?? true,
-              loading: false,
-              error: null,
+              loadState: 'loaded',
             };
             result.push(mapServiceLayer);
             break;
@@ -173,8 +169,7 @@ export class WebmapService {
               title: layer.title,
               layers: undefined,
               visible: layer.visibility ?? true,
-              loading: false,
-              error: null,
+              loadState: 'loaded',
             };
             result.push(webTiledLayer);
             break;

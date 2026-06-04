@@ -1,4 +1,5 @@
-import { Catalog, LoadingState } from './catalog-types';
+import { LoadingState } from '../loading-state';
+import { Catalog } from './catalog-types';
 
 export interface CatalogState {
   catalog: Catalog | undefined;

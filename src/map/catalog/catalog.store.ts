@@ -1,6 +1,7 @@
 import { withImmutableState } from '@angular-architects/ngrx-toolkit';
 import { patchState, signalStore, withMethods } from '@ngrx/signals';
-import { Catalog, LoadingState } from './catalog-types';
+import { LoadingState } from '../loading-state';
+import { Catalog } from './catalog-types';
 import { CatalogState, initialCatalogState } from './catalog.state';
 
 export const CatalogStore = signalStore(

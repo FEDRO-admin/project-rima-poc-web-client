@@ -1,26 +1,13 @@
-export type WebmapLayerType = 'GroupLayer' | 'ArcGISFeatureLayer' | 'ArcGISMapServiceLayer' | 'WebTiledLayer';
+import { LoadingState } from '../loading-state';
+import { WebmapLayerType } from './webmap-layer-type';
 
-export interface WebmapCollection {
-  loading: boolean;
-  error: unknown | null;
-  readonly webmaps: WebmapData[];
-}
-
-export interface WebmapData {
-  readonly title: string;
-  readonly portalItemId: string;
-  readonly categorySegments: string[];
-  readonly layers: WebmapLayer[];
-}
-
-export interface BaseWebmapLayer {
+interface BaseWebmapLayer {
   readonly id: string;
   readonly title: string;
   readonly type: WebmapLayerType;
   readonly layers: WebmapLayer[] | undefined;
   visible: boolean;
-  loading: boolean;
-  error: unknown | null;
+  loadState: LoadingState;
 }
 
 export interface WebmapGroupLayer extends BaseWebmapLayer {
@@ -46,20 +33,6 @@ export interface WebmapWebTiledLayer extends BaseWebmapLayer {
   readonly layerId: string;
   readonly url: string;
   readonly wmtsLayerIdentifier?: string;
-}
-
-export interface RawWebmapLayer {
-  id: string;
-  title: string;
-  layerType: string;
-  url?: string;
-  templateUrl?: string;
-  visibility?: boolean;
-  layers?: RawWebmapLayer[];
-  wmtsInfo?: {
-    url: string;
-    layerIdentifier: string;
-  };
 }
 
 export type WebmapLayer = WebmapGroupLayer | WebmapFeatureLayer | WebmapMapServiceLayer | WebmapWebTiledLayer;
