@@ -10,6 +10,7 @@ import {
   Catalog,
   CatalogLeafEntry,
   CatalogPathSegment,
+  LoadingState,
 } from './catalog-types';
 import { WebmapService } from '../webmap/webmap.service';
 import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
@@ -22,39 +23,33 @@ export class CatalogService {
   private readonly webmapService = inject(WebmapService);
 
   public readonly catalog: Signal<Catalog | undefined>;
-  public readonly loading: Signal<boolean>;
-  public readonly error: Signal<unknown | null>;
+  public readonly loadState: Signal<LoadingState>;
 
   private readonly writableCatalog = signal<Catalog | undefined>(undefined);
-  private readonly writableLoading = signal(false);
-  private readonly writableError = signal<unknown | null>(null);
+  private readonly writableLoadState = signal<LoadingState>(undefined);
 
   constructor() {
     this.catalog = this.writableCatalog.asReadonly();
-    this.loading = this.writableLoading.asReadonly();
-    this.error = this.writableError.asReadonly();
+    this.loadState = this.writableLoadState.asReadonly();
   }
 
   async buildMapCatalog(): Promise<Catalog> {
-    this.writableLoading.set(true);
-    this.writableError.set(null);
+    this.writableLoadState.set('loading');
     try {
       const webmapCollection = await this.webmapService.getWebmapCollection();
       const catalog = this.buildMapCatalogFromCollection(webmapCollection);
       this.writableCatalog.set(catalog);
+      this.writableLoadState.set('loaded');
       return catalog;
     } catch (error) {
-      this.writableError.set(error);
+      this.writableLoadState.set('error');
       throw error;
-    } finally {
-      this.writableLoading.set(false);
     }
   }
 
   private buildMapCatalogFromCollection(webmapCollection: WebmapCollection): Catalog {
     const catalog: Catalog = {
-      loading: false,
-      error: null,
+      loadState: 'loaded',
       items: [],
     };
 
@@ -120,8 +115,7 @@ export class CatalogService {
             url: layer.url,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -136,8 +130,7 @@ export class CatalogService {
             url: layer.url,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -153,8 +146,7 @@ export class CatalogService {
             wmtsLayerIdentifier: layer.wmtsLayerIdentifier,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -192,8 +184,7 @@ export class CatalogService {
       origin,
       items: [],
       visible: true,
-      loading: false,
-      error: null,
+      loadState: 'loaded',
     };
     currentItems.push(section);
     return section;

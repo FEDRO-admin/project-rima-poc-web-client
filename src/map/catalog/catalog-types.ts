@@ -1,10 +1,11 @@
 export type CatalogItemType = 'section' | 'feature-layer' | 'map-image-layer' | 'web-tiled-layer' | 'document';
 export type CatalogSectionOrigin = 'category' | 'webmap' | 'group-layer';
 
+export type LoadingState = 'loading' | 'loaded' | 'error' | undefined;
+
 // BASE INTERFACES
 interface BaseCatalog {
-  loading: boolean;
-  error: unknown | null;
+  loadState: LoadingState;
 }
 
 interface BaseCatalogItem extends BaseCatalog {
