@@ -114,7 +114,7 @@ export class WebmapService {
   }
 
   private parseRawWebmapLayers(rawWebmapLayers: RawWebmapLayer[], webmapId: string): WebmapLayer[] {
-    const result = [] as WebmapLayer[];
+    const result: WebmapLayer[] = [];
     for (const layer of rawWebmapLayers) {
       if (layer.layerType === 'GroupLayer' && layer.layers) {
         const childLayers = this.parseRawWebmapLayers([...layer.layers].reverse(), webmapId);
