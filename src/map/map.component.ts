@@ -18,14 +18,14 @@ export class MapComponent {
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
-  private readonly mapElement = viewChild<ElementRef>('arcgisMap');
+  private readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 
   constructor() {
     effect(() => {
       const mapElement = this.mapElement();
       untracked(() => {
         if (mapElement?.nativeElement) {
-          const view = mapElement.nativeElement.view as MapView;
+          const view = mapElement.nativeElement.view;
           this.onViewReady(view).catch((error) => {
             throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
           });
