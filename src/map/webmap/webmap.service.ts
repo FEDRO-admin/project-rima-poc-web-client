@@ -28,7 +28,7 @@ export class WebmapService {
   public readonly webmapCollection: Signal<WebmapCollection | undefined>;
   private readonly writableWebmapCollection = signal<WebmapCollection | undefined>(undefined);
 
-  public readonly languageStore = inject(LanguageStore);
+  private readonly languageStore = inject(LanguageStore);
 
   private loadPromise: Promise<WebmapCollection> | undefined;
 
