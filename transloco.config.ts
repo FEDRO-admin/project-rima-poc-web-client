@@ -8,7 +8,7 @@ import { TranslocoGlobalConfig } from '@jsverse/transloco-utils';
  *
  * It cannot import runtime configuration from src/ because it runs in a
  * build-time context outside the Angular compilation system. Therefore,
- * languages are hardcoded here (duplicated from src/i18n/language.config.ts).
+ * languages are hardcoded here (duplicated from src/i18n/language.ts).
  *
  * The default export is consumed by the CLI tool, not by TypeScript imports.
  */

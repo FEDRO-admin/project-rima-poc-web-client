@@ -1,18 +1,31 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, isDevMode, ErrorHandler } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  ErrorHandler,
+  provideAppInitializer,
+  inject,
+  isDevMode,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { provideTransloco } from '@jsverse/transloco';
 import { routes } from './app.routes';
-import { TranslocoHttpLoader } from '../i18n/transloco-loader';
-import { languageConfig } from '../i18n/language.config';
 import { ErrorHandlerService } from '../error-handling/error-handler.service';
+import { AppEffectsService } from './app-effects.service';
+import { languageConfig } from '../i18n/language';
+import { TranslocoHttpLoader } from '../i18n/transloco/transloco-loader';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    provideHttpClient(),
+    provideAppInitializer(() => {
+      inject(AppEffectsService);
+    }),
     provideTransloco({
       config: {
-        availableLangs: languageConfig.availableLanguages,
+        availableLangs: [...languageConfig.availableLanguages],
         defaultLang: languageConfig.defaultLanguage,
         reRenderOnLangChange: true,
         prodMode: !isDevMode(),
