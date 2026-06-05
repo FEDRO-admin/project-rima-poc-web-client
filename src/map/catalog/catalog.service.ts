@@ -32,7 +32,6 @@ export class CatalogService {
       const webmapCollection = await this.webmapService.getWebmapCollection();
       const catalog = this.buildMapCatalogFromCollection(webmapCollection);
       this.catalogStore.setCatalog(catalog);
-      this.catalogStore.setLoadState('loaded');
       return catalog;
     } catch (error) {
       this.catalogStore.setLoadState('error');
