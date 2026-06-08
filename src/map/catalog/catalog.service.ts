@@ -1,4 +1,4 @@
-import { inject, Injectable, signal, Signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   CatalogSection,
   CatalogSectionOrigin,
@@ -8,11 +8,15 @@ import {
   CatalogMapImageLayer,
   CatalogWebTiledLayer,
   Catalog,
-  CatalogLeafEntry,
-  CatalogPathSegment,
 } from './catalog-types';
+import { CatalogLeafEntry } from './catalog-leaf-entry';
+import { CatalogPathSegment } from './catalog-path-segment';
+import { isOfTypeRimaError } from '../../error-handling/base-error';
+import { CatalogWebMapLoadError } from './catalog-errors';
+import { CatalogStore } from './catalog.store';
 import { WebmapService } from '../webmap/webmap.service';
-import { WebmapLayer, WebmapCollection } from '../webmap/webmap-types';
+import { WebmapCollection } from '../webmap/webmap-collection';
+import { WebmapLayer } from '../webmap/webmap-layer';
 import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
 
 @Injectable({
@@ -20,41 +24,27 @@ import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
 })
 export class CatalogService {
   private readonly webmapService = inject(WebmapService);
-
-  public readonly catalog: Signal<Catalog | undefined>;
-  public readonly loading: Signal<boolean>;
-  public readonly error: Signal<unknown | null>;
-
-  private readonly writableCatalog = signal<Catalog | undefined>(undefined);
-  private readonly writableLoading = signal(false);
-  private readonly writableError = signal<unknown | null>(null);
-
-  constructor() {
-    this.catalog = this.writableCatalog.asReadonly();
-    this.loading = this.writableLoading.asReadonly();
-    this.error = this.writableError.asReadonly();
-  }
+  private readonly catalogStore = inject(CatalogStore);
 
   async buildMapCatalog(): Promise<Catalog> {
-    this.writableLoading.set(true);
-    this.writableError.set(null);
+    this.catalogStore.setLoadState('loading');
     try {
       const webmapCollection = await this.webmapService.getWebmapCollection();
       const catalog = this.buildMapCatalogFromCollection(webmapCollection);
-      this.writableCatalog.set(catalog);
+      this.catalogStore.setCatalog(catalog);
       return catalog;
     } catch (error) {
-      this.writableError.set(error);
-      throw error;
-    } finally {
-      this.writableLoading.set(false);
+      this.catalogStore.setLoadState('error');
+      if (isOfTypeRimaError(error)) {
+        throw error;
+      }
+      throw new CatalogWebMapLoadError(error);
     }
   }
 
   private buildMapCatalogFromCollection(webmapCollection: WebmapCollection): Catalog {
     const catalog: Catalog = {
-      loading: false,
-      error: null,
+      loadState: 'loaded',
       items: [],
     };
 
@@ -62,11 +52,11 @@ export class CatalogService {
       return catalog;
     }
 
-    const entries: CatalogLeafEntry[] = this.collectLeafEntries(webmapCollection);
+    const entries = this.collectLeafEntries(webmapCollection);
 
-    for (const entry of entries) {
+    entries.forEach((entry) => {
       this.depositAtPath(catalog.items, entry.path, entry.leaf);
-    }
+    });
 
     return catalog;
   }
@@ -75,11 +65,10 @@ export class CatalogService {
     const entries: CatalogLeafEntry[] = [];
 
     for (const webmap of webmapCollection.webmaps) {
-      const categorySegments = this.extractCategorySegments(webmap.categories);
       const basePath: CatalogPathSegment[] = [];
 
       // first, push category segments as path segments
-      for (const seg of categorySegments) {
+      for (const seg of webmap.categorySegments) {
         basePath.push({ id: `category:${seg}`, title: seg, origin: 'category' });
       }
 
@@ -121,8 +110,7 @@ export class CatalogService {
             url: layer.url,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -137,8 +125,7 @@ export class CatalogService {
             url: layer.url,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -154,8 +141,7 @@ export class CatalogService {
             wmtsLayerIdentifier: layer.wmtsLayerIdentifier,
             items: undefined,
             visible: layer.visible,
-            loading: false,
-            error: null,
+            loadState: 'loaded',
           };
           entries.push({ path: currentPath, leaf });
           break;
@@ -193,18 +179,9 @@ export class CatalogService {
       origin,
       items: [],
       visible: true,
-      loading: false,
-      error: null,
+      loadState: 'loaded',
     };
     currentItems.push(section);
     return section;
-  }
-
-  private extractCategorySegments(categories: string[]): string[] {
-    if (!categories.length) return [];
-    return categories[0]
-      .split('/')
-      .filter((s) => s.length > 0)
-      .slice(2); // skip "Categories" and language segment
   }
 }

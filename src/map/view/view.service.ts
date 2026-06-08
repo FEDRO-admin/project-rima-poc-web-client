@@ -3,7 +3,9 @@ import MapView from '@arcgis/core/views/MapView';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import Basemap from '@arcgis/core/Basemap';
 import { MapViewAlreadyRegisteredError } from '../map-errors';
-import { RIMA_SWISSTOPO_WMTS_URL, RIMA_SWISSTOPO_BASEMAP_LAYER_ID, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
+import { RIMA_SWISSTOPO_WMTS_URL, RIMA_SWISSTOPO_BASEMAP_LAYER_ID } from '../map-constants';
+import Basemap from '@arcgis/core/Basemap';
+import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 
 @Injectable({
   providedIn: 'root',
@@ -36,7 +38,5 @@ export class MapViewService {
       title: 'Swisstopo Pixelkarte',
       id: 'swisstopo',
     });
-
-    view.extent = RIMA_SWITZERLAND_EXTENT;
   }
 }

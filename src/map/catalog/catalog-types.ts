@@ -1,30 +1,19 @@
+import { LoadingState } from '../loading-state';
+
 export type CatalogItemType = 'section' | 'feature-layer' | 'map-image-layer' | 'web-tiled-layer' | 'document';
 export type CatalogSectionOrigin = 'category' | 'webmap' | 'group-layer';
 
 // BASE INTERFACES
-export interface BaseCatalog {
-  loading: boolean;
-  error: unknown | null;
+interface BaseCatalog {
+  loadState: LoadingState;
 }
 
-export interface BaseCatalogItem extends BaseCatalog {
+interface BaseCatalogItem extends BaseCatalog {
   readonly id: string;
   readonly title: string;
   readonly type: CatalogItemType;
   visible: boolean;
   items: CatalogItem[] | undefined;
-}
-
-// CATALOG PARSING INTERFACES
-export interface CatalogPathSegment {
-  id: string;
-  title: string;
-  origin: CatalogSectionOrigin;
-}
-
-export interface CatalogLeafEntry {
-  path: CatalogPathSegment[];
-  leaf: CatalogLayer;
 }
 
 // CATALOG-SPECIFIC INTERFACES
@@ -39,7 +28,7 @@ export interface CatalogSection extends BaseCatalogItem {
 }
 
 // CATALOG LAYER DISCRIMINATED UNION
-export interface BaseCatalogLayer extends BaseCatalogItem {
+interface BaseCatalogLayer extends BaseCatalogItem {
   readonly webMapItemId: string;
   readonly layerId: string;
   readonly url: string;

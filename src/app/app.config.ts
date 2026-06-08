@@ -4,13 +4,16 @@ import {
   ErrorHandler,
   provideAppInitializer,
   inject,
+  isDevMode,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
+import { provideTransloco } from '@jsverse/transloco';
 import { routes } from './app.routes';
 import { ErrorHandlerService } from '../error-handling/error-handler.service';
 import { AppEffectsService } from './app-effects.service';
-import { provideLanguage } from '../i18n/language-config';
+import { languageConfig } from '../i18n/language';
+import { TranslocoHttpLoader } from '../i18n/transloco/transloco-loader';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,7 +23,15 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(AppEffectsService);
     }),
-    provideLanguage(),
+    provideTransloco({
+      config: {
+        availableLangs: [...languageConfig.availableLanguages],
+        defaultLang: languageConfig.defaultLanguage,
+        reRenderOnLangChange: true,
+        prodMode: !isDevMode(),
+      },
+      loader: TranslocoHttpLoader,
+    }),
     { provide: ErrorHandler, useClass: ErrorHandlerService },
   ],
 };

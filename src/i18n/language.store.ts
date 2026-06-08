@@ -1,6 +1,6 @@
-import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import { Language } from './language-types';
-import { languageConfig } from './language-config';
+import { withImmutableState } from '@angular-architects/ngrx-toolkit';
+import { patchState, signalStore, withMethods } from '@ngrx/signals';
+import { Language, languageConfig } from './language';
 
 interface LanguageState {
   activeLanguage: Language;
@@ -14,7 +14,7 @@ const initialState: LanguageState = {
 
 export const LanguageStore = signalStore(
   { providedIn: 'root' },
-  withState(initialState),
+  withImmutableState<LanguageState>(() => initialState),
   withMethods((store) => ({
     setActiveLanguage(language: Language): void {
       patchState(store, { activeLanguage: language });

@@ -2,12 +2,9 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effec
 import '@arcgis/map-components/dist/components/arcgis-map';
 import { MapViewService } from './view/view.service';
 import { CatalogService } from './catalog/catalog.service';
-import { LayerService } from './layer/layer.service';
-import { LanguageStore } from '../i18n/language.store';
 import MapView from '@arcgis/core/views/MapView';
 import { MapViewInitialiseError } from './map-errors';
-import { ExtentProperties } from '@arcgis/core/geometry/Extent';
-import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReference';
+import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 
 @Component({
   selector: 'rima-map',
@@ -18,35 +15,20 @@ import { SpatialReferenceProperties } from '@arcgis/core/geometry/SpatialReferen
 export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
-  private readonly layerService = inject(LayerService);
-  public readonly languageStore = inject(LanguageStore);
 
-  private readonly initializedMapHosts = new WeakSet<HTMLArcgisMapElement>();
+  protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
-  protected readonly spatialReference: SpatialReferenceProperties = { wkid: 2056 };
-  protected readonly extent: ExtentProperties = {
-    xmin: 2479700,
-    xmax: 2840000,
-    ymin: 1068000,
-    ymax: 1308000,
-    spatialReference: this.spatialReference,
-  };
-  private readonly mapElement = viewChild<ElementRef>('arcgisMap');
+  private readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
 
   constructor() {
     effect(() => {
       const mapElement = this.mapElement();
       untracked(() => {
         if (mapElement?.nativeElement) {
-          const el = mapElement.nativeElement as HTMLArcgisMapElement;
-          if (this.initializedMapHosts.has(el)) return;
-          this.initializedMapHosts.add(el);
-
-          el.viewOnReady()
-            .then(() => this.onViewReady(el.view))
-            .catch((error) => {
-              throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
-            });
+          const view = mapElement.nativeElement.view;
+          this.onViewReady(view).catch((error) => {
+            throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
+          });
         }
       });
     });
