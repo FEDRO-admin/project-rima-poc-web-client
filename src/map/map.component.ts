@@ -5,6 +5,7 @@ import { CatalogService } from './catalog/catalog.service';
 import MapView from '@arcgis/core/views/MapView';
 import { MapViewInitialiseError } from './map-errors';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
+import { LayerService } from './layer/layer.service';
 
 @Component({
   selector: 'rima-map',
@@ -15,6 +16,7 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
+  private readonly layerService = inject(LayerService);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 

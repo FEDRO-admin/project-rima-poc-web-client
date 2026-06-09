@@ -1,7 +1,5 @@
 import { Injectable, signal, Signal } from '@angular/core';
 import MapView from '@arcgis/core/views/MapView';
-import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import Basemap from '@arcgis/core/Basemap';
 import { MapViewAlreadyRegisteredError } from '../map-errors';
 import { RIMA_SWISSTOPO_WMTS_URL, RIMA_SWISSTOPO_BASEMAP_LAYER_ID } from '../map-constants';
 import Basemap from '@arcgis/core/Basemap';

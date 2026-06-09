@@ -64,7 +64,15 @@ export class CatalogService {
   private collectLeafEntries(webmapCollection: WebmapCollection): CatalogLeafEntry[] {
     const entries: CatalogLeafEntry[] = [];
 
-    for (const webmap of webmapCollection.webmaps) {
+    const sortedWebmaps = [...webmapCollection.webmaps].sort((a, b) => {
+      const categoryComparison = a.categorySegments.join('/').localeCompare(b.categorySegments.join('/'));
+      if (categoryComparison !== 0) {
+        return categoryComparison;
+      }
+      return a.title.localeCompare(b.title);
+    });
+
+    for (const webmap of sortedWebmaps) {
       const basePath: CatalogPathSegment[] = [];
 
       // first, push category segments as path segments
