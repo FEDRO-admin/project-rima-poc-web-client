@@ -6,9 +6,11 @@ import MapView from '@arcgis/core/views/MapView';
 import { MapViewInitialiseError } from './map-errors';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { LayerService } from './layer/layer.service';
+import { TocComponent } from './toc/toc.component';
 
 @Component({
   selector: 'rima-map',
+  imports: [TocComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
