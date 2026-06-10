@@ -3,10 +3,12 @@ import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';
 import { PopupClickService } from './popup-click.service';
+import { PopupHighlightService } from './popup-highlight.service';
 import Graphic from '@arcgis/core/Graphic';
 
 @Component({
   selector: 'rima-popup',
+  host: { '[class.docked]': 'store.docked()' },
   imports: [PopupContentComponent],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
@@ -15,6 +17,7 @@ export class PopupComponent {
   protected readonly store = inject(PopupStore);
   private readonly viewService = inject(MapViewService);
   private readonly popupClickService = inject(PopupClickService);
+  private readonly popupHighlightService = inject(PopupHighlightService);
 
   private dragging = false;
   private dragOffsetX = 0;

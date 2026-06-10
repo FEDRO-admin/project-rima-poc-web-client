@@ -6,6 +6,11 @@
   height: 100%;
   pointer-events: none;
   z-index: 10;
+
+  &.docked {
+    position: static;
+    display: contents;
+  }
 }
 
 .popup-container {
@@ -14,12 +19,18 @@
   pointer-events: auto;
 
   &--docked {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
+    position: static;
     transform: none;
-    width: 360px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: min(22.5rem, 32vw);
+    align-self: stretch;
+    order: -1;
+    border-right: 1px solid color-mix(in srgb, #0079c1 35%, white);
+    background-color: color-mix(in srgb, #0079c1 6%, white);
+    pointer-events: auto;
+    overflow: hidden;
   }
 }
 
@@ -37,9 +48,11 @@
 
   .popup-container--docked & {
     border-radius: 0;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    box-shadow: none;
     width: 100%;
-    height: 100%;
+    height: auto;
+    flex: 1;
+    background-color: transparent;
   }
 }
 
