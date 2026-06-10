@@ -1,0 +1,19 @@
+:host {
+  display: contents;
+}
+
+.toc {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: min(20rem, 32vw);
+  align-self: stretch;
+  border-left: 1px solid color-mix(in srgb, #0079c1 35%, white);
+  background-color: color-mix(in srgb, #0079c1 6%, white);
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+arcgis-layer-list {
+  width: 100%;
+}

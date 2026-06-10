@@ -6,6 +6,39 @@
   overflow: hidden;
 }
 
+.app-shell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-outlet-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+
+  > *:not(router-outlet) {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;

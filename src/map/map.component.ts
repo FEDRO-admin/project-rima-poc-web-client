@@ -2,12 +2,14 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effec
 import '@arcgis/map-components/dist/components/arcgis-map';
 import { MapViewService } from './view/view.service';
 import { CatalogService } from './catalog/catalog.service';
-import MapView from '@arcgis/core/views/MapView';
-import { MapViewInitialiseError } from './map-errors';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
+import { LayerService } from './layer/layer.service';
+import { TocComponent } from './toc/toc.component';
+import { ViewInitialisationError } from './view/view-errors';
 
 @Component({
   selector: 'rima-map',
+  imports: [TocComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
@@ -15,28 +17,34 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
+  private readonly layerService = inject(LayerService);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
   private readonly mapElement = viewChild<ElementRef<HTMLArcgisMapElement>>('arcgisMap');
+  private mapInitialised = false;
 
   constructor() {
     effect(() => {
       const mapElement = this.mapElement();
       untracked(() => {
-        if (mapElement?.nativeElement) {
-          const view = mapElement.nativeElement.view;
-          this.onViewReady(view).catch((error) => {
-            throw new MapViewInitialiseError(error instanceof Error ? error.message : String(error));
-          });
+        if (mapElement?.nativeElement && !this.mapInitialised) {
+          this.mapInitialised = true;
+          this.initMap(mapElement.nativeElement);
         }
       });
     });
   }
 
-  protected async onViewReady(view: MapView): Promise<void> {
+  private async initMap(element: HTMLArcgisMapElement): Promise<void> {
+    const view = element.view;
+    if (!view) {
+      throw new ViewInitialisationError('MapView is not available on the arcgis-map element');
+    }
     await this.viewService.registerMapView(view);
-    await this.viewService.addBasemap();
-    await this.catalogService.buildMapCatalog();
+    this.viewService.addBasemap();
+    await view.when();
+    const catalog = await this.catalogService.buildMapCatalog();
+    this.layerService.addCatalogToMap(catalog);
   }
 }

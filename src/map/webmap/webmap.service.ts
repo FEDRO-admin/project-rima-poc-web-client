@@ -148,7 +148,8 @@ export class WebmapService {
             id: `featurelayer:${webmapId}/${layer.id}`,
             layerId: layer.id!,
             type: 'ArcGISFeatureLayer',
-            url: featureLayer.url ?? '',
+            url:
+              featureLayer.layerId != null ? `${featureLayer.url}/${featureLayer.layerId}` : (featureLayer.url ?? ''),
             title: layer.title ?? '',
             layers: undefined,
             visible: layer.visible,

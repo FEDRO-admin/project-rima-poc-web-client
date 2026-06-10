@@ -21,7 +21,7 @@ export class MapViewService {
     this.writableMapView.set(mapView);
   }
 
-  public async addBasemap(): Promise<void> {
+  public addBasemap(): void {
     const view = this.mapView();
     if (!view) throw new Error('Map view not registered');
     if (!view.map) throw new Error('Map view has no map');
