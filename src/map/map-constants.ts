@@ -1,6 +1,6 @@
 import Extent from '@arcgis/core/geometry/Extent';
 
-import { WebmapLayerType } from './webmap/webmap-types';
+import { WebmapLayerType } from './webmap/webmap-layer-type';
 
 export const RIMA_PORTAL_URL = 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis';
 

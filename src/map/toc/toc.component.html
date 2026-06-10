@@ -1,7 +1,6 @@
 <aside class="toc" aria-label="Table of contents">
   <arcgis-layer-list
     #layerList
-    reference-element="main-map"
     heading-level="2"
     show-heading
     show-errors
@@ -9,5 +8,6 @@
     min-filter-items="1"
     selection-mode="single"
     visibility-appearance="checkbox"
+    (arcgisTriggerAction)="onTriggerAction($event)"
   ></arcgis-layer-list>
 </aside>

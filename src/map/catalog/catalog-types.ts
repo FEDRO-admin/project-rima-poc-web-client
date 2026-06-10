@@ -1,10 +1,11 @@
+import { LoadingState } from '../loading-state';
+
 export type CatalogItemType = 'section' | 'feature-layer' | 'map-image-layer' | 'web-tiled-layer' | 'document';
 export type CatalogSectionOrigin = 'category' | 'webmap' | 'group-layer';
 
 // BASE INTERFACES
 interface BaseCatalog {
-  loading: boolean;
-  error: unknown | null;
+  loadState: LoadingState;
 }
 
 interface BaseCatalogItem extends BaseCatalog {
@@ -13,18 +14,6 @@ interface BaseCatalogItem extends BaseCatalog {
   readonly type: CatalogItemType;
   visible: boolean;
   items: CatalogItem[] | undefined;
-}
-
-// CATALOG PARSING INTERFACES
-export interface CatalogPathSegment {
-  id: string;
-  title: string;
-  origin: CatalogSectionOrigin;
-}
-
-export interface CatalogLeafEntry {
-  path: CatalogPathSegment[];
-  leaf: CatalogLayer;
 }
 
 // CATALOG-SPECIFIC INTERFACES

@@ -45,6 +45,7 @@ export class LayerService {
         layers.push(layer);
       }
     }
+    layers.reverse();
     return layers;
   }
 

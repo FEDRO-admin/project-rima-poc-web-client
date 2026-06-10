@@ -1,5 +1,4 @@
-export const languages = ['de', 'fr', 'it'] as const;
-export type Language = (typeof languages)[number];
+import { Language } from './language';
 
 export interface LanguageInfo {
   code: Language;

@@ -8,11 +8,10 @@
   height: 100%;
   width: 100%;
   display: flex;
-  flex-direction: column;
-  position: relative;
+  flex-direction: row;
 }
 
 arcgis-map {
   flex: 1;
-  width: 100%;
+  min-width: 0;
 }
