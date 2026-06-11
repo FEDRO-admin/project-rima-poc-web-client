@@ -1,0 +1,331 @@
+﻿@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Complete Application Flow\nAngular 19 / NgRx Signals / ArcGIS Maps SDK / Transloco\nBranch: feature/579-table_of_contents / June 2026
+
+actor "User / Browser" as User #LightBlue
+
+box "Bootstrap" #EEF4FF
+  participant "main.ts" as main
+  participant "AppConfig\n[providers]" as appConfig
+end box
+
+box "Application Shell" #E8F5E9
+  participant "AppComponent" as appComp
+  participant "LanguageSwitcherComponent" as langSwitcher
+  participant "Angular Router" as router
+end box
+
+box "i18n / Transloco" #FFF8E7
+  participant "AppEffectsService" as appEffects
+  participant "LanguageEffect" as langEffect
+  participant "LanguageStore\n[SignalStore]" as langStore
+  participant "TranslocoService" as transloco
+  participant "TranslocoHttpLoader" as transLoader
+end box
+
+box "Map Domain" #F3E5F5
+  participant "MapComponent" as mapComp
+  participant "TocComponent" as tocComp
+  participant "MapViewService\n[Signal]" as viewService
+  participant "CatalogService" as catalogService
+  participant "CatalogStore\n[SignalStore]" as catalogStore
+  participant "WebmapService\n[Signal+Cache]" as webmapService
+  participant "PortalService\n[Cache]" as portalService
+  participant "LayerService" as layerService
+end box
+
+box "ArcGIS Platform (external)" #FFEBEE
+  participant "ArcGIS Portal\nrima-poc.azure" as portal
+  participant "Swisstopo WMTS\nwmts.geo.admin.ch" as swisstopo
+end box
+
+box "Error Handling" #FBE9E7
+  participant "ErrorHandlerService\n[Angular ErrorHandler]" as errorHandler
+  participant "FatalErrorComponent" as errorPage
+end box
+
+== Phase 1 - Angular Bootstrap [SYNCHRONOUS] ==
+
+User -> main : Browser loads /
+activate main
+main -> appConfig : bootstrapApplication(\n  AppComponent, appConfig)
+activate appConfig
+
+note over appConfig
+  Providers registered synchronously:
+  1. provideBrowserGlobalErrorListeners()
+  2. provideRouter(routes)
+     - '' -> MapComponent (lazy)
+     - 'error' -> FatalErrorComponent (lazy)
+  3. provideHttpClient()
+  4. provideTransloco({
+       defaultLang: 'de',
+       availableLangs: ['de','fr','it'],
+       reRenderOnLangChange: true
+     })
+  5. { provide: ErrorHandler, useClass: ErrorHandlerService }
+  6. provideAppInitializer(()=> inject(AppEffectsService))
+end note
+
+appConfig -> appEffects : provideAppInitializer()\n-> inject(AppEffectsService) [constructor]
+activate appEffects
+appEffects -> langEffect : inject(LanguageEffect) [constructor]
+activate langEffect
+note over langEffect
+  Registers Angular effect():
+  watches languageStore.activeLanguage() signal
+  -> calls translocoService.setActiveLang() reactively
+end note
+langEffect -> langStore : read activeLanguage() signal\n-> 'de' (initial default)
+langEffect -> transloco : setActiveLang('de')
+activate transloco
+transloco -> transLoader : getTranslation('de')
+activate transLoader
+transLoader ->> portal : [ASYNC] HTTP GET /i18n/de.json
+note right of transLoader
+  Fire-and-forget Observable.
+  Translation JSON loads independently in background.
+  UI re-renders via reRenderOnLangChange when ready.
+end note
+deactivate transLoader
+deactivate transloco
+deactivate langEffect
+deactivate appEffects
+
+appConfig -> appComp : Angular renders AppComponent
+activate appComp
+appComp -> langSwitcher : renders <rima-language-switcher>
+activate langSwitcher
+langSwitcher -> langStore : reads availableLanguages()\n-> ['de', 'fr', 'it']
+langSwitcher -> langStore : reads activeLanguage() -> 'de'
+appComp -> router : renders <router-outlet>
+deactivate appConfig
+deactivate main
+
+== Phase 2 - Route Navigation & Lazy Loading [ASYNC] ==
+
+router -> router : matches default route ''\n-> lazy-load MapComponent
+router ->> mapComp : [ASYNC] dynamic import(\n  './map/map.component')
+activate mapComp
+
+note over mapComp
+  MapComponent constructor (SYNC):
+  - injects MapViewService, CatalogService, LayerService
+  - registers Angular effect() on viewChild<arcgisMap>
+  - mapInitialised = false
+  Template renders:
+    <arcgis-map #arcgisMap [extent]="switzerlandExtent">
+    <rima-toc>
+end note
+
+mapComp -> tocComp : renders <rima-toc>
+activate tocComp
+note over tocComp
+  TocComponent constructor (SYNC):
+  registers Angular effect() watching viewService.mapView() signal.
+  Will assign MapView to arcgis-layer-list when view is ready.
+end note
+
+== Phase 3 - ArcGIS Element Available [REACTIVE + ASYNC] ==
+
+note over mapComp
+  Angular change detection resolves viewChild signal.
+  mapElement() signal becomes non-null.
+  Constructor effect() fires with untracked() wrapper.
+end note
+
+mapComp -> mapComp : effect() fires ->\ninitMap(arcgisMapElement) [ASYNC]\nmapInitialised = true
+
+mapComp -> viewService : [ASYNC] registerMapView(view)
+activate viewService
+viewService -> viewService : writableMapView.set(view)\n[signal update -> notifies subscribers]
+viewService --> mapComp
+deactivate viewService
+
+note over tocComp
+  viewService.mapView() signal changed!
+  TocComponent effect() fires:
+end note
+tocComp -> tocComp : layerList.view = mapView\nlayerList.listItemCreatedFunction =\n  fn adding 'Zoom to' for feature/wmts layers
+
+mapComp -> viewService : [SYNC] addBasemap()
+activate viewService
+viewService -> viewService : new WMTSLayer({\n  url: wmts.geo.admin.ch,\n  activeLayer: ch.swisstopo.pixelkarte-farbe\n})
+viewService -> viewService : view.map.basemap =\n  new Basemap([swisstopoLayer])
+viewService ->> swisstopo : [ASYNC background]\nArcGIS SDK fetches WMTSCapabilities.xml
+note right of swisstopo
+  ArcGIS SDK handles basemap resource
+  loading asynchronously.
+end note
+deactivate viewService
+
+mapComp -> mapComp : [ASYNC] await view.when()\n   blocks until ArcGIS MapView\n   completes internal initialisation
+
+== Phase 4 - Catalog Build [ASYNC] ==
+
+mapComp -> catalogService : [ASYNC] buildMapCatalog()
+activate catalogService
+catalogService -> catalogStore : setLoadState('loading')
+
+catalogService -> webmapService : [ASYNC] getWebmapCollection()
+activate webmapService
+
+note over webmapService
+  Deduplication / cache strategy:
+  1. webmapCollection signal -> undefined -> miss
+  2. loadPromise -> undefined -> no in-flight request
+  3. start loadWebmapCollection(language = 'de')
+end note
+
+webmapService -> webmapService : lookup languageCategory\nfor 'de' -> 'DE Sample'\n(from languageInfos config)
+
+webmapService -> portalService : [ASYNC] queryItems(\n  PortalQueryParams {\n    categories: ['/Categories/DE Sample'],\n    query: 'type:"Web Map"',\n    num: 100, sortField: 'title', sortOrder: 'asc'\n  })
+activate portalService
+note over portalService
+  Cache strategy:
+  1. cachedPortal -> undefined -> miss
+  2. loadPromise -> undefined -> no in-flight
+  3. new Portal({ url, authMode:'immediate' }).load()
+end note
+portalService -> portal : [ASYNC] Portal.load()\nauthMode: 'immediate'\n-> authenticates automatically
+activate portal
+portal --> portalService : Portal loaded & cached
+deactivate portal
+
+portalService -> portal : [ASYNC] portal.queryItems(query)\n-> searches Portal catalogue
+activate portal
+portal --> portalService : PortalItem[]\n(Web Maps in DE Sample category,\n sorted by title)
+deactivate portal
+portalService --> webmapService : PortalItem[]
+deactivate portalService
+
+note over webmapService
+  Promise.all() launches all WebMap loads IN PARALLEL
+end note
+
+group Parallel WebMap Loading [Promise.all - N concurrent requests]
+  webmapService -> portal : [ASYNC] new WebMap({ portalItem: items[0] }).load()
+  activate portal
+  portal --> webmapService : WebMap[0] (layers, metadata)
+  deactivate portal
+
+  webmapService -> portal : [ASYNC] new WebMap({ portalItem: items[1] }).load()
+  activate portal
+  portal --> webmapService : WebMap[1] (layers, metadata)
+  deactivate portal
+
+  webmapService -> portal : [ASYNC] ... WebMap[N].load()
+  activate portal
+  portal --> webmapService : WebMap[N] (layers, metadata)
+  deactivate portal
+end group
+
+webmapService -> webmapService : transformWebMapLayers() per WebMap:\n- maps ArcGIS SDK types -> WebmapLayerType\n- recurse into GroupLayers\n- filter: only INCLUDED_LAYER_TYPES\n  ['ArcGISFeatureLayer', 'WebTiledLayer']\n- build WebmapData per item
+webmapService -> webmapService : writableWebmapCollection.set(collection)\n[signal update]
+webmapService --> catalogService : WebmapCollection { webmaps: WebmapData[] }
+deactivate webmapService
+
+catalogService -> catalogService : buildMapCatalogFromCollection()\n\n1. collectLeafEntries():\n   - sort webmaps by category+title\n   - for each webmap: build CatalogPathSegments\n     (category -> [webmap?] -> group -> leaf)\n   - recurse GroupLayers -> flatten to leaves\n   - returns CatalogLeafEntry[]\n\n2. depositAtPath() for each entry:\n   - walk / create CatalogSection nodes\n   - place CatalogLayer leaf at path end\n   - returns Catalog { items: CatalogItem[] }
+
+catalogService -> catalogStore : setCatalog(catalog)\n-> patchState: { catalog, loadState:'loaded' }
+catalogService --> mapComp : Catalog (tree)
+deactivate catalogService
+
+== Phase 5 - Layer Addition to Map [SYNCHRONOUS] ==
+
+mapComp -> layerService : [SYNC] addCatalogToMap(catalog)
+activate layerService
+layerService -> viewService : read mapView() signal\n-> MapView
+layerService -> layerService : buildLayersFromItems(catalog.items)\n- 'section'         -> GroupLayer (recursive)\n- 'feature-layer'   -> FeatureLayer(url)\n- 'map-image-layer' -> MapImageLayer(url)  [filtered out]\n- 'web-tiled-layer' -> WMTSLayer(url, layerId)\n- 'document'        -> undefined (skipped)\nlayers.reverse()  [ArcGIS z-order correction]
+layerService -> viewService : view.map.addMany(arcgisLayers)
+note over viewService, portal : ArcGIS SDK loads layer tile/feature data\nasynchronously from ArcGIS Portal
+deactivate layerService
+deactivate mapComp
+
+note over User
+  Map is now displayed with:
+  - Swisstopo Pixelkarte basemap
+  - Operational layers from ArcGIS Portal
+  - TOC (Table of Contents) panel
+end note
+
+== Phase 6 - Language Switch [USER INTERACTION / REACTIVE] ==
+
+User -> langSwitcher : clicks language button (e.g. 'fr')
+langSwitcher -> langStore : setActiveLanguage('fr')
+activate langStore
+langStore -> langStore : patchState({ activeLanguage: 'fr' })
+deactivate langStore
+note over langEffect : LanguageEffect reactive effect fires\n(effect tracks languageStore.activeLanguage())
+langEffect -> transloco : setActiveLang('fr')
+transloco -> transLoader : getTranslation('fr')
+transLoader ->> portal : [ASYNC] HTTP GET /i18n/fr.json
+note over mapComp, webmapService
+  NOTE: WebmapCollection is loaded once at startup
+  with the language active at that time.
+  Language changes affect only UI text (Transloco),
+  NOT the map layers or catalog.
+end note
+
+== Phase 7 - Zoom to Layer [USER INTERACTION / ASYNC] ==
+
+User -> tocComp : clicks "Zoom to" in TOC\non a FeatureLayer or WMTSLayer
+tocComp -> tocComp : onTriggerAction(event)\n-> action.id === 'zoom-to-layer'
+tocComp -> viewService : read mapView() signal -> MapView
+tocComp -> portal : [ASYNC] layer.load()\n(ensures layer fully loaded)
+activate portal
+portal --> tocComp : layer loaded
+deactivate portal
+alt layer.fullExtent exists (FeatureLayer)
+  tocComp -> viewService : [ASYNC] view.goTo(layer.fullExtent)
+else WMTS layer - use activeLayer extent
+  tocComp -> viewService : [ASYNC] view.goTo(layer.activeLayer.fullExtent)
+end
+
+== Error Handling Flow ==
+
+note over errorHandler
+  ErrorHandlerService is registered as Angular's global ErrorHandler.
+  handleError(error) is called for all uncaught exceptions.
+end note
+
+alt error instanceof SilentError
+  errorHandler -> errorHandler : [dev only] console.error(error)\nNo UI feedback
+  note right of errorHandler : e.g. MapViewAlreadyRegisteredError,\nPortalRestUrlMissingError
+else error instanceof RecoverableError
+  errorHandler -> errorHandler : [dev only] console.error(error)\nNo UI feedback
+  note right of errorHandler : e.g. CatalogWebMapLoadError,\nCatalogUndefinedError
+else any other error (incl. FatalError subclasses)
+  errorHandler -> transloco : [ASYNC] firstValueFrom(langChanges$)\n   waits for language to be ready
+  transloco --> errorHandler : language loaded
+  errorHandler -> errorHandler : isOfTypeRimaError(error)\n  -> translocoService.translate(error.message)\nelse -> error.message or JSON.stringify(error)
+  errorHandler -> router : NgZone.run() -> navigate(['/error'],\n  { queryParams:{ error: translatedMsg },\n    skipLocationChange: true })
+  router -> errorPage : lazy-load FatalErrorComponent
+  activate errorPage
+  errorPage -> errorPage : ngOnInit():\nsubscribes queryParamMap\n-> this.errorMessage = params.get('error')
+  User <-- errorPage : Error message + Refresh button
+  errorPage -> User : forceRefresh()\n-> window.location.href = '/'
+  deactivate errorPage
+  note right of errorHandler
+    FatalError types:
+    - PortalLoadError
+    - WebmapLanguageCategoryMissingError
+    - ViewInitialisationError
+    - LayerAddError / LayerBuildError
+    - MapViewInitialiseError
+  end note
+end
+
+@enduml
