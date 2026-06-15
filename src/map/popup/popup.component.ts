@@ -1,15 +1,16 @@
-import { Component, ElementRef, HostListener, inject, viewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';
 import { PopupClickService } from './popup-click.service';
 import { PopupHighlightService } from './popup-highlight.service';
 import Graphic from '@arcgis/core/Graphic';
+import '@esri/calcite-components/dist/components/calcite-icon';
 
 @Component({
   selector: 'rima-popup',
-  host: { '[class.docked]': 'store.docked()' },
   imports: [PopupContentComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
 })
@@ -18,10 +19,6 @@ export class PopupComponent {
   private readonly viewService = inject(MapViewService);
   private readonly popupClickService = inject(PopupClickService);
   private readonly popupHighlightService = inject(PopupHighlightService);
-
-  private dragging = false;
-  private dragOffsetX = 0;
-  private dragOffsetY = 0;
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
@@ -43,41 +40,5 @@ export class PopupComponent {
     const attrs = graphic.attributes;
     if (!attrs) return 'Feature';
     return attrs.OBJECTID ?? attrs.FID ?? attrs.ID ?? Object.values(attrs)[0] ?? 'Feature';
-  }
-
-  onDragStart(event: MouseEvent): void {
-    if (this.store.docked()) return;
-    this.dragging = true;
-    const screenPoint = this.store.screenPoint();
-    if (screenPoint) {
-      this.dragOffsetX = event.clientX - screenPoint.x;
-      this.dragOffsetY = event.clientY - screenPoint.y;
-    }
-    event.preventDefault();
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  onDragMove(event: MouseEvent): void {
-    if (!this.dragging) return;
-    const raw = {
-      x: event.clientX - this.dragOffsetX,
-      y: event.clientY - this.dragOffsetY,
-    };
-    this.store.updatePosition(this.popupClickService.clampScreenPoint(raw.x, raw.y));
-  }
-
-  @HostListener('document:mouseup')
-  onDragEnd(): void {
-    if (!this.dragging) return;
-    this.dragging = false;
-
-    const view = this.viewService.mapView();
-    const screenPoint = this.store.screenPoint();
-    if (view && screenPoint) {
-      const mapPoint = view.toMap(screenPoint);
-      if (mapPoint) {
-        this.store.updateAnchor(screenPoint, mapPoint);
-      }
-    }
   }
 }

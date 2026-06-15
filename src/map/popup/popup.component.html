@@ -1,15 +1,18 @@
 @if (store.visible()) {
-  <div
-    class="popup-container"
-    [class.popup-container--docked]="store.docked()"
-    [style.left.px]="store.docked() ? null : store.screenPoint()?.x"
-    [style.top.px]="store.docked() ? null : store.screenPoint()?.y"
-  >
+  <div class="popup-container">
     <div class="popup-card">
-      <div class="popup-header" (mousedown)="onDragStart($event)">
-        <button class="popup-header-btn" (click)="store.toggleDocked()" aria-label="Dock popup">
-          {{ store.docked() ? 'Float' : 'Dock' }}
-        </button>
+      <div class="popup-header">
+        @if (store.showDetail()) {
+          @if (store.graphics().length > 1) {
+            <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
+              <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+            </button>
+          }
+          <button class="popup-header-btn" (click)="zoomTo()" aria-label="Zoom to feature">
+            <calcite-icon icon="zoom-to-object" scale="s"></calcite-icon>
+          </button>
+        }
+        <span class="popup-header-spacer"></span>
         <button class="popup-header-btn popup-close" (click)="close()" aria-label="Close popup">✕</button>
       </div>
 
@@ -33,14 +36,6 @@
       }
 
       @if (store.showDetail() && store.selectedGraphic()) {
-        <div class="popup-toolbar">
-          @if (store.graphics().length > 1) {
-            <button class="popup-toolbar-btn" (click)="store.backToList()" aria-label="Back to feature list">
-              Back
-            </button>
-          }
-          <button class="popup-toolbar-btn" (click)="zoomTo()" aria-label="Zoom to feature">Zoom to</button>
-        </div>
         <rima-popup-content [graphic]="store.selectedGraphic()!" />
       }
     </div>
