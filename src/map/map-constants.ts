@@ -2,7 +2,7 @@ import Extent from '@arcgis/core/geometry/Extent';
 
 import { WebmapLayerType } from './webmap/webmap-layer-type';
 
-export const RIMA_PORTAL_URL = 'https://rima-poc.switzerlandnorth.cloudapp.azure.com/arcgis';
+export const RIMA_PORTAL_URL = 'https://rima-poc.astra.admin.ch/arcgis';
 
 export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
   'ArcGISFeatureLayer',
