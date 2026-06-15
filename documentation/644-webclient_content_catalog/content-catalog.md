@@ -89,15 +89,15 @@ The catalog is built by `CatalogService.buildMapCatalog()`, which orchestrates t
 
 ### Step 1 — Acquire the WebmapCollection
 
-`WebmapService.getWebmapCollection()` queries the ArcGIS Enterprise Portal for all Web Map items belonging to the active language's category. The Portal uses a root-level category to distinguish content by language — for example, all German-language Web Maps are placed under `/Categories/DE Sample`. The mapping between application language codes and Portal category names is defined in `src/i18n/language-info-config.ts`:
+`WebmapService.getWebmapCollection()` queries the ArcGIS Enterprise Portal for all Web Map items belonging to the active language's category. The Portal uses a root-level category to distinguish content by language — for example, all German-language Web Maps are placed under `/Categories/DE/...`. The mapping between application language codes and Portal category names is defined in `src/i18n/language-info-config.ts`:
 
 | Language Code | Portal Category |
 | ------------- | --------------- |
-| `de`          | `DE Sample`     |
-| `fr`          | `FR (French)`   |
-| `it`          | `IT (Italian)`  |
+| `de`          | `DE`            |
+| `fr`          | `FR`            |
+| `it`          | `IT`            |
 
-The query targets all items of type `"Web Map"` within the resolved category (e.g., `"/Categories/DE Sample"` for German). Each Web Map is loaded via the ArcGIS SDK, and its layers are extracted, filtered to the permitted types (`ArcGISFeatureLayer` and `WebTiledLayer`), and transformed into `WebmapData` objects. The result is a `WebmapCollection` containing an array of `WebmapData`, each with:
+The query targets all items of type `"Web Map"` within the resolved category (e.g., `"/Categories/DE"` for German). Each Web Map is loaded via the ArcGIS SDK, and its layers are extracted, filtered to the permitted types (`ArcGISFeatureLayer` and `WebTiledLayer`), and transformed into `WebmapData` objects. The result is a `WebmapCollection` containing an array of `WebmapData`, each with:
 
 - `portalItemId` — the Portal item identifier
 - `title` — the Web Map's display title
