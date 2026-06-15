@@ -1,0 +1,136 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Table of Contents (ToC) Flow\nTask 579 / June 2026
+
+actor "User" as user #LightBlue
+participant "MapComponent\ntemplate" as mapTpl #E8F5E9
+participant "TocComponent" as tocComp #F3E5F5
+participant "arcgis-layer-list\n[Web Component]" as layerList #FFEBEE
+participant "MapViewService\n[Signal]" as viewSvc #E8F5E9
+participant "ArcGIS MapView" as mapView #FFEBEE
+participant "ArcGIS Layer" as layer #FFEBEE
+
+== Component Initialisation ==
+
+mapTpl -> tocComp : Angular renders <rima-toc>\nin MapComponent template
+activate tocComp
+
+note over tocComp
+  TocComponent constructor:
+  - injects MapViewService
+  - resolves viewChild('layerList')
+    -> reference to <arcgis-layer-list> element
+  - registers Angular effect() watching
+    viewService.mapView() signal
+end note
+
+tocComp -> layerList : Template renders:\n<arcgis-layer-list\n  #layerList\n  show-heading\n  show-filter\n  selection-mode="single"\n  visibility-appearance="checkbox"\n  (arcgisTriggerAction)="onTriggerAction($event)"\n>
+activate layerList
+
+note over layerList
+  At this point the layer list is empty.
+  It requires a MapView reference before
+  it can display any layers.
+end note
+
+== Reactive Binding (triggered by MapView registration) ==
+
+viewSvc -> viewSvc : writableMapView.set(view)\n[signal emits from MapComponent.initMap()]
+
+note over tocComp
+  Angular effect() fires because
+  viewService.mapView() signal changed.
+  Runs inside untracked() to prevent
+  re-triggering on layerList changes.
+end note
+
+tocComp -> layerList : layerList.view = mapView
+tocComp -> layerList : layerList.listItemCreatedFunction =\n  onListItemCreated callback
+
+layerList -> mapView : reads map.layers collection
+layerList -> layerList : builds list items from\nmap layer hierarchy\n(GroupLayer -> nested items,\n FeatureLayer/WMTSLayer -> leaf items)
+
+== List Item Creation (per layer) ==
+
+group For each layer in the map
+  layerList -> tocComp : listItemCreatedFunction({ item })
+  activate tocComp
+
+  alt item.layer.type === 'feature' OR 'wmts'
+    tocComp -> layerList : item.actionsSections = [\n  [{ title:'Zoom to',\n     icon:'zoom-to-object',\n     id:'zoom-to-layer',\n     type:'button' }]\n]
+    note right of layerList
+      Adds a "Zoom to" action button
+      to the layer's context menu.
+      Only FeatureLayer and WMTSLayer
+      entries receive this action.
+    end note
+  else other layer types (GroupLayer, etc.)
+    tocComp -> layerList : no action added
+  end
+
+  deactivate tocComp
+end group
+
+note over layerList
+  Layer list is now fully populated.
+  User sees:
+  - Hierarchical layer tree (GroupLayers as folders)
+  - Checkboxes to toggle layer visibility
+  - Filter/search input
+  - "Zoom to" buttons on feature/WMTS layers
+end note
+
+== User Interaction: Toggle Visibility ==
+
+user -> layerList : clicks checkbox on a layer
+layerList -> mapView : layer.visible = true/false
+note over mapView : ArcGIS SDK immediately\nshows/hides the layer on the map
+
+== User Interaction: Zoom to Layer ==
+
+user -> layerList : clicks "Zoom to" action button
+layerList -> tocComp : (arcgisTriggerAction) event\n{ action: { id:'zoom-to-layer' },\n  item: { layer } }
+activate tocComp
+
+tocComp -> tocComp : onTriggerAction(event)\ncheck: action.id === 'zoom-to-layer'
+tocComp -> viewSvc : read mapView() signal
+viewSvc --> tocComp : MapView reference
+
+tocComp -> layer : [ASYNC] layer.load()
+activate layer
+note right of layer
+  Ensures layer metadata
+  (including fullExtent)
+  is fully loaded from server.
+end note
+layer --> tocComp : layer loaded
+deactivate layer
+
+alt layer.fullExtent exists
+  tocComp -> mapView : [ASYNC] view.goTo(layer.fullExtent)
+else layer.type === 'wmts' (fallback)
+  tocComp -> mapView : [ASYNC] view.goTo(\n  layer.activeLayer.fullExtent)
+else no extent available
+  tocComp -> tocComp : no navigation (silent)
+end
+
+deactivate tocComp
+
+note over user
+  Map animates to the selected
+  layer's spatial extent.
+end note
+
+@enduml

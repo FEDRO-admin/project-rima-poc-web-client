@@ -1,0 +1,154 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Content Catalog Build Flow\nTask 644 / June 2026
+
+participant "MapComponent" as mapComp #E8F5E9
+participant "CatalogService" as catalogSvc #F3E5F5
+participant "CatalogStore\n[SignalStore]" as catalogStore #F3E5F5
+participant "WebmapService" as webmapSvc #F3E5F5
+participant "LanguageStore\n[SignalStore]" as langStore #FFF8E7
+participant "language-info-config" as langConfig #FFF8E7
+participant "PortalService" as portalSvc #F3E5F5
+participant "ArcGIS Portal" as portal #FFEBEE
+participant "LayerService" as layerSvc #E8F5E9
+
+== Catalog Build Entry Point ==
+
+mapComp -> catalogSvc : [ASYNC] buildMapCatalog()
+activate catalogSvc
+catalogSvc -> catalogStore : setLoadState('loading')
+
+== Step 1 - Acquire WebmapCollection ==
+
+catalogSvc -> webmapSvc : [ASYNC] getWebmapCollection()
+activate webmapSvc
+
+note over webmapSvc
+  Cache check:
+  1. webmapCollection signal != undefined? -> return cached
+  2. loadPromise != undefined? -> return in-flight promise
+  3. Otherwise: start fresh load
+end note
+
+webmapSvc -> langStore : read activeLanguage()\n-> 'de'
+webmapSvc -> langConfig : lookup catalogId for 'de'\n-> 'DE Sample'
+
+note over langConfig
+  Language-to-Portal category mapping:
+  de -> 'DE'
+  fr -> 'FR'
+  it -> 'IT'
+  Source: src/i18n/language-info-config.ts
+end note
+
+webmapSvc -> portalSvc : [ASYNC] queryItems(\n  categories: ['/Categories/DE'],\n  query: 'type:"Web Map"',\n  num: 100, sortField: 'title')
+activate portalSvc
+portalSvc -> portal : [ASYNC] Portal.load() + portal.queryItems()
+activate portal
+portal --> portalSvc : PortalItem[]
+deactivate portal
+portalSvc --> webmapSvc : PortalItem[]
+deactivate portalSvc
+
+note over webmapSvc
+  Promise.all() - load all WebMaps in parallel
+end note
+
+group Parallel: for each PortalItem
+  webmapSvc -> portal : [ASYNC] new WebMap({ portalItem }).load()
+  activate portal
+  portal --> webmapSvc : WebMap (loaded)
+  deactivate portal
+
+  webmapSvc -> webmapSvc : transformWebMapLayers(webMap.layers)\n\nFor each ArcGIS SDK layer:\n  - GroupLayer -> WebmapGroupLayer (recurse children)\n  - FeatureLayer -> WebmapFeatureLayer\n  - MapImageLayer -> WebmapMapServiceLayer\n  - WMTSLayer -> WebmapWebTiledLayer\n\nFilter: only INCLUDED_LAYER_TYPES\n  ['ArcGISFeatureLayer', 'WebTiledLayer']\n\nSkip layers with unsupported type
+  webmapSvc -> webmapSvc : extractCategorySegments(item.categories)\n-> split path, skip 'Categories' + language root\n-> e.g. ['Roads', 'National']
+end group
+
+webmapSvc -> webmapSvc : Build WebmapCollection {\n  loadState: 'loaded',\n  webmaps: WebmapData[]\n}\nStore in signal cache
+webmapSvc --> catalogSvc : WebmapCollection
+deactivate webmapSvc
+
+== Step 2 - Collect Leaf Entries ==
+
+catalogSvc -> catalogSvc : collectLeafEntries(webmapCollection)\n\n1. Sort webmaps by categorySegments + title\n2. For each webmap:\n   a. Build basePath from category segments\n      [{ id:'category:Roads', origin:'category' },\n       { id:'category:National', origin:'category' }]\n   b. (Optional) append webmap title as segment\n      [disabled: WEBMAP_NAME_AS_SECTION = false]\n   c. Recurse into layers:
+
+note over catalogSvc
+  collectLayerEntries() recursion:
+
+  - GroupLayer:
+      append path segment { origin:'group-layer' }
+      recurse into child layers
+
+  - ArcGISFeatureLayer:
+      create CatalogFeatureLayer leaf
+      push { path, leaf } to entries
+
+  - ArcGISMapServiceLayer:
+      create CatalogMapImageLayer leaf
+      push { path, leaf } to entries
+
+  - WebTiledLayer:
+      create CatalogWebTiledLayer leaf
+      push { path, leaf } to entries
+
+  Result: flat array of CatalogLeafEntry[]
+  Each entry = { path: CatalogPathSegment[], leaf: CatalogLayer }
+end note
+
+== Step 3 - Tree Assembly ==
+
+catalogSvc -> catalogSvc : depositAtPath() for each entry\n\nWalk path segments:\n  1. Find or create CatalogSection at current level\n     (matched by id)\n  2. Descend into section.items\n  3. Repeat until path exhausted\n  4. Push leaf into deepest section.items
+
+note over catalogSvc
+  Example resulting tree:
+
+  Catalog.items = [
+    CatalogSection { title:'Roads', origin:'category', items:[
+      CatalogSection { title:'National', origin:'category', items:[
+        CatalogSection { title:'Group A', origin:'group-layer', items:[
+          CatalogFeatureLayer { title:'Bridges', url:... }
+          CatalogWebTiledLayer { title:'Aerial', url:... }
+        ]}
+      ]}
+    ]}
+  ]
+
+  Multiple webmaps sharing the same category path
+  merge their layers into the same section nodes.
+end note
+
+== Step 4 - Store and Return ==
+
+catalogSvc -> catalogStore : setCatalog(catalog)\n-> patchState({ catalog, loadState:'loaded' })
+catalogSvc --> mapComp : Catalog
+deactivate catalogSvc
+
+== Layer Rendering ==
+
+mapComp -> layerSvc : [SYNC] addCatalogToMap(catalog)
+activate layerSvc
+
+layerSvc -> layerSvc : buildLayersFromItems(catalog.items)\n\nRecursive mapping:\n  CatalogSection -> GroupLayer { title, layers:[] }\n  CatalogFeatureLayer -> FeatureLayer { url }\n  CatalogMapImageLayer -> MapImageLayer { url }\n  CatalogWebTiledLayer -> WMTSLayer { url, activeLayer }\n  CatalogDocument -> skipped\n\nlayers.reverse() (z-order correction)
+
+layerSvc -> mapComp : view.map.addMany(arcgisLayers)
+deactivate layerSvc
+
+note over mapComp
+  Catalog tree is now mirrored as ArcGIS SDK layers on the map.
+  The arcgis-layer-list (ToC) reads the map layer collection
+  and reflects the same hierarchy to the user.
+end note
+
+@enduml
