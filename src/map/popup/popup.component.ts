@@ -17,13 +17,11 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
   private readonly viewService = inject(MapViewService);
+
+  // These are not used, but we need to inject them to ensure they are initialised and their effects are running
+  // Maybe there is a better way to do this?
   private readonly popupClickService = inject(PopupClickService);
   private readonly popupHighlightService = inject(PopupHighlightService);
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.store.close();
-  }
 
   close(): void {
     this.store.close();

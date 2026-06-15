@@ -1,17 +1,12 @@
-import { DestroyRef, effect, inject, Injectable } from '@angular/core';
+import { DestroyRef, effect, inject, Injectable, untracked } from '@angular/core';
 import { MapViewService } from '../view/view.service';
 import { PopupStore } from './popup.store';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
-import Graphic from '@arcgis/core/Graphic';
+import type { GraphicHit } from '@arcgis/core/views/types';
 
 interface Handle {
   remove(): void;
-}
-
-interface GraphicHitResult {
-  type: 'graphic';
-  graphic: Graphic;
 }
 
 @Injectable({
@@ -27,9 +22,11 @@ export class PopupClickService {
   constructor() {
     effect(() => {
       const view = this.viewService.mapView();
-      if (view) {
-        this.attach(view);
-      }
+      untracked(() => {
+        if (view) {
+          this.attach(view);
+        }
+      });
     });
 
     this.destroyRef.onDestroy(() => this.detach());
@@ -58,8 +55,8 @@ export class PopupClickService {
     });
 
     const graphics = response.results
-      .filter((result) => result.type === 'graphic')
-      .map((result) => (result as unknown as GraphicHitResult).graphic);
+      .filter((result): result is GraphicHit => result.type === 'graphic')
+      .map((result) => result.graphic);
 
     if (graphics.length > 0) {
       this.popupStore.open(graphics);

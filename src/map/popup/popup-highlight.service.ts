@@ -3,6 +3,7 @@ import { MapViewService } from '../view/view.service';
 import { PopupStore } from './popup.store';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { PopupHighlightError } from './popup-errors';
 
 interface Handle {
   remove(): void;
@@ -22,10 +23,12 @@ export class PopupHighlightService {
   constructor() {
     effect(() => {
       const selectedGraphic = this.popupStore.selectedGraphic();
-      this.clearSelectionHighlight();
-      if (selectedGraphic) {
-        this.highlightGraphic(selectedGraphic, 'selection');
-      }
+      untracked(() => {
+        this.clearSelectionHighlight();
+        if (selectedGraphic) {
+          this.highlightGraphic(selectedGraphic, 'selection');
+        }
+      });
     });
 
     effect(() => {
@@ -68,8 +71,8 @@ export class PopupHighlightService {
         this.clearSelectionHighlight();
         this.selectionHighlight = handle;
       }
-    } catch {
-      // Layer view may not be ready
+    } catch (error) {
+      throw new PopupHighlightError(error);
     }
   }
 
