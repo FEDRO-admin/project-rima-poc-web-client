@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';

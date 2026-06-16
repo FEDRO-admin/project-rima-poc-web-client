@@ -1,5 +1,4 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
-import { MapViewService } from '../view/view.service';
 import { PopupStore } from './popup.store';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
@@ -13,7 +12,6 @@ interface Handle {
   providedIn: 'root',
 })
 export class PopupClickService {
-  private readonly viewService = inject(MapViewService);
   private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
 
