@@ -20,19 +20,10 @@ export class PopupClickService {
   private clickHandle: Handle | undefined;
 
   constructor() {
-    effect(() => {
-      const view = this.viewService.mapView();
-      untracked(() => {
-        if (view) {
-          this.attach(view);
-        }
-      });
-    });
-
     this.destroyRef.onDestroy(() => this.detach());
   }
 
-  private attach(view: MapView): void {
+  public attach(view: MapView): void {
     this.detach();
 
     view.popupEnabled = false;

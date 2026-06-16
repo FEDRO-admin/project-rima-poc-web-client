@@ -14,49 +14,16 @@ interface Handle {
 })
 export class PopupHighlightService {
   private readonly viewService = inject(MapViewService);
-  private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
 
   private hoverHighlight: Handle | undefined;
   private selectionHighlight: Handle | undefined;
 
   constructor() {
-    effect(() => {
-      const selectedGraphic = this.popupStore.selectedGraphic();
-      untracked(() => {
-        this.clearSelectionHighlight();
-        if (selectedGraphic) {
-          this.highlightGraphic(selectedGraphic, 'selection');
-        }
-      });
-    });
-
-    effect(() => {
-      const hoveredIndex = this.popupStore.hoveredIndex();
-      untracked(() => {
-        this.clearHoverHighlight();
-        if (hoveredIndex != null) {
-          const graphic = this.popupStore.graphics()[hoveredIndex];
-          if (graphic) {
-            this.highlightGraphic(graphic, 'hover');
-          }
-        }
-      });
-    });
-
-    effect(() => {
-      const visible = this.popupStore.visible();
-      untracked(() => {
-        if (!visible) {
-          this.clearAllHighlights();
-        }
-      });
-    });
-
     this.destroyRef.onDestroy(() => this.clearAllHighlights());
   }
 
-  private async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
+  public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
     const view = this.viewService.mapView();
     if (!view || !(graphic.layer instanceof FeatureLayer)) return;
 
@@ -76,17 +43,17 @@ export class PopupHighlightService {
     }
   }
 
-  private clearHoverHighlight(): void {
+  public clearHoverHighlight(): void {
     this.hoverHighlight?.remove();
     this.hoverHighlight = undefined;
   }
 
-  private clearSelectionHighlight(): void {
+  public clearSelectionHighlight(): void {
     this.selectionHighlight?.remove();
     this.selectionHighlight = undefined;
   }
 
-  private clearAllHighlights(): void {
+  public clearAllHighlights(): void {
     this.clearHoverHighlight();
     this.clearSelectionHighlight();
   }
