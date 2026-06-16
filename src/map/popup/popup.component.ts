@@ -1,21 +1,26 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';
 import { PopupClickService } from './popup-click.service';
 import { PopupHighlightService } from './popup-highlight.service';
+import { EditStore } from '../edit/edit.store';
+import { EditService } from '../edit/edit.service';
+import { ConfirmDialogComponent } from '../edit/confirm-dialog/confirm-dialog.component';
 import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 
 @Component({
   selector: 'rima-popup',
-  imports: [PopupContentComponent],
+  imports: [PopupContentComponent, ConfirmDialogComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
 })
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
+  protected readonly editStore = inject(EditStore);
+  private readonly editService = inject(EditService);
   private readonly viewService = inject(MapViewService);
 
   // These are not used, but we need to inject them to ensure they are initialised and their effects are running
@@ -23,7 +28,32 @@ export class PopupComponent {
   private readonly popupClickService = inject(PopupClickService);
   private readonly popupHighlightService = inject(PopupHighlightService);
 
-  close(): void {
+  protected readonly showCloseConfirm = signal(false);
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.requestClose();
+  }
+
+  requestClose(): void {
+    if (this.editStore.editing() && this.editStore.isDirty()) {
+      this.showCloseConfirm.set(true);
+    } else {
+      this.forceClose();
+    }
+  }
+
+  onCloseConfirm(confirmed: boolean): void {
+    this.showCloseConfirm.set(false);
+    if (confirmed) {
+      this.forceClose();
+    }
+  }
+
+  private forceClose(): void {
+    if (this.editStore.editing()) {
+      this.editService.cancel();
+    }
     this.store.close();
   }
 

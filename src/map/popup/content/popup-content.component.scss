@@ -80,3 +80,25 @@
     font-style: italic;
   }
 }
+
+.popup-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a73e8;
+  background: none;
+  border: 1px solid #1a73e8;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: #e8f0fe;
+  }
+}

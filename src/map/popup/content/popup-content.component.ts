@@ -1,9 +1,13 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input, signal } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Field from '@arcgis/core/layers/support/Field';
 import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
 import { GraphicLayer } from '@arcgis/core/Graphic';
+import { EditFormComponent } from '../../edit/edit-form/edit-form.component';
+import { EditStore } from '../../edit/edit.store';
+import { isLayerEditable } from '../../edit/edit-capability';
+import '@esri/calcite-components/dist/components/calcite-icon';
 
 export type PopupTab = 'attributes' | 'hierarchy' | 'documents';
 
@@ -16,13 +20,20 @@ interface FieldEntry {
 
 @Component({
   selector: 'rima-popup-content',
+  imports: [EditFormComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup-content.component.html',
   styleUrl: './popup-content.component.scss',
 })
 export class PopupContentComponent {
   readonly graphic = input.required<Graphic>();
 
+  private readonly editStore = inject(EditStore);
+
   readonly activeTab = signal<PopupTab>('attributes');
+  readonly editMode = computed(() => this.editStore.editing());
+
+  readonly isEditable = computed(() => isLayerEditable(this.graphic()));
 
   readonly title = computed<string>(() => {
     const graphic = this.graphic();
@@ -46,6 +57,10 @@ export class PopupContentComponent {
 
   selectTab(tab: PopupTab): void {
     this.activeTab.set(tab);
+  }
+
+  startEdit(): void {
+    this.editStore.startEditing(this.graphic());
   }
 
   private resolveFieldValue(field: Field, value: AttributeValue | undefined, layer: FeatureLayer): AttributeValue {

@@ -1,0 +1,178 @@
+<div class="edit-form">
+  <div class="edit-form-header">
+    <calcite-icon icon="pencil" scale="s"></calcite-icon>
+    <span class="edit-form-title">Edit Feature</span>
+  </div>
+
+  @if (supportsGeometryUpdate()) {
+    <div class="edit-geometry-section">
+      <button
+        class="edit-geometry-toggle"
+        [class.edit-geometry-toggle--active]="editStore.geometryEditing()"
+        (click)="toggleGeometryEditing()"
+      >
+        <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+        @if (editStore.geometryEditing()) {
+          Geometry Editing Active
+        } @else {
+          Edit Geometry
+        }
+      </button>
+      @if (editStore.geometryEditing()) {
+        <div class="edit-geometry-tools">
+          <button
+            class="edit-geometry-tool-btn"
+            (click)="undoGeometry()"
+            [disabled]="!geometryEditService.canUndo"
+            title="Undo"
+          >
+            <calcite-icon icon="undo" scale="s"></calcite-icon>
+          </button>
+          <button
+            class="edit-geometry-tool-btn"
+            (click)="redoGeometry()"
+            [disabled]="!geometryEditService.canRedo"
+            title="Redo"
+          >
+            <calcite-icon icon="redo" scale="s"></calcite-icon>
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="edit-form-fields">
+    @for (field of fields(); track field.name) {
+      <div class="edit-field">
+        <label class="edit-field-label" [attr.for]="'edit-' + field.name">{{ field.alias }}</label>
+
+        @switch (field.fieldType) {
+          @case ('subtype') {
+            <select
+              class="edit-field-input"
+              [id]="'edit-' + field.name"
+              [value]="getFieldValue(field.name)"
+              (change)="onSubtypeChange(field.name, $event)"
+            >
+              @if (field.nullable) {
+                <option [value]="''">— None —</option>
+              }
+              @for (option of field.codedValues; track option.code) {
+                <option [value]="option.code" [selected]="getFieldValue(field.name) === option.code">
+                  {{ option.name }} ({{ option.code }})
+                </option>
+              }
+            </select>
+          }
+          @case ('coded-value') {
+            @if (isRawInput(field.name)) {
+              <div class="edit-field-row">
+                <input
+                  class="edit-field-input"
+                  type="number"
+                  [id]="'edit-' + field.name"
+                  [value]="getFieldValue(field.name)"
+                  (change)="onFieldChange(field.name, $event)"
+                />
+                <button class="edit-field-toggle" (click)="toggleRawInput(field.name)" title="Switch to dropdown">
+                  <calcite-icon icon="list" scale="s"></calcite-icon>
+                </button>
+              </div>
+            } @else {
+              <div class="edit-field-row">
+                <select
+                  class="edit-field-input"
+                  [id]="'edit-' + field.name"
+                  [value]="getFieldValue(field.name)"
+                  (change)="onFieldChange(field.name, $event)"
+                >
+                  @if (field.nullable) {
+                    <option [value]="''">— None —</option>
+                  }
+                  @for (option of field.codedValues; track option.code) {
+                    <option [value]="option.code" [selected]="getFieldValue(field.name) === option.code">
+                      {{ option.name }} ({{ option.code }})
+                    </option>
+                  }
+                </select>
+                <button class="edit-field-toggle" (click)="toggleRawInput(field.name)" title="Enter raw value">
+                  <calcite-icon icon="number" scale="s"></calcite-icon>
+                </button>
+              </div>
+            }
+          }
+          @case ('integer') {
+            <input
+              class="edit-field-input"
+              type="number"
+              step="1"
+              [id]="'edit-' + field.name"
+              [value]="getFieldValue(field.name)"
+              (change)="onFieldChange(field.name, $event)"
+            />
+          }
+          @case ('double') {
+            <input
+              class="edit-field-input"
+              type="number"
+              step="any"
+              [id]="'edit-' + field.name"
+              [value]="getFieldValue(field.name)"
+              (change)="onFieldChange(field.name, $event)"
+            />
+          }
+          @case ('date') {
+            <input
+              class="edit-field-input"
+              type="datetime-local"
+              [id]="'edit-' + field.name"
+              [value]="getFieldValue(field.name)"
+              (change)="onFieldChange(field.name, $event)"
+            />
+          }
+          @default {
+            <input
+              class="edit-field-input"
+              type="text"
+              [id]="'edit-' + field.name"
+              [value]="getFieldValue(field.name)"
+              [attr.maxlength]="field.length"
+              (change)="onFieldChange(field.name, $event)"
+            />
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="edit-form-actions">
+    <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="editStore.saving()">Cancel</button>
+    <button class="edit-btn edit-btn--save" (click)="requestSave()" [disabled]="editStore.saving()">
+      @if (editStore.saving()) {
+        Saving...
+      } @else {
+        Save
+      }
+    </button>
+  </div>
+</div>
+
+@if (confirmAction() === 'save') {
+  <rima-confirm-dialog
+    title="Save Changes"
+    message="Are you sure you want to save the changes to this feature?"
+    confirmLabel="Save"
+    cancelLabel="Cancel"
+    (confirmed)="onConfirm($event)"
+  />
+}
+
+@if (confirmAction() === 'cancel') {
+  <rima-confirm-dialog
+    title="Discard Changes"
+    message="You have unsaved changes. Are you sure you want to discard them?"
+    confirmLabel="Discard"
+    cancelLabel="Keep Editing"
+    (confirmed)="onConfirm($event)"
+  />
+}

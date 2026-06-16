@@ -19,19 +19,29 @@
   @switch (activeTab()) {
     @case ('attributes') {
       <div class="popup-panel">
-        @if (fields().length === 0) {
-          <p class="popup-placeholder">No attributes available.</p>
+        @if (editMode()) {
+          <rima-edit-form [graphic]="graphic()" />
         } @else {
-          <table class="popup-attr-table">
-            @for (field of fields(); track field.label) {
-              <tr>
-                <td class="popup-attr-key">{{ field.label }}</td>
-                <td class="popup-attr-value" [class.popup-attr-value--null]="field.value == null">
-                  {{ field.value == null ? 'null' : field.value }}
-                </td>
-              </tr>
-            }
-          </table>
+          @if (isEditable()) {
+            <button class="popup-edit-btn" (click)="startEdit()" aria-label="Edit attributes">
+              <calcite-icon icon="pencil" scale="s"></calcite-icon>
+              Edit
+            </button>
+          }
+          @if (fields().length === 0) {
+            <p class="popup-placeholder">No attributes available.</p>
+          } @else {
+            <table class="popup-attr-table">
+              @for (field of fields(); track field.label) {
+                <tr>
+                  <td class="popup-attr-key">{{ field.label }}</td>
+                  <td class="popup-attr-value" [class.popup-attr-value--null]="field.value == null">
+                    {{ field.value == null ? 'null' : field.value }}
+                  </td>
+                </tr>
+              }
+            </table>
+          }
         }
       </div>
     }
