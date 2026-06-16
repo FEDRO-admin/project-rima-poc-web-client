@@ -1,4 +1,4 @@
-import { DestroyRef, effect, inject, Injectable, untracked } from '@angular/core';
+import { DestroyRef, inject, Injectable } from '@angular/core';
 import { MapViewService } from '../view/view.service';
 import { PopupStore } from './popup.store';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';

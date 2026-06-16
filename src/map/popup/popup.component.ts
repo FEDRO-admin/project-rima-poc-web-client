@@ -2,8 +2,6 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject } from '@angula
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';
-import { PopupClickService } from './popup-click.service';
-import { PopupHighlightService } from './popup-highlight.service';
 import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 
