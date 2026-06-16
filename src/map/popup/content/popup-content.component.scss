@@ -74,4 +74,9 @@
 .popup-attr-value {
   padding: 4px 0;
   word-break: break-word;
+
+  &--null {
+    color: #999;
+    font-style: italic;
+  }
 }
