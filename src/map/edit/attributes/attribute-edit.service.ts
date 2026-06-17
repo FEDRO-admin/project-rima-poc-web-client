@@ -1,20 +1,18 @@
 import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { EditStore } from './edit.store';
-import { GeometryEditService } from './geometry/geometry-edit.service';
-import { EditSaveError, EditRefreshError } from './edit-errors';
-import { isSystemField } from './edit-capability';
-import { PopupStore } from '../popup/popup.store';
+import { AttributeEditStore } from './attribute-edit.store';
+import { EditSaveError, EditRefreshError } from '../edit-errors';
+import { isSystemField } from '../edit-capability';
+import { PopupStore } from '../../popup/popup.store';
 
 type AttributeValue = string | number | boolean | null;
 
 @Injectable({
   providedIn: 'root',
 })
-export class EditService {
-  private readonly editStore = inject(EditStore);
-  private readonly geometryEditService = inject(GeometryEditService);
+export class AttributeEditService {
+  private readonly editStore = inject(AttributeEditStore);
   private readonly popupStore = inject(PopupStore);
 
   async save(): Promise<void> {
@@ -27,16 +25,9 @@ export class EditService {
     this.editStore.setSaving(true);
 
     try {
-      // Deactivate geometry sketching before saving
-      if (this.editStore.allowsGeometryEditing()) {
-        this.geometryEditService.deactivate();
-      }
-
       const updatedAttributes = this.buildUpdatePayload(graphic, this.editStore.editedAttributes());
-      const updatedGeometry = this.editStore.editedGeometry() ?? graphic.geometry;
       const updateGraphic = new Graphic({
         attributes: updatedAttributes,
-        geometry: updatedGeometry,
       });
 
       const result = await layer.applyEdits({ updateFeatures: [updateGraphic] });
@@ -58,9 +49,6 @@ export class EditService {
   }
 
   cancel(): void {
-    if (this.editStore.allowsGeometryEditing()) {
-      this.geometryEditService.deactivate();
-    }
     this.editStore.reset();
   }
 

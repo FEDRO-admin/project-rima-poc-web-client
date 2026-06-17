@@ -4,43 +4,6 @@
     <span class="edit-form-title">Edit Feature</span>
   </div>
 
-  @if (supportsGeometryUpdate()) {
-    <div class="edit-geometry-section">
-      <button
-        class="edit-geometry-toggle"
-        [class.edit-geometry-toggle--active]="editStore.allowsGeometryEditing()"
-        (click)="toggleGeometryEditing()"
-      >
-        <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
-        @if (editStore.allowsGeometryEditing()) {
-          Geometry Editing Active
-        } @else {
-          Edit Geometry
-        }
-      </button>
-      @if (editStore.allowsGeometryEditing()) {
-        <div class="edit-geometry-tools">
-          <button
-            class="edit-geometry-tool-btn"
-            (click)="undoGeometry()"
-            [disabled]="!geometryEditService.canUndo()"
-            title="Undo"
-          >
-            <calcite-icon icon="undo" scale="s"></calcite-icon>
-          </button>
-          <button
-            class="edit-geometry-tool-btn"
-            (click)="redoGeometry()"
-            [disabled]="!geometryEditService.canRedo()"
-            title="Redo"
-          >
-            <calcite-icon icon="redo" scale="s"></calcite-icon>
-          </button>
-        </div>
-      }
-    </div>
-  }
-
   <div class="edit-form-fields">
     @for (field of fields(); track field.name) {
       <div class="edit-field">

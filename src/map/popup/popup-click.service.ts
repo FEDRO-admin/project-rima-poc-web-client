@@ -1,6 +1,7 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
 import { PopupStore } from './popup.store';
-import { EditStore } from '../edit/edit.store';
+import { AttributeEditStore } from '../edit/attributes/attribute-edit.store';
+import { GeometryEditStore } from '../edit/geometry/geometry-edit.store';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
 import type { GraphicHit } from '@arcgis/core/views/types';
@@ -14,7 +15,8 @@ interface Handle {
 })
 export class PopupClickService {
   private readonly popupStore = inject(PopupStore);
-  private readonly editStore = inject(EditStore);
+  private readonly editStore = inject(AttributeEditStore);
+  private readonly geometryEditStore = inject(GeometryEditStore);
   private readonly destroyRef = inject(DestroyRef);
 
   private clickHandle: Handle | undefined;
@@ -42,7 +44,7 @@ export class PopupClickService {
     if (!view.map) return;
 
     // Ignore all map clicks while in edit mode
-    if (this.editStore.editing()) {
+    if (this.editStore.editing() || this.geometryEditStore.editing()) {
       return;
     }
 

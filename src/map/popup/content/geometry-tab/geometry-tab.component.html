@@ -1,0 +1,24 @@
+<div class="geometry-tab">
+  @if (geometryEditStore.editing()) {
+    <rima-geometry-edit-form [graphic]="graphic()" />
+  } @else {
+    @if (supportsGeometryUpdate()) {
+      <button class="geometry-edit-btn" (click)="startEditing()">
+        <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+        Edit Geometry
+      </button>
+    }
+    @if (geometryInfo().length > 0) {
+      <table class="geometry-info-table">
+        @for (info of geometryInfo(); track info.label) {
+          <tr>
+            <td class="geometry-info-key">{{ info.label }}</td>
+            <td class="geometry-info-value">{{ info.value }}</td>
+          </tr>
+        }
+      </table>
+    } @else {
+      <p class="geometry-placeholder">No geometry information available.</p>
+    }
+  }
+</div>

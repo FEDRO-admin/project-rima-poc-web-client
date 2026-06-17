@@ -1,12 +1,10 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Graphic from '@arcgis/core/Graphic';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { EditStore } from '../edit.store';
-import { EditService } from '../edit.service';
-import { GeometryEditService } from '../geometry/geometry-edit.service';
+import { AttributeEditStore } from '../attribute-edit.store';
+import { AttributeEditService } from '../attribute-edit.service';
 import { EditField } from '../edit-field';
-import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent } from '../../confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableFields } from '../edit-domain-resolver';
 
@@ -16,26 +14,18 @@ type ConfirmAction = 'save' | 'cancel' | null;
   selector: 'rima-edit-form',
   imports: [FormsModule, ConfirmDialogComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  templateUrl: './edit-form.component.html',
-  styleUrl: './edit-form.component.scss',
+  templateUrl: './attribute-edit-form.component.html',
+  styleUrl: './attribute-edit-form.component.scss',
 })
-export class EditFormComponent {
+export class AttributeEditFormComponent {
   readonly graphic = input.required<Graphic>();
 
-  protected readonly editStore = inject(EditStore);
-  private readonly editService = inject(EditService);
-  protected readonly geometryEditService = inject(GeometryEditService);
+  protected readonly editStore = inject(AttributeEditStore);
+  private readonly editService = inject(AttributeEditService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   protected readonly fields = computed<EditField[]>(() => resolveEditableFields(this.graphic()));
-
-  protected readonly supportsGeometryUpdate = computed(() => {
-    const graphic = this.graphic();
-    const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return false;
-    return layer.capabilities?.editing?.supportsGeometryUpdate ?? false;
-  });
 
   protected getFieldValue(fieldName: string): string | number | boolean | null {
     return this.editStore.editedAttributes()[fieldName] ?? null;
@@ -61,22 +51,6 @@ export class EditFormComponent {
     } else {
       this.editService.cancel();
     }
-  }
-
-  protected toggleGeometryEditing(): void {
-    if (this.editStore.allowsGeometryEditing()) {
-      this.geometryEditService.deactivate();
-    } else {
-      this.geometryEditService.activate(this.graphic());
-    }
-  }
-
-  protected undoGeometry(): void {
-    this.geometryEditService.undo();
-  }
-
-  protected redoGeometry(): void {
-    this.geometryEditService.redo();
   }
 
   protected async onConfirm(confirmed: boolean): Promise<void> {

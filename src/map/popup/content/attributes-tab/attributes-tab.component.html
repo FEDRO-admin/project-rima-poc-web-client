@@ -1,0 +1,39 @@
+@if (editMode()) {
+  <rima-edit-form [graphic]="graphic()" />
+} @else {
+  @if (isEditable()) {
+    <button class="attributes-edit-btn" (click)="startEdit()" aria-label="Edit attributes">
+      <calcite-icon icon="pencil" scale="s"></calcite-icon>
+      Edit
+    </button>
+  }
+  @if (fields().length === 0) {
+    <p class="attributes-placeholder">No attributes available.</p>
+  } @else {
+    <table class="attributes-table">
+      @for (field of fields(); track field.label) {
+        <tr>
+          <td class="attributes-key">{{ field.label }}</td>
+          <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+            {{ field.value == null ? 'null' : field.value }}
+          </td>
+        </tr>
+      }
+    </table>
+  }
+  @if (systemFields().length > 0) {
+    <details class="attributes-system-fields">
+      <summary>System Fields</summary>
+      <table class="attributes-table">
+        @for (field of systemFields(); track field.label) {
+          <tr>
+            <td class="attributes-key">{{ field.label }}</td>
+            <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+              {{ field.value == null ? 'null' : field.value }}
+            </td>
+          </tr>
+        }
+      </table>
+    </details>
+  }
+}

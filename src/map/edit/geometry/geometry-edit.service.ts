@@ -1,12 +1,16 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { DestroyRef, inject, Injectable } from '@angular/core';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import type Geometry from '@arcgis/core/geometry/Geometry';
 import type Map from '@arcgis/core/Map';
 import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
 import { MapViewService } from '../../view/view.service';
-import { EditStore } from '../edit.store';
+import type MapView from '@arcgis/core/views/MapView';
+import { PopupStore } from '../../popup/popup.store';
+import { GeometryEditStore } from './geometry-edit.store';
+import { EditSaveError, EditRefreshError } from '../edit-errors';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit-config';
 
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -16,7 +20,8 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 })
 export class GeometryEditService {
   private readonly viewService = inject(MapViewService);
-  private readonly editStore = inject(EditStore);
+  private readonly popupStore = inject(PopupStore);
+  private readonly store = inject(GeometryEditStore);
   private readonly destroyRef = inject(DestroyRef);
 
   private sketchViewModel: SketchViewModel | undefined;
@@ -24,25 +29,106 @@ export class GeometryEditService {
   private sketchGraphic: Graphic | undefined;
   private eventHandle: { remove(): void } | undefined;
 
-  readonly canUndo = signal(false);
-  readonly canRedo = signal(false);
+  private _graphic: Graphic | undefined;
+  private _originalGeometry: Geometry | undefined;
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.deactivate());
+    this.destroyRef.onDestroy(() => this.reset());
   }
 
-  activate(graphic: Graphic): void {
+  startEditing(graphic: Graphic): void {
     const view = this.viewService.mapView();
     if (!view?.map || !graphic.geometry) return;
 
-    this.deactivate();
+    this.reset();
 
+    this._graphic = graphic;
+    this._originalGeometry = graphic.geometry.clone();
+    this.store.setEditing(true);
+
+    this.activateSketch(view, graphic.geometry);
+  }
+
+  reenterSketch(): void {
+    const view = this.viewService.mapView();
+    if (!view?.map || !this._graphic) return;
+
+    const geometry = this.store.editedGeometry() ?? this._graphic.geometry;
+    if (!geometry) return;
+
+    this.deactivateSketch();
+    this.activateSketch(view, geometry);
+  }
+
+  async save(): Promise<void> {
+    if (!this._graphic) return;
+
+    const layer = this._graphic.layer;
+    if (!(layer instanceof FeatureLayer)) return;
+
+    this.store.setSaving(true);
+
+    try {
+      this.deactivateSketch();
+
+      const geometry = this.store.editedGeometry();
+      if (!geometry) return;
+
+      const objectIdField = layer.objectIdField;
+      const updateGraphic = new Graphic({
+        attributes: { [objectIdField]: this._graphic.attributes[objectIdField] },
+        geometry,
+      });
+
+      const result = await layer.applyEdits({ updateFeatures: [updateGraphic] });
+      const updateResult = result.updateFeatureResults[0];
+
+      if (updateResult?.error) {
+        throw new EditSaveError(updateResult.error);
+      }
+
+      await this.refreshGraphicInPopup(this._graphic, layer);
+      this.reset();
+    } catch (error) {
+      this.store.setSaving(false);
+      if (error instanceof EditSaveError) {
+        throw error;
+      }
+      throw new EditSaveError(error);
+    }
+  }
+
+  cancel(): void {
+    if (this._graphic && this._originalGeometry) {
+      this._graphic.geometry = this._originalGeometry;
+    }
+    this.reset();
+  }
+
+  reset(): void {
+    this.deactivateSketch();
+    this._graphic = undefined;
+    this._originalGeometry = undefined;
+    this.store.reset();
+  }
+
+  undo(): void {
+    this.sketchViewModel?.undo();
+    this.updateUndoRedoState();
+  }
+
+  redo(): void {
+    this.sketchViewModel?.redo();
+    this.updateUndoRedoState();
+  }
+
+  private activateSketch(view: MapView, geometry: Geometry): void {
     this.sketchLayer = new GraphicsLayer({ listMode: 'hide' });
-    view.map.add(this.sketchLayer);
+    view.map!.add(this.sketchLayer);
 
     this.sketchGraphic = new Graphic({
-      geometry: graphic.geometry.clone(),
-      symbol: this.getEditSymbol(graphic.geometry.type),
+      geometry: geometry.clone(),
+      symbol: this.getEditSymbol(geometry.type),
     });
     this.sketchLayer.add(this.sketchGraphic);
 
@@ -51,14 +137,14 @@ export class GeometryEditService {
       layer: this.sketchLayer,
       updateOnGraphicClick: false,
       defaultUpdateOptions: {
-        tool: this.getToolForGeometryType(graphic.geometry.type),
+        tool: this.getToolForGeometryType(geometry.type),
         enableRotation: false,
         enableScaling: false,
         reshapeOptions: { edgeOperation: 'split', shapeOperation: 'move' },
       },
       snappingOptions: {
         enabled: true,
-        featureSources: this.buildSnappingSources(view.map),
+        featureSources: this.buildSnappingSources(view.map!),
       },
     });
 
@@ -66,20 +152,20 @@ export class GeometryEditService {
       if (event.state === 'active' || event.state === 'complete') {
         const updatedGeometry = event.graphics[0]?.geometry;
         if (updatedGeometry) {
-          this.editStore.updateGeometry(updatedGeometry);
+          this.store.updateGeometry(updatedGeometry);
         }
       }
-      if (event.state === 'complete' && this.sketchGraphic) {
-        this.sketchViewModel!.update(this.sketchGraphic);
+      if (event.state === 'complete') {
+        this.onSketchComplete();
       }
       this.updateUndoRedoState();
     });
 
     this.sketchViewModel.update(this.sketchGraphic);
-    this.editStore.enableGeometryEditing();
+    this.store.setSketchActive(true);
   }
 
-  deactivate(): void {
+  private deactivateSketch(): void {
     this.eventHandle?.remove();
     this.eventHandle = undefined;
     this.sketchGraphic = undefined;
@@ -99,24 +185,22 @@ export class GeometryEditService {
       this.sketchLayer = undefined;
     }
 
-    this.canUndo.set(false);
-    this.canRedo.set(false);
-    this.editStore.disableGeometryEditing();
+    this.store.deactivateSketch();
   }
 
-  undo(): void {
-    this.sketchViewModel?.undo();
-    this.updateUndoRedoState();
-  }
-
-  redo(): void {
-    this.sketchViewModel?.redo();
-    this.updateUndoRedoState();
+  private onSketchComplete(): void {
+    const editedGeometry = this.store.editedGeometry();
+    if (this._graphic && editedGeometry) {
+      this._graphic.geometry = editedGeometry;
+    }
+    // Fallback: if the sketch completes despite click interception, re-enter
+    if (this.sketchViewModel && this.sketchGraphic) {
+      this.sketchViewModel.update(this.sketchGraphic);
+    }
   }
 
   private updateUndoRedoState(): void {
-    this.canUndo.set(this.sketchViewModel?.canUndo() ?? false);
-    this.canRedo.set(this.sketchViewModel?.canRedo() ?? false);
+    this.store.setUndoRedo(this.sketchViewModel?.canUndo() ?? false, this.sketchViewModel?.canRedo() ?? false);
   }
 
   private getToolForGeometryType(geometryType: string): SketchTool {
@@ -151,5 +235,34 @@ export class GeometryEditService {
       }
     });
     return sources;
+  }
+
+  private async refreshGraphicInPopup(graphic: Graphic, layer: FeatureLayer): Promise<void> {
+    try {
+      const objectIdField = layer.objectIdField;
+      const objectId = graphic.attributes[objectIdField];
+
+      const query = layer.createQuery();
+      query.objectIds = [objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await layer.queryFeatures(query);
+      const refreshedFeature = featureSet.features[0];
+
+      if (refreshedFeature) {
+        const graphics = this.popupStore.graphics();
+        const selectedIndex = this.popupStore.selectedIndex();
+
+        if (selectedIndex != null) {
+          const updatedGraphics = [...graphics];
+          updatedGraphics[selectedIndex] = refreshedFeature;
+          this.popupStore.open(updatedGraphics);
+          this.popupStore.selectFeature(selectedIndex);
+        }
+      }
+    } catch (error) {
+      throw new EditRefreshError(error);
+    }
   }
 }

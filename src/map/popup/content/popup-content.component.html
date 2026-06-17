@@ -8,6 +8,11 @@
     >
       Attributes
     </button>
+    @if (hasGeometry()) {
+      <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'geometry'" (click)="selectTab('geometry')">
+        Geometry
+      </button>
+    }
     <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
       Hierarchy
     </button>
@@ -19,55 +24,22 @@
   @switch (activeTab()) {
     @case ('attributes') {
       <div class="popup-panel">
-        @if (editMode()) {
-          <rima-edit-form [graphic]="graphic()" />
-        } @else {
-          @if (isEditable()) {
-            <button class="popup-edit-btn" (click)="startEdit()" aria-label="Edit attributes">
-              <calcite-icon icon="pencil" scale="s"></calcite-icon>
-              Edit
-            </button>
-          }
-          @if (fields().length === 0) {
-            <p class="popup-placeholder">No attributes available.</p>
-          } @else {
-            <table class="popup-attr-table">
-              @for (field of fields(); track field.label) {
-                <tr>
-                  <td class="popup-attr-key">{{ field.label }}</td>
-                  <td class="popup-attr-value" [class.popup-attr-value--null]="field.value == null">
-                    {{ field.value == null ? 'null' : field.value }}
-                  </td>
-                </tr>
-              }
-            </table>
-          }
-          @if (systemFields().length > 0) {
-            <details class="popup-system-fields">
-              <summary>System Fields</summary>
-              <table class="popup-attr-table">
-                @for (field of systemFields(); track field.label) {
-                  <tr>
-                    <td class="popup-attr-key">{{ field.label }}</td>
-                    <td class="popup-attr-value" [class.popup-attr-value--null]="field.value == null">
-                      {{ field.value == null ? 'null' : field.value }}
-                    </td>
-                  </tr>
-                }
-              </table>
-            </details>
-          }
-        }
+        <rima-attributes-tab [graphic]="graphic()" />
+      </div>
+    }
+    @case ('geometry') {
+      <div class="popup-panel">
+        <rima-geometry-tab [graphic]="graphic()" />
       </div>
     }
     @case ('hierarchy') {
       <div class="popup-panel">
-        <p class="popup-placeholder">Hierarchy view coming soon.</p>
+        <rima-hierarchy-tab />
       </div>
     }
     @case ('documents') {
       <div class="popup-panel">
-        <p class="popup-placeholder">Documents view coming soon.</p>
+        <rima-documents-tab />
       </div>
     }
   }

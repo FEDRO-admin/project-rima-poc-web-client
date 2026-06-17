@@ -3,7 +3,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Field from '@arcgis/core/layers/support/Field';
 import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
 import { CodedValueOption, EditField, mapFieldType } from './edit-field';
-import { isSystemField } from './edit-capability';
+import { isSystemField } from '../edit-capability';
 
 export function resolveEditableFields(graphic: Graphic): EditField[] {
   const layer = graphic.layer;
