@@ -1,5 +1,4 @@
-import { DestroyRef, effect, inject, Injectable, untracked } from '@angular/core';
-import { MapViewService } from '../view/view.service';
+import { DestroyRef, inject, Injectable } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { EditStore } from '../edit/edit.store';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -14,7 +13,6 @@ interface Handle {
   providedIn: 'root',
 })
 export class PopupClickService {
-  private readonly viewService = inject(MapViewService);
   private readonly popupStore = inject(PopupStore);
   private readonly editStore = inject(EditStore);
   private readonly destroyRef = inject(DestroyRef);
@@ -22,19 +20,10 @@ export class PopupClickService {
   private clickHandle: Handle | undefined;
 
   constructor() {
-    effect(() => {
-      const view = this.viewService.mapView();
-      untracked(() => {
-        if (view) {
-          this.attach(view);
-        }
-      });
-    });
-
     this.destroyRef.onDestroy(() => this.detach());
   }
 
-  private attach(view: MapView): void {
+  public attach(view: MapView): void {
     this.detach();
 
     view.popupEnabled = false;
