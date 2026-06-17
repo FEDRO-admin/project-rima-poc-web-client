@@ -16,63 +16,60 @@ export class PopupEffects {
   private readonly popupHighlightService = inject(PopupHighlightService);
 
   constructor() {
+    this.attachClickHandler();
+    this.highlightSelected();
+    this.highlightHovered();
+    this.clearHighlight();
+  }
+
+  private attachClickHandler(): void {
     effect(() => {
       const view = this.viewService.mapView();
       untracked(() => {
-        this.attachClickHandler(view);
+        if (view) {
+          this.popupClickService.attach(view);
+        }
       });
     });
+  }
 
+  private highlightSelected(): void {
     effect(() => {
       const selectedGraphic = this.popupStore.selectedGraphic();
       untracked(() => {
-        this.highlightSelected(selectedGraphic);
+        if (!selectedGraphic) return;
+        this.popupHighlightService.clearSelectionHighlight();
+        if (selectedGraphic) {
+          this.popupHighlightService.highlightGraphic(selectedGraphic, 'selection');
+        }
       });
     });
+  }
 
+  private highlightHovered(): void {
     effect(() => {
       const hoveredIndex = this.popupStore.hoveredIndex();
       untracked(() => {
-        this.highlightHovered(hoveredIndex);
+        this.popupHighlightService.clearHoverHighlight();
+        if (hoveredIndex != null) {
+          const graphic = this.popupStore.graphics()[hoveredIndex];
+          if (graphic) {
+            this.popupHighlightService.highlightGraphic(graphic, 'hover');
+          }
+        }
       });
     });
+  }
 
+  private clearHighlight(): void {
     effect(() => {
       const visible = this.popupStore.visible();
       untracked(() => {
-        this.toggleVisibleHighlight(visible);
+        if (!visible) {
+          this.popupHighlightService.clearHoverHighlight();
+          this.popupHighlightService.clearSelectionHighlight();
+        }
       });
     });
-  }
-
-  private attachClickHandler(view: MapView | undefined): void {
-    if (view) {
-      this.popupClickService.attach(view);
-    }
-  }
-
-  private highlightSelected(graphic: Graphic | undefined): void {
-    if (!graphic) return;
-    this.popupHighlightService.clearSelectionHighlight();
-    if (graphic) {
-      this.popupHighlightService.highlightGraphic(graphic, 'selection');
-    }
-  }
-
-  private highlightHovered(index: number | undefined): void {
-    this.popupHighlightService.clearHoverHighlight();
-    if (index != null) {
-      const graphic = this.popupStore.graphics()[index];
-      if (graphic) {
-        this.popupHighlightService.highlightGraphic(graphic, 'hover');
-      }
-    }
-  }
-
-  private toggleVisibleHighlight(visible: boolean): void {
-    if (!visible) {
-      this.popupHighlightService.clearHoverHighlight();
-      this.popupHighlightService.clearSelectionHighlight();
-    }
   }
 }
