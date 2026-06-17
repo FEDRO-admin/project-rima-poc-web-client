@@ -10,7 +10,7 @@ interface EditState {
   originalAttributes: Record<string, AttributeValue>;
   editedAttributes: Record<string, AttributeValue>;
   saving: boolean;
-  geometryEditing: boolean;
+  allowsGeometryEditing: boolean;
   editedGeometry: Geometry | undefined;
 }
 
@@ -19,7 +19,7 @@ const initialState: EditState = {
   originalAttributes: {},
   editedAttributes: {},
   saving: false,
-  geometryEditing: false,
+  allowsGeometryEditing: false,
   editedGeometry: undefined,
 };
 
@@ -29,10 +29,10 @@ export const EditStore = signalStore(
   withComputed((store) => ({
     editing: computed(() => store.graphic() != null),
     isDirty: computed(() => {
-      const original = store.originalAttributes();
-      const edited = store.editedAttributes();
-      const hasAttributeChanges = Object.keys(edited).some((key) => edited[key] !== original[key]);
-      const hasGeometryChanges = store.editedGeometry() != null;
+      const original: Record<string, AttributeValue> = store.originalAttributes();
+      const edited: Record<string, AttributeValue> = store.editedAttributes();
+      const hasAttributeChanges: boolean = Object.keys(edited).some((key) => edited[key] !== original[key]);
+      const hasGeometryChanges: boolean = store.editedGeometry() != null;
       return hasAttributeChanges || hasGeometryChanges;
     }),
   })),
@@ -44,7 +44,7 @@ export const EditStore = signalStore(
         originalAttributes: attrs,
         editedAttributes: { ...attrs },
         saving: false,
-        geometryEditing: false,
+        allowsGeometryEditing: false,
         editedGeometry: undefined,
       });
     },
@@ -53,10 +53,10 @@ export const EditStore = signalStore(
       patchState(store, { editedAttributes: edited });
     },
     enableGeometryEditing(): void {
-      patchState(store, { geometryEditing: true });
+      patchState(store, { allowsGeometryEditing: true });
     },
     disableGeometryEditing(): void {
-      patchState(store, { geometryEditing: false });
+      patchState(store, { allowsGeometryEditing: false });
     },
     updateGeometry(geometry: Geometry): void {
       patchState(store, { editedGeometry: geometry });

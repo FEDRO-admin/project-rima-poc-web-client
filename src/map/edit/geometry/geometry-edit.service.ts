@@ -1,15 +1,13 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
-import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import type Map from '@arcgis/core/Map';
-import type FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
+import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
 import { MapViewService } from '../../view/view.service';
 import { EditStore } from '../edit.store';
+import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit-config';
 
 type SketchTool = 'move' | 'reshape' | 'transform';
 
@@ -23,7 +21,11 @@ export class GeometryEditService {
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
+  private sketchGraphic: Graphic | undefined;
   private eventHandle: { remove(): void } | undefined;
+
+  readonly canUndo = signal(false);
+  readonly canRedo = signal(false);
 
   constructor() {
     this.destroyRef.onDestroy(() => this.deactivate());
@@ -38,11 +40,11 @@ export class GeometryEditService {
     this.sketchLayer = new GraphicsLayer({ listMode: 'hide' });
     view.map.add(this.sketchLayer);
 
-    const sketchGraphic = new Graphic({
+    this.sketchGraphic = new Graphic({
       geometry: graphic.geometry.clone(),
       symbol: this.getEditSymbol(graphic.geometry.type),
     });
-    this.sketchLayer.add(sketchGraphic);
+    this.sketchLayer.add(this.sketchGraphic);
 
     this.sketchViewModel = new SketchViewModel({
       view,
@@ -67,13 +69,21 @@ export class GeometryEditService {
           this.editStore.updateGeometry(updatedGeometry);
         }
       }
+      if (event.state === 'complete' && this.sketchGraphic) {
+        this.sketchViewModel!.update(this.sketchGraphic);
+      }
+      this.updateUndoRedoState();
     });
 
-    this.sketchViewModel.update(sketchGraphic);
+    this.sketchViewModel.update(this.sketchGraphic);
     this.editStore.enableGeometryEditing();
   }
 
   deactivate(): void {
+    this.eventHandle?.remove();
+    this.eventHandle = undefined;
+    this.sketchGraphic = undefined;
+
     if (this.sketchViewModel) {
       this.sketchViewModel.cancel();
       this.sketchViewModel.destroy();
@@ -89,26 +99,24 @@ export class GeometryEditService {
       this.sketchLayer = undefined;
     }
 
-    this.eventHandle?.remove();
-    this.eventHandle = undefined;
-
+    this.canUndo.set(false);
+    this.canRedo.set(false);
     this.editStore.disableGeometryEditing();
   }
 
   undo(): void {
     this.sketchViewModel?.undo();
+    this.updateUndoRedoState();
   }
 
   redo(): void {
     this.sketchViewModel?.redo();
+    this.updateUndoRedoState();
   }
 
-  get canUndo(): boolean {
-    return this.sketchViewModel?.canUndo() ?? false;
-  }
-
-  get canRedo(): boolean {
-    return this.sketchViewModel?.canRedo() ?? false;
+  private updateUndoRedoState(): void {
+    this.canUndo.set(this.sketchViewModel?.canUndo() ?? false);
+    this.canRedo.set(this.sketchViewModel?.canRedo() ?? false);
   }
 
   private getToolForGeometryType(geometryType: string): SketchTool {
@@ -121,34 +129,25 @@ export class GeometryEditService {
     }
   }
 
-  private getEditSymbol(geometryType: string): SimpleMarkerSymbol | SimpleLineSymbol | SimpleFillSymbol {
+  private getEditSymbol(
+    geometryType: string,
+  ): typeof EDIT_POINT_SYMBOL | typeof EDIT_LINE_SYMBOL | typeof EDIT_POLYGON_SYMBOL {
     switch (geometryType) {
       case 'point':
       case 'multipoint':
-        return new SimpleMarkerSymbol({
-          color: [0, 121, 193, 0.3],
-          outline: { color: [0, 121, 193, 1], width: 2, style: 'dash' },
-          size: 12,
-        });
+        return EDIT_POINT_SYMBOL;
       case 'polyline':
-        return new SimpleLineSymbol({
-          color: [0, 121, 193, 1],
-          width: 3,
-          style: 'dash',
-        });
+        return EDIT_LINE_SYMBOL;
       default:
-        return new SimpleFillSymbol({
-          color: [0, 121, 193, 0.1],
-          outline: { color: [0, 121, 193, 1], width: 2, style: 'dash' },
-        });
+        return EDIT_POLYGON_SYMBOL;
     }
   }
 
   private buildSnappingSources(map: Map): FeatureSnappingLayerSource[] {
     const sources: FeatureSnappingLayerSource[] = [];
     map.allLayers.forEach((layer) => {
-      if (layer.type === 'feature') {
-        sources.push({ layer: layer as FeatureLayer, enabled: true } as unknown as FeatureSnappingLayerSource);
+      if (layer instanceof FeatureLayer) {
+        sources.push(new FeatureSnappingLayerSource({ layer, enabled: true }));
       }
     });
     return sources;

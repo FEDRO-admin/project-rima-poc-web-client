@@ -1,9 +1,7 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, signal } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { MapViewService } from '../view/view.service';
-import { PopupClickService } from './popup-click.service';
-import { PopupHighlightService } from './popup-highlight.service';
 import { EditStore } from '../edit/edit.store';
 import { EditService } from '../edit/edit.service';
 import { ConfirmDialogComponent } from '../edit/confirm-dialog/confirm-dialog.component';
@@ -23,14 +21,8 @@ export class PopupComponent {
   private readonly editService = inject(EditService);
   private readonly viewService = inject(MapViewService);
 
-  // These are not used, but we need to inject them to ensure they are initialised and their effects are running
-  // Maybe there is a better way to do this?
-  private readonly popupClickService = inject(PopupClickService);
-  private readonly popupHighlightService = inject(PopupHighlightService);
-
   protected readonly showCloseConfirm = signal(false);
 
-  @HostListener('document:keydown.escape')
   onEscape(): void {
     this.requestClose();
   }
@@ -39,18 +31,18 @@ export class PopupComponent {
     if (this.editStore.editing() && this.editStore.isDirty()) {
       this.showCloseConfirm.set(true);
     } else {
-      this.forceClose();
+      this.close();
     }
   }
 
   onCloseConfirm(confirmed: boolean): void {
     this.showCloseConfirm.set(false);
     if (confirmed) {
-      this.forceClose();
+      this.close();
     }
   }
 
-  private forceClose(): void {
+  private close(): void {
     if (this.editStore.editing()) {
       this.editService.cancel();
     }

@@ -28,7 +28,7 @@ export class EditService {
 
     try {
       // Deactivate geometry sketching before saving
-      if (this.editStore.geometryEditing()) {
+      if (this.editStore.allowsGeometryEditing()) {
         this.geometryEditService.deactivate();
       }
 
@@ -58,7 +58,7 @@ export class EditService {
   }
 
   cancel(): void {
-    if (this.editStore.geometryEditing()) {
+    if (this.editStore.allowsGeometryEditing()) {
       this.geometryEditService.deactivate();
     }
     this.editStore.reset();

@@ -1,6 +1,6 @@
 import type Field from '@arcgis/core/layers/support/Field';
 
-export type EditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value' | 'subtype';
+export type EditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value';
 
 export interface CodedValueOption {
   code: string | number;
@@ -17,11 +17,7 @@ export interface EditField {
   editable: boolean;
 }
 
-export function mapFieldType(field: Field, isSubtypeField: boolean): EditFieldType {
-  if (isSubtypeField) {
-    return 'subtype';
-  }
-
+export function mapFieldType(field: Field): EditFieldType {
   if (field.domain?.type === 'coded-value') {
     return 'coded-value';
   }

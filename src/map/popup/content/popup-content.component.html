@@ -42,6 +42,21 @@
               }
             </table>
           }
+          @if (systemFields().length > 0) {
+            <details class="popup-system-fields">
+              <summary>System Fields</summary>
+              <table class="popup-attr-table">
+                @for (field of systemFields(); track field.label) {
+                  <tr>
+                    <td class="popup-attr-key">{{ field.label }}</td>
+                    <td class="popup-attr-value" [class.popup-attr-value--null]="field.value == null">
+                      {{ field.value == null ? 'null' : field.value }}
+                    </td>
+                  </tr>
+                }
+              </table>
+            </details>
+          }
         }
       </div>
     }

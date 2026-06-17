@@ -6,7 +6,7 @@ import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain'
 import { GraphicLayer } from '@arcgis/core/Graphic';
 import { EditFormComponent } from '../../edit/edit-form/edit-form.component';
 import { EditStore } from '../../edit/edit.store';
-import { isLayerEditable } from '../../edit/edit-capability';
+import { isLayerEditable, isSystemField } from '../../edit/edit-capability';
 import '@esri/calcite-components/dist/components/calcite-icon';
 
 export type PopupTab = 'attributes' | 'hierarchy' | 'documents';
@@ -46,13 +46,32 @@ export class PopupContentComponent {
     const attrs: Record<string, AttributeValue> = graphic.attributes ?? {};
 
     if (layer instanceof FeatureLayer && layer.fields?.length) {
-      return layer.fields.map((field) => ({
-        label: field.alias || field.name,
-        value: this.resolveFieldValue(field, attrs[field.name], layer),
-      }));
+      return layer.fields
+        .filter((field) => !isSystemField(field.name))
+        .map((field) => ({
+          label: field.alias || field.name,
+          value: this.resolveFieldValue(field, attrs[field.name], layer),
+        }));
     }
 
     return Object.entries(attrs).map(([key, value]) => ({ label: key, value }));
+  });
+
+  readonly systemFields = computed<FieldEntry[]>(() => {
+    const graphic: Graphic = this.graphic();
+    const layer: GraphicLayer | null | undefined = graphic.layer;
+    const attrs: Record<string, AttributeValue> = graphic.attributes ?? {};
+
+    if (layer instanceof FeatureLayer && layer.fields?.length) {
+      return layer.fields
+        .filter((field) => isSystemField(field.name) && attrs[field.name] != null)
+        .map((field) => ({
+          label: field.alias || field.name,
+          value: this.resolveFieldValue(field, attrs[field.name], layer),
+        }));
+    }
+
+    return [];
   });
 
   selectTab(tab: PopupTab): void {

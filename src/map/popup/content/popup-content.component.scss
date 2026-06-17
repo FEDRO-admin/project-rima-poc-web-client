@@ -102,3 +102,21 @@
     background: #e8f0fe;
   }
 }
+
+.popup-system-fields {
+  margin-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+
+  summary {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    padding: 4px 0;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}

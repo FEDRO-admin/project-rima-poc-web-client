@@ -6,9 +6,9 @@ import { EditStore } from '../edit.store';
 import { EditService } from '../edit.service';
 import { GeometryEditService } from '../geometry/geometry-edit.service';
 import { EditField } from '../edit-field';
-import { resolveEditableFieldsForSubtype } from '../edit-domain-resolver';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import { resolveEditableFields } from '../edit-domain-resolver';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -27,21 +27,8 @@ export class EditFormComponent {
   protected readonly geometryEditService = inject(GeometryEditService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
-  protected readonly rawInputFields = signal<Set<string>>(new Set());
 
-  protected readonly fields = computed<EditField[]>(() => {
-    const graphic = this.graphic();
-    const editedAttrs = this.editStore.editedAttributes();
-    const layer = graphic.layer;
-
-    if (!(layer instanceof FeatureLayer)) {
-      return [];
-    }
-
-    const rawSubtype = layer.typeIdField ? (editedAttrs[layer.typeIdField] ?? null) : null;
-    const subtypeValue = typeof rawSubtype === 'boolean' ? null : rawSubtype;
-    return resolveEditableFieldsForSubtype(graphic, subtypeValue);
-  });
+  protected readonly fields = computed<EditField[]>(() => resolveEditableFields(this.graphic()));
 
   protected readonly supportsGeometryUpdate = computed(() => {
     const graphic = this.graphic();
@@ -60,30 +47,8 @@ export class EditFormComponent {
     if (!field) return;
 
     const rawValue = target.value;
-    const typedValue = this.coerceValue(rawValue, field);
+    const typedValue = this.castValue(rawValue, field);
     this.editStore.updateField(fieldName, typedValue);
-  }
-
-  protected onSubtypeChange(fieldName: string, event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const rawValue = target.value;
-    const numericValue = rawValue === '' ? null : Number(rawValue);
-    this.editStore.updateField(fieldName, numericValue);
-  }
-
-  protected isRawInput(fieldName: string): boolean {
-    return this.rawInputFields().has(fieldName);
-  }
-
-  protected toggleRawInput(fieldName: string): void {
-    const current = this.rawInputFields();
-    const next = new Set(current);
-    if (next.has(fieldName)) {
-      next.delete(fieldName);
-    } else {
-      next.add(fieldName);
-    }
-    this.rawInputFields.set(next);
   }
 
   protected requestSave(): void {
@@ -99,7 +64,7 @@ export class EditFormComponent {
   }
 
   protected toggleGeometryEditing(): void {
-    if (this.editStore.geometryEditing()) {
+    if (this.editStore.allowsGeometryEditing()) {
       this.geometryEditService.deactivate();
     } else {
       this.geometryEditService.activate(this.graphic());
@@ -127,7 +92,7 @@ export class EditFormComponent {
     }
   }
 
-  private coerceValue(rawValue: string, field: EditField): string | number | null {
+  private castValue(rawValue: string, field: EditField): string | number | null {
     if (rawValue === '') {
       return field.nullable ? null : '';
     }
@@ -138,15 +103,14 @@ export class EditFormComponent {
       case 'double':
         return Number.isNaN(Number(rawValue)) ? null : Number(rawValue);
       case 'coded-value':
-        return this.coerceCodedValue(rawValue, field);
+        return this.castCodedValue(rawValue, field);
       case 'string':
       case 'date':
-      case 'subtype':
         return rawValue;
     }
   }
 
-  private coerceCodedValue(rawValue: string, field: EditField): string | number | null {
+  private castCodedValue(rawValue: string, field: EditField): string | number | null {
     // Try to match as a numeric code first
     const numericValue = Number(rawValue);
     if (!Number.isNaN(numericValue)) {

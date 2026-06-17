@@ -8,22 +8,22 @@
     <div class="edit-geometry-section">
       <button
         class="edit-geometry-toggle"
-        [class.edit-geometry-toggle--active]="editStore.geometryEditing()"
+        [class.edit-geometry-toggle--active]="editStore.allowsGeometryEditing()"
         (click)="toggleGeometryEditing()"
       >
         <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
-        @if (editStore.geometryEditing()) {
+        @if (editStore.allowsGeometryEditing()) {
           Geometry Editing Active
         } @else {
           Edit Geometry
         }
       </button>
-      @if (editStore.geometryEditing()) {
+      @if (editStore.allowsGeometryEditing()) {
         <div class="edit-geometry-tools">
           <button
             class="edit-geometry-tool-btn"
             (click)="undoGeometry()"
-            [disabled]="!geometryEditService.canUndo"
+            [disabled]="!geometryEditService.canUndo()"
             title="Undo"
           >
             <calcite-icon icon="undo" scale="s"></calcite-icon>
@@ -31,7 +31,7 @@
           <button
             class="edit-geometry-tool-btn"
             (click)="redoGeometry()"
-            [disabled]="!geometryEditService.canRedo"
+            [disabled]="!geometryEditService.canRedo()"
             title="Redo"
           >
             <calcite-icon icon="redo" scale="s"></calcite-icon>
@@ -47,12 +47,12 @@
         <label class="edit-field-label" [attr.for]="'edit-' + field.name">{{ field.alias }}</label>
 
         @switch (field.fieldType) {
-          @case ('subtype') {
+          @case ('coded-value') {
             <select
               class="edit-field-input"
               [id]="'edit-' + field.name"
               [value]="getFieldValue(field.name)"
-              (change)="onSubtypeChange(field.name, $event)"
+              (change)="onFieldChange(field.name, $event)"
             >
               @if (field.nullable) {
                 <option [value]="''">— None —</option>
@@ -63,43 +63,6 @@
                 </option>
               }
             </select>
-          }
-          @case ('coded-value') {
-            @if (isRawInput(field.name)) {
-              <div class="edit-field-row">
-                <input
-                  class="edit-field-input"
-                  type="number"
-                  [id]="'edit-' + field.name"
-                  [value]="getFieldValue(field.name)"
-                  (change)="onFieldChange(field.name, $event)"
-                />
-                <button class="edit-field-toggle" (click)="toggleRawInput(field.name)" title="Switch to dropdown">
-                  <calcite-icon icon="list" scale="s"></calcite-icon>
-                </button>
-              </div>
-            } @else {
-              <div class="edit-field-row">
-                <select
-                  class="edit-field-input"
-                  [id]="'edit-' + field.name"
-                  [value]="getFieldValue(field.name)"
-                  (change)="onFieldChange(field.name, $event)"
-                >
-                  @if (field.nullable) {
-                    <option [value]="''">— None —</option>
-                  }
-                  @for (option of field.codedValues; track option.code) {
-                    <option [value]="option.code" [selected]="getFieldValue(field.name) === option.code">
-                      {{ option.name }} ({{ option.code }})
-                    </option>
-                  }
-                </select>
-                <button class="edit-field-toggle" (click)="toggleRawInput(field.name)" title="Enter raw value">
-                  <calcite-icon icon="number" scale="s"></calcite-icon>
-                </button>
-              </div>
-            }
           }
           @case ('integer') {
             <input
