@@ -1,0 +1,164 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Object Info (Popup) Flow\nTask 580 / June 2026
+
+actor "User" as user #LightBlue
+participant "ArcGIS MapView" as mapView #FFEBEE
+participant "PopupClickService" as clickSvc #F3E5F5
+participant "PopupStore\n[SignalStore]" as store #F3E5F5
+participant "PopupHighlightService" as highlightSvc #F3E5F5
+participant "PopupComponent" as popupComp #E8F5E9
+participant "PopupContentComponent" as contentComp #E8F5E9
+participant "FeatureLayerView" as layerView #FFEBEE
+
+== Initialisation ==
+
+note over clickSvc
+  PopupClickService constructor:
+  registers effect() watching mapView() signal.
+  When view becomes available:
+end note
+
+clickSvc -> mapView : view.popupEnabled = false\n(disables native SDK popup)
+clickSvc -> mapView : view.on('click', handleClick)
+
+note over highlightSvc
+  PopupHighlightService constructor:
+  registers 3 reactive effects:
+  1. Watch selectedGraphic() -> highlight on map
+  2. Watch hoveredIndex() -> highlight on map
+  3. Watch visible() -> clear all when false
+end note
+
+== User Clicks on Map ==
+
+user -> mapView : clicks on map
+mapView -> clickSvc : click event { x, y }
+activate clickSvc
+
+clickSvc -> mapView : [ASYNC] view.hitTest(event,\n  { include: all FeatureLayers })
+activate mapView
+mapView --> clickSvc : HitTestResult { results[] }
+deactivate mapView
+
+clickSvc -> clickSvc : Extract Graphic[] from results\n(filter type === 'graphic')
+
+alt graphics.length > 0
+  clickSvc -> store : open(graphics)
+  activate store
+
+  alt graphics.length === 1
+    store -> store : patchState({\n  graphics,\n  selectedIndex: 0,\n  visible: true\n})\n-> jumps directly to detail view
+  else graphics.length > 1
+    store -> store : patchState({\n  graphics,\n  selectedIndex: undefined,\n  visible: true\n})\n-> shows feature list view
+  end
+
+  deactivate store
+else no graphics hit
+  clickSvc -> store : close()
+  store -> store : reset all state
+end
+
+deactivate clickSvc
+
+== Highlight Reacts to Store ==
+
+note over highlightSvc
+  effect() fires: selectedGraphic() changed
+end note
+
+highlightSvc -> highlightSvc : clearSelectionHighlight()
+highlightSvc -> mapView : [ASYNC] view.whenLayerView(graphic.layer)
+mapView --> highlightSvc : FeatureLayerView
+highlightSvc -> layerView : layerView.highlight(graphic)
+activate layerView
+note right of layerView
+  Blue outline/fill rendered
+  around the selected feature
+  on the map.
+end note
+deactivate layerView
+
+== UI Renders ==
+
+alt store.showList() (multiple features)
+
+  popupComp -> popupComp : Render popup card with:\n- Header: [close button]\n- Title: "Features (N)"\n- Scrollable list of feature buttons
+
+  user -> popupComp : hovers over list item [index]
+  popupComp -> store : hoverFeature(index)
+  note over highlightSvc : effect() fires:\nhoveredIndex() changed\n-> highlight hovered feature
+
+  user -> popupComp : clicks list item [index]
+  popupComp -> store : selectFeature(index)
+  store -> store : patchState({ selectedIndex: index })
+  note over highlightSvc : effect() fires:\nselectedGraphic() changed\n-> update selection highlight
+
+else store.showDetail() (single feature)
+
+  popupComp -> popupComp : Render popup card with:\n- Header: [back] [zoom-to] [close]\n- <rima-popup-content>
+  popupComp -> contentComp : [graphic] = selectedGraphic
+  activate contentComp
+
+  contentComp -> contentComp : Compute title from graphic.layer.title\nCompute fields from layer.fields + attributes
+
+  note over contentComp
+    Tabbed view:
+    [Attributes] [Hierarchy] [Documents]
+    Default: Attributes tab active
+
+    Attributes tab:
+    - Key-value table using field.alias as label
+    - Falls back to raw attribute key names
+
+    Hierarchy tab: placeholder
+    Documents tab: placeholder
+  end note
+
+  deactivate contentComp
+end
+
+== User Actions in Detail View ==
+
+user -> popupComp : clicks "Zoom to"
+popupComp -> popupComp : zoomTo()\nread selectedGraphic().geometry
+popupComp -> mapView : [ASYNC] view.goTo(\n  { target: geometry, zoom: 15 })
+
+user -> popupComp : clicks "Back" (chevron)
+popupComp -> store : backToList()
+store -> store : patchState({ selectedIndex: undefined })
+note over highlightSvc : selection highlight cleared\n(no selectedGraphic)
+note over popupComp : UI returns to feature list view
+
+== Close Popup ==
+
+alt user clicks close button
+  user -> popupComp : clicks X
+  popupComp -> store : close()
+else user presses Escape
+  user -> popupComp : @HostListener Escape
+  popupComp -> store : close()
+else user clicks empty map area
+  user -> mapView : click (no features hit)
+  clickSvc -> store : close()
+end
+
+store -> store : patchState({\n  graphics: [],\n  selectedIndex: undefined,\n  hoveredIndex: undefined,\n  visible: false\n})
+
+note over highlightSvc : effect() fires:\nvisible() = false\n-> clearAllHighlights()
+
+note over popupComp : @if (store.visible()) hides\nthe entire popup card
+
+@enduml

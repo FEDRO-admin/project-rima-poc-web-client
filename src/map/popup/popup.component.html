@@ -1,0 +1,43 @@
+@if (store.visible()) {
+  <div class="popup-container">
+    <div class="popup-card">
+      <div class="popup-header">
+        @if (store.showDetail()) {
+          @if (store.graphics().length > 1) {
+            <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
+              <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+            </button>
+          }
+          <button class="popup-header-btn" (click)="zoomTo()" aria-label="Zoom to feature">
+            <calcite-icon icon="zoom-to-object" scale="s"></calcite-icon>
+          </button>
+        }
+        <span class="popup-header-spacer"></span>
+        <button class="popup-header-btn popup-close" (click)="close()" aria-label="Close popup">✕</button>
+      </div>
+
+      @if (store.showList()) {
+        <h3 class="popup-list-title">Features ({{ store.graphics().length }})</h3>
+        <ul class="popup-feature-list">
+          @for (graphic of store.graphics(); track $index) {
+            <li>
+              <button
+                class="popup-feature-item"
+                (click)="store.selectFeature($index)"
+                (mouseenter)="store.hoverFeature($index)"
+                (mouseleave)="store.hoverFeature(undefined)"
+              >
+                <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
+                <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (store.showDetail() && store.selectedGraphic()) {
+        <rima-popup-content [graphic]="store.selectedGraphic()!" />
+      }
+    </div>
+  </div>
+}

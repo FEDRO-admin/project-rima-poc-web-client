@@ -6,10 +6,11 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { LayerService } from './layer/layer.service';
 import { TocComponent } from './toc/toc.component';
 import { ViewInitialisationError } from './view/view-errors';
+import { PopupComponent } from './popup/popup.component';
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent],
+  imports: [TocComponent, PopupComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
