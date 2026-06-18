@@ -12,6 +12,7 @@ This document serves as the index for the RIMA PoC web client documentation. Eac
 | 644  | Web Client Content Catalog | [content-catalog.md](./644-webclient_content_catalog/content-catalog.md)          |
 | 579  | Table of Contents (ToC)    | [table-of-contents.md](./579-table_of_contents/table-of-contents.md)              |
 | 580  | Object Info (Popup)        | [object-info.md](./580-objekt_info/object-info.md)                                |
+| 583  | Feature Editing            | [editing.md](./583-editing/editing.md)                                            |
 
 ## Application Flow Diagram
 
