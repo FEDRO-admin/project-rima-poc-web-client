@@ -2,9 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { AttributeEditStore } from './attribute-edit.store';
-import { EditSaveError, EditRefreshError } from '../edit-errors';
+import { EditSaveError } from '../edit-errors';
 import { isSystemField } from '../edit-capability';
-import { PopupStore } from '../../popup/popup.store';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -12,20 +11,19 @@ type AttributeValue = string | number | boolean | null;
   providedIn: 'root',
 })
 export class AttributeEditService {
-  private readonly editStore = inject(AttributeEditStore);
-  private readonly popupStore = inject(PopupStore);
+  private readonly attributeEditStore = inject(AttributeEditStore);
 
   async save(): Promise<void> {
-    const graphic = this.editStore.graphic();
+    const graphic = this.attributeEditStore.graphic();
     if (!graphic) return;
 
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.editStore.setSaving(true);
+    this.attributeEditStore.setSaving(true);
 
     try {
-      const updatedAttributes = this.buildUpdatePayload(graphic, this.editStore.editedAttributes());
+      const updatedAttributes = this.buildUpdatePayload(graphic, this.attributeEditStore.editedAttributes());
       const updateGraphic = new Graphic({
         attributes: updatedAttributes,
       });
@@ -37,10 +35,9 @@ export class AttributeEditService {
         throw new EditSaveError(updateResult.error);
       }
 
-      await this.refreshGraphicInPopup(graphic, layer);
-      this.editStore.reset();
+      this.attributeEditStore.reset();
     } catch (error) {
-      this.editStore.setSaving(false);
+      this.attributeEditStore.setSaving(false);
       if (error instanceof EditSaveError) {
         throw error;
       }
@@ -49,7 +46,7 @@ export class AttributeEditService {
   }
 
   cancel(): void {
-    this.editStore.reset();
+    this.attributeEditStore.reset();
   }
 
   private buildUpdatePayload(
@@ -80,35 +77,5 @@ export class AttributeEditService {
       return layer.objectIdField;
     }
     return undefined;
-  }
-
-  private async refreshGraphicInPopup(graphic: Graphic, layer: FeatureLayer): Promise<void> {
-    try {
-      const objectIdField = layer.objectIdField;
-      const objectId = graphic.attributes[objectIdField];
-
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
-
-      const featureSet = await layer.queryFeatures(query);
-      const refreshedFeature = featureSet.features[0];
-
-      if (refreshedFeature) {
-        // Update the graphic in the popup store's graphics array
-        const graphics = this.popupStore.graphics();
-        const selectedIndex = this.popupStore.selectedIndex();
-
-        if (selectedIndex != null) {
-          const updatedGraphics = [...graphics];
-          updatedGraphics[selectedIndex] = refreshedFeature;
-          this.popupStore.open(updatedGraphics);
-          this.popupStore.selectFeature(selectedIndex);
-        }
-      }
-    } catch (error) {
-      throw new EditRefreshError(error);
-    }
   }
 }

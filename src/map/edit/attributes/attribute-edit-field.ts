@@ -1,24 +1,28 @@
 import type Field from '@arcgis/core/layers/support/Field';
 
-export type EditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value';
+export type AttributeEditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value';
 
-export interface CodedValueOption {
+export interface AttributeCodedValueOption {
   code: string | number;
   name: string;
 }
 
-export interface EditField {
+export interface AttributeEditField {
   name: string;
   alias: string;
-  fieldType: EditFieldType;
+  fieldType: AttributeEditFieldType;
   nullable: boolean;
   length: number | undefined;
-  codedValues: CodedValueOption[];
+  codedValues: AttributeCodedValueOption[];
   editable: boolean;
 }
 
-export function mapFieldType(field: Field): EditFieldType {
-  if (field.domain?.type === 'coded-value') {
+export function convertAttributeFieldType(
+  field: Field,
+  domain?: { type?: string | null } | null,
+): AttributeEditFieldType {
+  const effectiveDomain = domain ?? field.domain;
+  if (effectiveDomain?.type === 'coded-value') {
     return 'coded-value';
   }
 

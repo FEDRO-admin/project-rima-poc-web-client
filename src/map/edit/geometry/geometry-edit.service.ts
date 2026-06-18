@@ -8,9 +8,8 @@ import type Map from '@arcgis/core/Map';
 import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
 import { MapViewService } from '../../view/view.service';
 import type MapView from '@arcgis/core/views/MapView';
-import { PopupStore } from '../../popup/popup.store';
 import { GeometryEditStore } from './geometry-edit.store';
-import { EditSaveError, EditRefreshError } from '../edit-errors';
+import { EditSaveError } from '../edit-errors';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit-config';
 
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -20,7 +19,6 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 })
 export class GeometryEditService {
   private readonly viewService = inject(MapViewService);
-  private readonly popupStore = inject(PopupStore);
   private readonly store = inject(GeometryEditStore);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -87,7 +85,6 @@ export class GeometryEditService {
         throw new EditSaveError(updateResult.error);
       }
 
-      await this.refreshGraphicInPopup(this._graphic, layer);
       this.reset();
     } catch (error) {
       this.store.setSaving(false);
@@ -235,34 +232,5 @@ export class GeometryEditService {
       }
     });
     return sources;
-  }
-
-  private async refreshGraphicInPopup(graphic: Graphic, layer: FeatureLayer): Promise<void> {
-    try {
-      const objectIdField = layer.objectIdField;
-      const objectId = graphic.attributes[objectIdField];
-
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
-
-      const featureSet = await layer.queryFeatures(query);
-      const refreshedFeature = featureSet.features[0];
-
-      if (refreshedFeature) {
-        const graphics = this.popupStore.graphics();
-        const selectedIndex = this.popupStore.selectedIndex();
-
-        if (selectedIndex != null) {
-          const updatedGraphics = [...graphics];
-          updatedGraphics[selectedIndex] = refreshedFeature;
-          this.popupStore.open(updatedGraphics);
-          this.popupStore.selectFeature(selectedIndex);
-        }
-      }
-    } catch (error) {
-      throw new EditRefreshError(error);
-    }
   }
 }

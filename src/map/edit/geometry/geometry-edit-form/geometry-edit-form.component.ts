@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, input } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import { GeometryEditService } from '../geometry-edit.service';
 import { GeometryEditStore } from '../geometry-edit.store';
@@ -16,6 +16,11 @@ export class GeometryEditFormComponent {
 
   protected readonly store = inject(GeometryEditStore);
   private readonly geometryEditService = inject(GeometryEditService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.geometryEditService.cancel());
+  }
 
   protected startEditing(): void {
     this.geometryEditService.startEditing(this.graphic());

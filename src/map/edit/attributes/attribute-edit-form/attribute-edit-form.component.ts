@@ -1,12 +1,12 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Graphic from '@arcgis/core/Graphic';
 import { AttributeEditStore } from '../attribute-edit.store';
 import { AttributeEditService } from '../attribute-edit.service';
-import { EditField } from '../edit-field';
+import { AttributeEditField } from '../attribute-edit-field';
 import { ConfirmDialogComponent } from '../../confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { resolveEditableFields } from '../edit-domain-resolver';
+import { resolveEditableAttributeFields } from '../attribute-domain-resolver';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -20,25 +20,30 @@ type ConfirmAction = 'save' | 'cancel' | null;
 export class AttributeEditFormComponent {
   readonly graphic = input.required<Graphic>();
 
-  protected readonly editStore = inject(AttributeEditStore);
-  private readonly editService = inject(AttributeEditService);
+  protected readonly attributeEditStore = inject(AttributeEditStore);
+  private readonly attributeEditService = inject(AttributeEditService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.attributeEditService.cancel());
+  }
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
-  protected readonly fields = computed<EditField[]>(() => resolveEditableFields(this.graphic()));
+  protected readonly fields = computed<AttributeEditField[]>(() => resolveEditableAttributeFields(this.graphic()));
 
-  protected getFieldValue(fieldName: string): string | number | boolean | null {
-    return this.editStore.editedAttributes()[fieldName] ?? null;
+  protected getAttributeFieldValue(fieldName: string): string | number | boolean | null {
+    return this.attributeEditStore.editedAttributes()[fieldName] ?? null;
   }
 
-  protected onFieldChange(fieldName: string, event: Event): void {
+  protected onAttributeFieldChange(fieldName: string, event: Event): void {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
     const field = this.fields().find((f) => f.name === fieldName);
     if (!field) return;
 
     const rawValue = target.value;
     const typedValue = this.castValue(rawValue, field);
-    this.editStore.updateField(fieldName, typedValue);
+    this.attributeEditStore.updateField(fieldName, typedValue);
   }
 
   protected requestSave(): void {
@@ -46,10 +51,10 @@ export class AttributeEditFormComponent {
   }
 
   protected requestCancel(): void {
-    if (this.editStore.isDirty()) {
+    if (this.attributeEditStore.isDirty()) {
       this.confirmAction.set('cancel');
     } else {
-      this.editService.cancel();
+      this.attributeEditService.cancel();
     }
   }
 
@@ -60,13 +65,15 @@ export class AttributeEditFormComponent {
     if (!confirmed) return;
 
     if (action === 'save') {
-      await this.editService.save();
+      await this.attributeEditService.save();
     } else if (action === 'cancel') {
-      this.editService.cancel();
+      this.attributeEditService.cancel();
     }
   }
 
-  private castValue(rawValue: string, field: EditField): string | number | null {
+  // because apparently the HTML input element always returns a string,
+  // we need to cast the value back to the appropriate type based on the field definition
+  private castValue(rawValue: string, field: AttributeEditField): string | number | null {
     if (rawValue === '') {
       return field.nullable ? null : '';
     }
@@ -84,7 +91,7 @@ export class AttributeEditFormComponent {
     }
   }
 
-  private castCodedValue(rawValue: string, field: EditField): string | number | null {
+  private castCodedValue(rawValue: string, field: AttributeEditField): string | number | null {
     // Try to match as a numeric code first
     const numericValue = Number(rawValue);
     if (!Number.isNaN(numericValue)) {
