@@ -1,5 +1,6 @@
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import Graphic from '@arcgis/core/Graphic';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { computed } from '@angular/core';
 
 interface PopupState {
@@ -51,6 +52,37 @@ export const PopupStore = signalStore(
         hoveredIndex: undefined,
         visible: false,
       });
+    },
+    replaceSelectedGraphic(graphic: Graphic): void {
+      const index = store.selectedIndex();
+      if (index == null) return;
+      const updated = [...store.graphics()];
+      updated[index] = graphic;
+      patchState(store, { graphics: updated });
+    },
+    async refreshSelectedGraphic(): Promise<void> {
+      const index = store.selectedIndex();
+      if (index == null) return;
+
+      const graphic = store.graphics()[index];
+      if (!graphic) return;
+
+      const layer = graphic.layer;
+      if (!(layer instanceof FeatureLayer)) return;
+
+      const objectId = graphic.attributes[layer.objectIdField];
+      const query = layer.createQuery();
+      query.objectIds = [objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await layer.queryFeatures(query);
+      const refreshedFeature = featureSet.features[0];
+      if (refreshedFeature) {
+        const updated = [...store.graphics()];
+        updated[index] = refreshedFeature;
+        patchState(store, { graphics: updated });
+      }
     },
   })),
 );

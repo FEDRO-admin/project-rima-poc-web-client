@@ -3,8 +3,6 @@ import { PopupClickService } from './popup-click.service';
 import { PopupHighlightService } from './popup-highlight.service';
 import { PopupStore } from './popup.store';
 import { MapViewService } from '../view/view.service';
-import Graphic from '@arcgis/core/Graphic';
-import MapView from '@arcgis/core/views/MapView';
 
 @Injectable({
   providedIn: 'root',

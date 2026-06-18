@@ -9,7 +9,7 @@ export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
   //'ArcGISMapServiceLayer',
   'WebTiledLayer',
 ];
-export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = false;
+export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = true;
 
 // BASEMAP
 export const RIMA_SWISSTOPO_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';

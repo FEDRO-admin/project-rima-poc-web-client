@@ -1,0 +1,106 @@
+<div class="edit-form">
+  <div class="edit-form-header">
+    <calcite-icon icon="pencil" scale="s"></calcite-icon>
+    <span class="edit-form-title">Edit Feature</span>
+  </div>
+
+  <div class="edit-form-fields">
+    @for (field of fields(); track field.name) {
+      <div class="edit-field">
+        <label class="edit-field-label" [attr.for]="'edit-' + field.name">{{ field.alias }}</label>
+
+        @switch (field.fieldType) {
+          @case ('coded-value') {
+            <select
+              class="edit-field-input"
+              [id]="'edit-' + field.name"
+              [value]="getAttributeFieldValue(field.name)"
+              (change)="onAttributeFieldChange(field.name, $event)"
+            >
+              @if (field.nullable) {
+                <option [value]="''">— None —</option>
+              }
+              @for (option of field.codedValues; track option.code) {
+                <option [value]="option.code" [selected]="getAttributeFieldValue(field.name) === option.code">
+                  {{ option.name }} ({{ option.code }})
+                </option>
+              }
+            </select>
+          }
+          @case ('integer') {
+            <input
+              class="edit-field-input"
+              type="number"
+              step="1"
+              [id]="'edit-' + field.name"
+              [value]="getAttributeFieldValue(field.name)"
+              (change)="onAttributeFieldChange(field.name, $event)"
+            />
+          }
+          @case ('double') {
+            <input
+              class="edit-field-input"
+              type="number"
+              step="any"
+              [id]="'edit-' + field.name"
+              [value]="getAttributeFieldValue(field.name)"
+              (change)="onAttributeFieldChange(field.name, $event)"
+            />
+          }
+          @case ('date') {
+            <input
+              class="edit-field-input"
+              type="datetime-local"
+              [id]="'edit-' + field.name"
+              [value]="getAttributeFieldValue(field.name)"
+              (change)="onAttributeFieldChange(field.name, $event)"
+            />
+          }
+          @default {
+            <input
+              class="edit-field-input"
+              type="text"
+              [id]="'edit-' + field.name"
+              [value]="getAttributeFieldValue(field.name)"
+              [attr.maxlength]="field.length"
+              (change)="onAttributeFieldChange(field.name, $event)"
+            />
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="edit-form-actions">
+    <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="attributeEditStore.saving()">
+      Cancel
+    </button>
+    <button class="edit-btn edit-btn--save" (click)="requestSave()" [disabled]="attributeEditStore.saving()">
+      @if (attributeEditStore.saving()) {
+        Saving...
+      } @else {
+        Save
+      }
+    </button>
+  </div>
+</div>
+
+@if (confirmAction() === 'save') {
+  <rima-confirm-dialog
+    title="Save Changes"
+    message="Are you sure you want to save the changes to this feature?"
+    confirmLabel="Save"
+    cancelLabel="Cancel"
+    (confirmed)="onConfirm($event)"
+  />
+}
+
+@if (confirmAction() === 'cancel') {
+  <rima-confirm-dialog
+    title="Discard Changes"
+    message="You have unsaved changes. Are you sure you want to discard them?"
+    confirmLabel="Discard"
+    cancelLabel="Keep Editing"
+    (confirmed)="onConfirm($event)"
+  />
+}
