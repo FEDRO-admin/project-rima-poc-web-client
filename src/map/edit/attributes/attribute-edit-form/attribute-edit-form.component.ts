@@ -4,7 +4,7 @@ import Graphic from '@arcgis/core/Graphic';
 import { AttributeEditStore } from '../attribute-edit.store';
 import { AttributeEditService } from '../attribute-edit.service';
 import { AttributeEditField } from '../attribute-edit-field';
-import { ConfirmDialogComponent } from '../../confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../attribute-domain-resolver';
 
@@ -42,7 +42,7 @@ export class AttributeEditFormComponent {
     if (!field) return;
 
     const rawValue = target.value;
-    const typedValue = this.castValue(rawValue, field);
+    const typedValue = this.convertValue(rawValue, field);
     this.attributeEditStore.updateField(fieldName, typedValue);
   }
 
@@ -72,8 +72,8 @@ export class AttributeEditFormComponent {
   }
 
   // because apparently the HTML input element always returns a string,
-  // we need to cast the value back to the appropriate type based on the field definition
-  private castValue(rawValue: string, field: AttributeEditField): string | number | null {
+  // we need to convert the value back to the appropriate type based on the field definition
+  private convertValue(rawValue: string, field: AttributeEditField): string | number | null {
     if (rawValue === '') {
       return field.nullable ? null : '';
     }
@@ -84,14 +84,14 @@ export class AttributeEditFormComponent {
       case 'double':
         return Number.isNaN(Number(rawValue)) ? null : Number(rawValue);
       case 'coded-value':
-        return this.castCodedValue(rawValue, field);
+        return this.convertCodedValue(rawValue, field);
       case 'string':
       case 'date':
         return rawValue;
     }
   }
 
-  private castCodedValue(rawValue: string, field: AttributeEditField): string | number | null {
+  private convertCodedValue(rawValue: string, field: AttributeEditField): string | number | null {
     // Try to match as a numeric code first
     const numericValue = Number(rawValue);
     if (!Number.isNaN(numericValue)) {

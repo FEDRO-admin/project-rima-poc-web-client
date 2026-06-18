@@ -71,6 +71,6 @@ function resolveCodedValues(domain: Domain | Field['domain'] | undefined): Attri
   return [];
 }
 
-function isCodedValueDomain(domain: unknown): domain is CodedValueDomain {
-  return domain != null && typeof domain === 'object' && 'type' in domain && domain.type === 'coded-value';
+function isCodedValueDomain(domain: Domain | null | undefined): domain is CodedValueDomain {
+  return domain != null && domain.type === 'coded-value';
 }

@@ -16,3 +16,15 @@ This document serves as the index for the RIMA PoC web client documentation. Eac
 ## Application Flow Diagram
 
 ![RIMA PoC Startup and ToC](./604-base_web_client_components/rima-application-flow.png)
+
+## Tests
+
+Run the following checks locally before pushing. Each command can be copied directly into the terminal.
+
+| Check      | Command                | Description                                                                 |
+| ---------- | ---------------------- | --------------------------------------------------------------------------- |
+| Format     | `npm run format:check` | Verifies that all source files are formatted according to Prettier rules.   |
+| Linter     | `npm run lint`         | Runs ESLint across the project and reports any rule violations.             |
+| Type check | `npm run type:check`   | Compiles TypeScript without emitting output to catch type errors.           |
+| Tests      | `npm run test-ci`      | Executes the full unit test suite in CI mode (no watch, with coverage).     |
+| Build      | `npm run build`        | Produces a production build and fails on any compilation or bundling error. |
