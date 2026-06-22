@@ -55,7 +55,7 @@ export class AttributesTabComponent {
 
     if (layer instanceof FeatureLayer && layer.fields?.length) {
       return layer.fields
-        .filter((field) => isSystemField(field.name) && attrs[field.name] != null)
+        .filter((field) => isSystemField(field.name))
         .map((field) => ({
           label: field.alias || field.name,
           value: this.resolveFieldValue(field, attrs[field.name], layer),

@@ -20,6 +20,8 @@ export const EDIT_POLYGON_SYMBOL = new SimpleFillSymbol({
 });
 
 export const EDIT_SYSTEM_FIELDS: ReadonlySet<string> = new Set([
+  'id',
+  'fk_anlage',
   'objectid',
   'globalid',
   'type',

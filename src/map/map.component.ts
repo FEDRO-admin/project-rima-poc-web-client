@@ -1,5 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effect, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
+import '@esri/calcite-components/dist/components/calcite-icon';
 import { MapViewService } from './view/view.service';
 import { CatalogService } from './catalog/catalog.service';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
@@ -7,10 +8,14 @@ import { LayerService } from './layer/layer.service';
 import { TocComponent } from './toc/toc.component';
 import { ViewInitialisationError } from './view/view-errors';
 import { PopupComponent } from './popup/popup.component';
+import { CreatePanelComponent } from './create/create-panel/create-panel.component';
+import { CreateStore } from './create/create.store';
+import { CreateEffects } from './create/create-effects';
+import { EditEffects } from './edit/edit-effects';
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent],
+  imports: [TocComponent, PopupComponent, CreatePanelComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
@@ -19,6 +24,9 @@ export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
   private readonly layerService = inject(LayerService);
+  protected readonly createStore = inject(CreateStore);
+  protected readonly createEffects = inject(CreateEffects);
+  protected readonly editEffects = inject(EditEffects);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
@@ -47,5 +55,9 @@ export class MapComponent {
     await view.when();
     const catalog = await this.catalogService.buildMapCatalog();
     this.layerService.addCatalogToMap(catalog);
+  }
+
+  protected onCreateClick(): void {
+    this.createStore.open();
   }
 }

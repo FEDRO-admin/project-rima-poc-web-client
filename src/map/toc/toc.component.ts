@@ -1,6 +1,9 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracked, viewChild } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { MapViewService } from '../view/view.service';
+import { CreateStore } from '../create/create.store';
+import { isLayerCreatable } from '../create/create-capability';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 
 @Component({
@@ -12,6 +15,7 @@ import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 })
 export class TocComponent {
   private readonly viewService = inject(MapViewService);
+  private readonly createStore = inject(CreateStore);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -30,16 +34,25 @@ export class TocComponent {
   private onListItemCreated(event: { item: ListItem }): void {
     const { item } = event;
     if (item.layer?.type === 'feature' || item.layer?.type === 'wmts') {
-      item.actionsSections = [
-        [
-          {
-            title: 'Zoom to',
-            icon: 'zoom-to-object',
-            id: 'zoom-to-layer',
-            type: 'button',
-          },
-        ],
-      ];
+      const zoomAction = {
+        title: 'Zoom to',
+        icon: 'zoom-to-object',
+        id: 'zoom-to-layer',
+        type: 'button',
+      } as const;
+
+      if (item.layer instanceof FeatureLayer && isLayerCreatable(item.layer)) {
+        const createAction = {
+          title: 'Create',
+          icon: 'plus',
+          id: 'create-feature',
+          type: 'button',
+        } as const;
+
+        item.actionsSections = [[zoomAction, createAction]];
+      } else {
+        item.actionsSections = [[zoomAction]];
+      }
     }
   }
 
@@ -55,6 +68,14 @@ export class TocComponent {
       const extent = layer.fullExtent ?? (layer.type === 'wmts' ? layer.activeLayer?.fullExtent : undefined);
       if (extent) {
         view.goTo(extent);
+      }
+    }
+
+    if (action.id === 'create-feature') {
+      const layer = item.layer;
+      if (layer instanceof FeatureLayer) {
+        await layer.load();
+        this.createStore.activate(layer);
       }
     }
   }

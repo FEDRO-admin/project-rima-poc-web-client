@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { LanguageEffect } from '../i18n/language-effects';
 import { PopupEffects } from '../map/popup/popup-effects';
 import { EditEffects } from '../map/edit/edit-effects';
+import { CreateEffects } from '../map/create/create-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -15,5 +16,6 @@ export class AppEffectsService {
     inject(LanguageEffect);
     inject(PopupEffects);
     inject(EditEffects);
+    inject(CreateEffects);
   }
 }

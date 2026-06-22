@@ -1,0 +1,164 @@
+<div class="create-form">
+  <!-- Geometry Section -->
+  <div class="create-section">
+    <div class="create-section-header">
+      <calcite-icon icon="polygon-vertices" scale="s"></calcite-icon>
+      <span>Geometry</span>
+    </div>
+
+    @if (createStore.geometry()) {
+      <div class="geometry-status geometry-status--complete">
+        <calcite-icon icon="check-circle" scale="s"></calcite-icon>
+        <span>Geometry added</span>
+        <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="createStore.saving()">
+          <calcite-icon icon="refresh" scale="s"></calcite-icon>
+          Change
+        </button>
+      </div>
+    } @else if (createStore.sketchActive()) {
+      <div class="geometry-status geometry-status--active">
+        <span>Drawing...</span>
+        <div class="geometry-tools">
+          <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
+            <calcite-icon icon="undo" scale="s"></calcite-icon>
+          </button>
+          <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
+            <calcite-icon icon="redo" scale="s"></calcite-icon>
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="geometry-toolbar">
+        <span class="geometry-toolbar-label">Add geometry:</span>
+        <div class="geometry-toolbar-buttons">
+          @for (tool of drawingTools(); track tool.tool) {
+            <button
+              class="geometry-toolbar-btn"
+              [class.active]="activeTool() === tool.tool"
+              (click)="selectTool(tool.tool)"
+              [disabled]="createStore.saving()"
+              [title]="tool.label"
+            >
+              <calcite-icon [icon]="tool.icon" scale="s"></calcite-icon>
+              <span class="geometry-toolbar-btn-label">{{ tool.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Attributes Section -->
+  <div class="create-section">
+    <div class="create-section-header">
+      <calcite-icon icon="list" scale="s"></calcite-icon>
+      <span>Attributes</span>
+    </div>
+
+    <div class="create-form-fields">
+      @for (field of fields(); track field.name) {
+        <div class="create-field">
+          <label class="create-field-label" [attr.for]="'create-' + field.name">
+            {{ field.alias }}
+            @if (!field.nullable) {
+              <span class="required-indicator">*</span>
+            }
+          </label>
+
+          @switch (field.fieldType) {
+            @case ('coded-value') {
+              <select
+                class="create-field-input"
+                [id]="'create-' + field.name"
+                [value]="getFieldValue(field.name)"
+                (change)="onFieldChange(field.name, $event)"
+              >
+                @if (field.nullable) {
+                  <option [value]="''">— None —</option>
+                }
+                @for (option of field.codedValues; track option.code) {
+                  <option [value]="option.code" [selected]="getFieldValue(field.name) === option.code">
+                    {{ option.name }} ({{ option.code }})
+                  </option>
+                }
+              </select>
+            }
+            @case ('integer') {
+              <input
+                class="create-field-input"
+                type="number"
+                step="1"
+                [id]="'create-' + field.name"
+                [value]="getFieldValue(field.name)"
+                (change)="onFieldChange(field.name, $event)"
+              />
+            }
+            @case ('double') {
+              <input
+                class="create-field-input"
+                type="number"
+                step="any"
+                [id]="'create-' + field.name"
+                [value]="getFieldValue(field.name)"
+                (change)="onFieldChange(field.name, $event)"
+              />
+            }
+            @case ('date') {
+              <input
+                class="create-field-input"
+                type="datetime-local"
+                [id]="'create-' + field.name"
+                [value]="getFieldValue(field.name)"
+                (change)="onFieldChange(field.name, $event)"
+              />
+            }
+            @default {
+              <input
+                class="create-field-input"
+                type="text"
+                [id]="'create-' + field.name"
+                [value]="getFieldValue(field.name)"
+                [attr.maxlength]="field.length"
+                (change)="onFieldChange(field.name, $event)"
+              />
+            }
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="create-form-actions">
+    <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="createStore.saving()">
+      Cancel
+    </button>
+    <button class="create-btn create-btn--save" (click)="requestSave()" [disabled]="!canSave()">
+      @if (createStore.saving()) {
+        Saving...
+      } @else {
+        Create Feature
+      }
+    </button>
+  </div>
+</div>
+
+@if (confirmAction() === 'save') {
+  <rima-confirm-dialog
+    title="Create Feature"
+    message="Are you sure you want to create this feature?"
+    confirmLabel="Create"
+    cancelLabel="Cancel"
+    (confirmed)="onConfirm($event)"
+  />
+}
+
+@if (confirmAction() === 'cancel') {
+  <rima-confirm-dialog
+    title="Discard Changes"
+    message="You have unsaved changes. Are you sure you want to discard them?"
+    confirmLabel="Discard"
+    cancelLabel="Keep Editing"
+    (confirmed)="onConfirm($event)"
+  />
+}

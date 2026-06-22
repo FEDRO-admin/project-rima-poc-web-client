@@ -1,0 +1,12 @@
+<div class="layer-picker">
+  <label class="layer-picker-label" for="create-layer-select">
+    <calcite-icon icon="layers" scale="s"></calcite-icon>
+    Feature Layer
+  </label>
+  <select class="layer-picker-select" id="create-layer-select" (change)="onLayerChange($event)">
+    <option value="" disabled selected>— Select a layer —</option>
+    @for (layer of layers(); track layer.id) {
+      <option [value]="layer.id">{{ layer.title }}</option>
+    }
+  </select>
+</div>

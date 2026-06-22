@@ -1,0 +1,37 @@
+@if (store.active()) {
+  <div class="create-container" role="dialog" (keydown.escape)="onEscape()">
+    <div class="create-card">
+      <div class="create-header">
+        <calcite-icon icon="plus-circle" scale="s"></calcite-icon>
+        <span class="create-header-title">Create Feature</span>
+        <span class="create-header-spacer"></span>
+        <button class="create-header-btn create-close" (click)="requestClose()" aria-label="Close create panel">
+          ✕
+        </button>
+      </div>
+
+      <div class="create-body">
+        <rima-layer-picker (layerSelected)="onLayerSelected($event)" />
+
+        @if (store.layer()) {
+          <rima-create-form [layer]="store.layer()!" />
+        } @else {
+          <div class="create-placeholder">
+            <calcite-icon icon="cursor-click" scale="l"></calcite-icon>
+            <p>Select a feature layer to start creating a new feature.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (showCloseConfirm()) {
+      <rima-confirm-dialog
+        title="Discard Changes"
+        message="You have unsaved changes. Are you sure you want to close?"
+        confirmLabel="Discard"
+        cancelLabel="Keep Editing"
+        (confirmed)="onCloseConfirm($event)"
+      />
+    }
+  </div>
+}
