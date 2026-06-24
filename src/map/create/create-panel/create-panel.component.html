@@ -11,15 +11,14 @@
       </div>
 
       <div class="create-body">
-        <rima-layer-picker (layerSelected)="onLayerSelected($event)" />
-
         @if (store.layer()) {
-          <rima-create-form [layer]="store.layer()!" />
-        } @else {
-          <div class="create-placeholder">
-            <calcite-icon icon="cursor-click" scale="l"></calcite-icon>
-            <p>Select a feature layer to start creating a new feature.</p>
+          <div class="create-layer-info">
+            <span class="create-layer-name">{{ store.layer()!.title }}</span>
+            @if (store.subtypeValue() != null) {
+              <span class="create-layer-type">Type: {{ store.subtypeValue() }}</span>
+            }
           </div>
+          <rima-create-form [layer]="store.layer()!" />
         }
       </div>
     </div>

@@ -2,12 +2,13 @@ import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@ang
 import type Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Field from '@arcgis/core/layers/support/Field';
-import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
 import { GraphicLayer } from '@arcgis/core/Graphic';
 import { AttributeEditFormComponent } from '../../../edit/attributes/attribute-edit-form/attribute-edit-form.component';
 import { AttributeEditStore } from '../../../edit/attributes/attribute-edit.store';
-import { isLayerEditable, isSystemField } from '../../../edit/edit-capability';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import { isLayerEditable } from '../../../layer/layer-capabilities';
+import { isImmutableField } from '../../../layer/layer-attributes';
+import { resolveFieldDisplayValue } from '../../../layer/layer-attribute-domain-resolver';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -38,27 +39,27 @@ export class AttributesTabComponent {
 
     if (layer instanceof FeatureLayer && layer.fields?.length) {
       return layer.fields
-        .filter((field) => !isSystemField(field.name))
+        .filter((field) => !isImmutableField(field.name, layer))
         .map((field) => ({
           label: field.alias || field.name,
-          value: this.resolveFieldValue(field, attrs[field.name], layer),
+          value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),
         }));
     }
 
     return Object.entries(attrs).map(([key, value]) => ({ label: key, value }));
   });
 
-  readonly systemFields = computed<FieldEntry[]>(() => {
+  readonly immutableFields = computed<FieldEntry[]>(() => {
     const graphic: Graphic = this.graphic();
     const layer: GraphicLayer | null | undefined = graphic.layer;
     const attrs: Record<string, AttributeValue> = graphic.attributes ?? {};
 
     if (layer instanceof FeatureLayer && layer.fields?.length) {
       return layer.fields
-        .filter((field) => isSystemField(field.name))
+        .filter((field) => isImmutableField(field.name, layer))
         .map((field) => ({
           label: field.alias || field.name,
-          value: this.resolveFieldValue(field, attrs[field.name], layer),
+          value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),
         }));
     }
 
@@ -67,31 +68,5 @@ export class AttributesTabComponent {
 
   startEdit(): void {
     this.editStore.startEditing(this.graphic());
-  }
-
-  private resolveFieldValue(field: Field, value: AttributeValue | undefined, layer: FeatureLayer): AttributeValue {
-    if (value == null) {
-      return null;
-    }
-
-    if (field.name === layer.typeIdField && layer.types?.length) {
-      const match = layer.types.find((t) => t.id === value);
-      if (match) {
-        return match.name;
-      }
-    }
-
-    if (this.isCodedValueDomain(field.domain)) {
-      const match = field.domain.codedValues?.find((cv) => cv.code === value);
-      if (match) {
-        return match.name;
-      }
-    }
-
-    return value;
-  }
-
-  private isCodedValueDomain(domain: Field['domain']): domain is CodedValueDomain {
-    return domain?.type === 'coded-value';
   }
 }

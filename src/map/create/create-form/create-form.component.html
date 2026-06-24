@@ -6,13 +6,39 @@
       <span>Geometry</span>
     </div>
 
-    @if (createStore.geometry()) {
+    @if (createStore.adjusting()) {
+      <div class="geometry-status geometry-status--adjusting">
+        <span>Adjust geometry...</span>
+        <div class="geometry-tools">
+          <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
+            <calcite-icon icon="undo" scale="s"></calcite-icon>
+          </button>
+          <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
+            <calcite-icon icon="redo" scale="s"></calcite-icon>
+          </button>
+          <button
+            class="geometry-tool-btn geometry-tool-btn--confirm"
+            (click)="confirmPlacement()"
+            title="Confirm placement"
+          >
+            <calcite-icon icon="check" scale="s"></calcite-icon>
+          </button>
+          <button class="geometry-tool-btn" (click)="clearGeometry()" title="Redraw">
+            <calcite-icon icon="refresh" scale="s"></calcite-icon>
+          </button>
+        </div>
+      </div>
+    } @else if (createStore.geometry()) {
       <div class="geometry-status geometry-status--complete">
         <calcite-icon icon="check-circle" scale="s"></calcite-icon>
         <span>Geometry added</span>
+        <button class="geometry-redraw-btn" (click)="editGeometry()" [disabled]="createStore.saving()">
+          <calcite-icon icon="pencil" scale="s"></calcite-icon>
+          Edit
+        </button>
         <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="createStore.saving()">
           <calcite-icon icon="refresh" scale="s"></calcite-icon>
-          Change
+          Redraw
         </button>
       </div>
     } @else if (createStore.sketchActive()) {

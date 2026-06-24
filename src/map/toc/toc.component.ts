@@ -2,9 +2,12 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracke
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { MapViewService } from '../view/view.service';
 import { CreateStore } from '../create/create.store';
-import { isLayerCreatable } from '../create/create-capability';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
+import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
+import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
+import { getSubtypeFieldName } from '../layer/layer-sub-types';
 
 @Component({
   selector: 'rima-toc',
@@ -33,50 +36,66 @@ export class TocComponent {
 
   private onListItemCreated(event: { item: ListItem }): void {
     const { item } = event;
-    if (item.layer?.type === 'feature' || item.layer?.type === 'wmts') {
+    const sections = [];
+
+    if (item.layer instanceof FeatureLayer || item.layer instanceof MapImageLayer) {
       const zoomAction = {
         title: 'Zoom to',
         icon: 'zoom-to-object',
         id: 'zoom-to-layer',
         type: 'button',
       } as const;
-
-      if (item.layer instanceof FeatureLayer && isLayerCreatable(item.layer)) {
-        const createAction = {
-          title: 'Create',
-          icon: 'plus',
-          id: 'create-feature',
-          type: 'button',
-        } as const;
-
-        item.actionsSections = [[zoomAction, createAction]];
-      } else {
-        item.actionsSections = [[zoomAction]];
-      }
+      sections.push([zoomAction]);
     }
+
+    if (item.layer instanceof FeatureLayer) {
+      const createAction = {
+        title: 'Create',
+        icon: 'plus',
+        id: 'create-feature',
+        type: 'button',
+      } as const;
+      sections.push([createAction]);
+    }
+
+    item.actionsSections = sections;
   }
 
   protected async onTriggerAction(event: CustomEvent): Promise<void> {
     const { action, item } = event.detail;
-    if (action.id === 'zoom-to-layer') {
-      const view = this.viewService.mapView();
-      if (!view) return;
+    if (action.id === 'zoom-to-layer') await this.zoomToLayer(item.layer);
+    if (action.id === 'create-feature') await this.createFeature(item.layer);
+  }
 
-      const layer = item.layer;
-      await layer.load();
+  private async zoomToLayer(layer: Layer): Promise<void> {
+    const view = this.viewService.mapView();
+    if (!view) return;
 
-      const extent = layer.fullExtent ?? (layer.type === 'wmts' ? layer.activeLayer?.fullExtent : undefined);
-      if (extent) {
-        view.goTo(extent);
+    await layer.load();
+
+    const extent =
+      layer.fullExtent ?? (layer.type === 'wmts' ? (layer as WMTSLayer).activeLayer?.fullExtent : undefined);
+    if (extent) {
+      view.goTo(extent);
+    }
+  }
+
+  private async createFeature(layer: Layer): Promise<void> {
+    if (!(layer instanceof FeatureLayer)) return;
+
+    await layer.load();
+    const subtypeField = getSubtypeFieldName(layer);
+
+    if (subtypeField) {
+      const query = layer.createQuery();
+      query.num = 1;
+      query.outFields = [subtypeField];
+      const result = await layer.queryFeatures(query);
+      const typeValue = result.features[0]?.attributes?.[subtypeField] as number | string | undefined;
+      if (typeValue != null) {
+        this.createStore.setSubtype(subtypeField, typeValue);
       }
     }
-
-    if (action.id === 'create-feature') {
-      const layer = item.layer;
-      if (layer instanceof FeatureLayer) {
-        await layer.load();
-        this.createStore.activate(layer);
-      }
-    }
+    this.createStore.activate(layer);
   }
 }

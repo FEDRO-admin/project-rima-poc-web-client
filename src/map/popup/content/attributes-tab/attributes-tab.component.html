@@ -21,11 +21,11 @@
       }
     </table>
   }
-  @if (systemFields().length > 0) {
+  @if (immutableFields().length > 0) {
     <details class="attributes-system-fields">
-      <summary>System Fields</summary>
+      <summary>Immutable</summary>
       <table class="attributes-table">
-        @for (field of systemFields(); track field.label) {
+        @for (field of immutableFields(); track field.label) {
           <tr>
             <td class="attributes-key">{{ field.label }}</td>
             <td class="attributes-value" [class.attributes-value--null]="field.value == null">

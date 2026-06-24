@@ -64,6 +64,26 @@
   flex: 1;
 }
 
+.create-layer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 12px;
+}
+
+.create-layer-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.create-layer-type {
+  font-size: 12px;
+  color: #666;
+}
+
 .create-placeholder {
   display: flex;
   flex-direction: column;

@@ -4,7 +4,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { CreateStore } from './create.store';
 import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError } from './create-errors';
-import { isSystemField } from '../edit/edit-capability';
+import { isImmutableField } from '../layer/layer-attributes';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -67,7 +67,7 @@ export class CreateService {
     const payload: Record<string, AttributeValue> = {};
 
     for (const [key, value] of Object.entries(attributes)) {
-      if (!isSystemField(key) && key !== layer.objectIdField) {
+      if (!isImmutableField(key, layer) && key !== layer.objectIdField) {
         payload[key] = value;
       }
     }

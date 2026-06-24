@@ -6,7 +6,7 @@ import { AttributeEditService } from '../attribute-edit.service';
 import { AttributeEditField } from '../attribute-edit-field';
 import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { resolveEditableAttributeFields } from '../attribute-domain-resolver';
+import { resolveEditableAttributeFields } from '../../../layer/layer-attribute-domain-resolver';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 

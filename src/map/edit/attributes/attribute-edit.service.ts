@@ -3,7 +3,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { AttributeEditStore } from './attribute-edit.store';
 import { EditSaveError } from '../edit-errors';
-import { isSystemField } from '../edit-capability';
+import { isImmutableField } from '../../layer/layer-attributes';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -53,6 +53,7 @@ export class AttributeEditService {
     graphic: Graphic,
     editedAttributes: Record<string, AttributeValue>,
   ): Record<string, AttributeValue> {
+    const layer = graphic.layer as FeatureLayer;
     const payload: Record<string, AttributeValue> = {};
     const objectIdField = this.getObjectIdFieldName(graphic);
 
@@ -61,9 +62,9 @@ export class AttributeEditService {
       payload[objectIdField] = graphic.attributes[objectIdField];
     }
 
-    // Include only editable, non-system fields
+    // Include only mutable fields
     for (const [key, value] of Object.entries(editedAttributes)) {
-      if (!isSystemField(key) && key !== objectIdField) {
+      if (!isImmutableField(key, layer) && key !== objectIdField) {
         payload[key] = value;
       }
     }

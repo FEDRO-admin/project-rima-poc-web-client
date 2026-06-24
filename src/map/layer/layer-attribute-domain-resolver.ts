@@ -1,3 +1,4 @@
+import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Field from '@arcgis/core/layers/support/Field';
 import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
@@ -7,46 +8,61 @@ import {
   AttributeEditField,
   convertAttributeFieldType,
 } from '../edit/attributes/attribute-edit-field';
-import { isImmutableField } from '../layer/layer-attributes';
-import { getSubtypeFieldName } from '../layer/layer-sub-types';
+import { isImmutableField } from './layer-attributes';
+import { getSubtypeFieldName, getSubtypes } from './layer-sub-types';
 
-type AttributeValue = string | number | boolean | null;
-
-export function resolveCreatableFields(layer: FeatureLayer, subtypeValue?: string | number): AttributeEditField[] {
-  if (!layer.fields?.length) {
+export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
+  const layer = graphic.layer;
+  if (!(layer instanceof FeatureLayer) || !layer.fields?.length) {
     return [];
   }
 
-  const subtypeDomains = resolveSubtypeDomains(layer, subtypeValue);
+  const subtypeDomains = resolveSubtypeDomains(graphic, layer);
 
   return layer.fields
     .filter((field) => !isImmutableField(field.name, layer))
-    .map((field) => buildCreatableField(field, layer, subtypeDomains));
+    .map((field) => buildEditAttributeField(field, subtypeDomains));
 }
 
-export function buildDefaultAttributes(
-  layer: FeatureLayer,
-  fields: AttributeEditField[],
-): Record<string, AttributeValue> {
-  const attributes: Record<string, AttributeValue> = {};
-
-  for (const editField of fields) {
-    const layerField = layer.fields.find((f) => f.name === editField.name);
-    const defaultValue = layerField?.defaultValue as AttributeValue | undefined;
-    attributes[editField.name] = defaultValue ?? null;
+export function resolveFieldDisplayValue(
+  graphic: Graphic,
+  field: Field,
+  value: string | number | boolean | null | undefined,
+): string | number | boolean | null {
+  if (value == null) {
+    return null;
   }
 
-  return attributes;
+  const layer = graphic.layer;
+  if (!(layer instanceof FeatureLayer)) {
+    return value;
+  }
+
+  const subtypeField = getSubtypeFieldName(layer);
+  if (subtypeField && field.name === subtypeField) {
+    const subtypes = getSubtypes(layer);
+    const match = subtypes.find((s) => s.code === value);
+    return match?.name ?? value;
+  }
+
+  const subtypeDomains = resolveSubtypeDomains(graphic, layer);
+  const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
+
+  if (isCodedValueDomain(effectiveDomain)) {
+    const match = effectiveDomain.codedValues?.find((cv) => cv.code === value);
+    return match?.name ?? value;
+  }
+
+  return value;
 }
 
-function resolveSubtypeDomains(
-  layer: FeatureLayer,
-  subtypeValue?: string | number,
-): Record<string, Domain> | undefined {
+function resolveSubtypeDomains(graphic: Graphic, layer: FeatureLayer): Record<string, Domain> | undefined {
   const subtypeField = getSubtypeFieldName(layer);
-  if (!subtypeField || subtypeValue == null) {
+  if (!subtypeField) {
     return undefined;
   }
+
+  const subtypeValue = graphic.attributes?.[subtypeField];
 
   if (layer.types?.length) {
     const activeType = layer.types.find((t) => t.id === subtypeValue);
@@ -72,11 +88,7 @@ function resolveSubtypeDomains(
   return undefined;
 }
 
-function buildCreatableField(
-  field: Field,
-  layer: FeatureLayer,
-  subtypeDomains: Record<string, Domain> | undefined,
-): AttributeEditField {
+function buildEditAttributeField(field: Field, subtypeDomains: Record<string, Domain> | undefined): AttributeEditField {
   const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
   const fieldType = convertAttributeFieldType(field, effectiveDomain);
   const codedValues = resolveCodedValues(effectiveDomain);
@@ -96,6 +108,7 @@ function resolveCodedValues(domain: Domain | Field['domain'] | undefined): Attri
   if (isCodedValueDomain(domain)) {
     return domain.codedValues.map((cv) => ({ code: cv.code, name: cv.name }));
   }
+
   return [];
 }
 

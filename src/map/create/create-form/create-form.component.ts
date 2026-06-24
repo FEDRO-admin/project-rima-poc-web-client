@@ -4,12 +4,14 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
-import { CreateEffects } from '../create-effects';
 import { AttributeEditField } from '../../edit/attributes/attribute-edit-field';
 import { resolveCreatableFields, buildDefaultAttributes } from '../create-attribute.service';
 import { DrawingToolOption, getDrawingToolsForGeometryType } from '../create-config';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import { CreateService } from '../create.service';
+import { PopupStore } from '../../popup/popup.store';
+import { CreateFormLoadError as SaveAndOpenPopupError } from '../create-errors';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -25,12 +27,12 @@ export class CreateFormComponent {
 
   protected readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
-  private readonly createEffects = inject(CreateEffects);
+  private readonly createService = inject(CreateService);
+  private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
-  private readonly subtypeValue = signal<string | number | undefined>(undefined);
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
 
   constructor() {
@@ -39,7 +41,7 @@ export class CreateFormComponent {
 
   protected readonly fields = computed<AttributeEditField[]>(() => {
     const layer = this.layer();
-    const subtype = this.subtypeValue();
+    const subtype = this.createStore.subtypeValue();
     return resolveCreatableFields(layer, subtype);
   });
 
@@ -55,7 +57,8 @@ export class CreateFormComponent {
 
   initializeForm(): void {
     const layer = this.layer();
-    const fields = resolveCreatableFields(layer);
+    const subtypeValue = this.createStore.subtypeValue();
+    const fields = resolveCreatableFields(layer, subtypeValue);
     const defaults = buildDefaultAttributes(layer, fields);
     this.createStore.setAttributes(defaults);
   }
@@ -72,10 +75,6 @@ export class CreateFormComponent {
     const rawValue = target.value;
     const typedValue = this.convertValue(rawValue, field);
     this.createStore.updateField(fieldName, typedValue);
-
-    if (fieldName === this.layer().typeIdField) {
-      this.onSubtypeChange(typedValue);
-    }
   }
 
   protected selectTool(tool: CreateTool): void {
@@ -87,6 +86,14 @@ export class CreateFormComponent {
     this.createGeometryService.cancel();
     this.createStore.updateGeometry(undefined!);
     this.activeTool.set(undefined);
+  }
+
+  protected confirmPlacement(): void {
+    this.createGeometryService.confirmPlacement();
+  }
+
+  protected editGeometry(): void {
+    this.createGeometryService.reenterAdjusting();
   }
 
   protected undo(): void {
@@ -117,31 +124,36 @@ export class CreateFormComponent {
     if (!confirmed) return;
 
     if (action === 'save') {
-      await this.createEffects.saveAndOpenInPopup();
+      await this.saveAndOpenInPopup();
     } else if (action === 'cancel') {
       this.createGeometryService.cancel();
       this.createStore.reset();
     }
   }
 
-  private onSubtypeChange(value: string | number | null): void {
-    this.subtypeValue.set(value ?? undefined);
+  async saveAndOpenInPopup(): Promise<void> {
+    const layer = this.createStore.layer();
+    if (!(layer instanceof FeatureLayer)) return;
 
-    const layer = this.layer();
-    const newFields = resolveCreatableFields(layer, value ?? undefined);
-    const currentAttributes = this.createStore.attributes();
-    const updatedAttributes: Record<string, string | number | boolean | null> = {};
+    try {
+      const objectId = await this.createService.save();
+      if (objectId == null) return;
 
-    for (const field of newFields) {
-      if (field.name === layer.typeIdField) {
-        updatedAttributes[field.name] = value;
-      } else {
-        const layerField = layer.fields.find((f) => f.name === field.name);
-        updatedAttributes[field.name] = currentAttributes[field.name] ?? layerField?.defaultValue ?? null;
+      layer.refresh();
+
+      const query = layer.createQuery();
+      query.objectIds = [objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await layer.queryFeatures(query);
+      const graphic = featureSet.features[0];
+      if (graphic) {
+        this.popupStore.open([graphic]);
       }
+    } catch (error) {
+      throw new SaveAndOpenPopupError(error);
     }
-
-    this.createStore.setAttributes(updatedAttributes);
   }
 
   private convertValue(rawValue: string, field: AttributeEditField): string | number | null {
