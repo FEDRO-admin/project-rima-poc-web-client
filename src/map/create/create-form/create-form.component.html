@@ -81,97 +81,14 @@
       <span>Attributes</span>
     </div>
 
-    <div class="create-form-fields">
-      @for (field of fields(); track field.name) {
-        <div class="create-field">
-          <label class="create-field-label" [attr.for]="'create-' + field.name">
-            {{ field.alias }}
-            @if (!field.nullable) {
-              <span class="required-indicator">*</span>
-            }
-          </label>
-
-          @switch (field.fieldType) {
-            @case ('coded-value') {
-              <select
-                class="create-field-input"
-                [id]="'create-' + field.name"
-                [value]="getFieldValue(field.name)"
-                (change)="onFieldChange(field.name, $event)"
-              >
-                @if (field.nullable) {
-                  <option [value]="''">— None —</option>
-                }
-                @for (option of field.codedValues; track option.code) {
-                  <option [value]="option.code" [selected]="getFieldValue(field.name) === option.code">
-                    {{ option.name }} ({{ option.code }})
-                  </option>
-                }
-              </select>
-            }
-            @case ('integer') {
-              <input
-                class="create-field-input"
-                type="number"
-                step="1"
-                [id]="'create-' + field.name"
-                [value]="getFieldValue(field.name)"
-                (change)="onFieldChange(field.name, $event)"
-              />
-            }
-            @case ('double') {
-              <input
-                class="create-field-input"
-                type="number"
-                step="any"
-                [id]="'create-' + field.name"
-                [value]="getFieldValue(field.name)"
-                (change)="onFieldChange(field.name, $event)"
-              />
-            }
-            @case ('date') {
-              <input
-                class="create-field-input"
-                type="datetime-local"
-                [id]="'create-' + field.name"
-                [value]="getFieldValue(field.name)"
-                (change)="onFieldChange(field.name, $event)"
-              />
-            }
-            @case ('guid') {
-              <div class="guid-field-row">
-                <input
-                  class="create-field-input guid-field-input"
-                  type="text"
-                  [id]="'create-' + field.name"
-                  [value]="getFieldValue(field.name)"
-                  [attr.maxlength]="field.length"
-                  (change)="onFieldChange(field.name, $event)"
-                />
-                <button
-                  class="guid-pick-btn"
-                  (click)="startGuidPick(field.name)"
-                  [disabled]="createStore.saving() || guidPickerService.active()"
-                  title="Pick from map"
-                >
-                  <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
-                </button>
-              </div>
-            }
-            @default {
-              <input
-                class="create-field-input"
-                type="text"
-                [id]="'create-' + field.name"
-                [value]="getFieldValue(field.name)"
-                [attr.maxlength]="field.length"
-                (change)="onFieldChange(field.name, $event)"
-              />
-            }
-          }
-        </div>
-      }
-    </div>
+    <rima-attribute-form
+      [fields]="fields()"
+      [values]="createStore.attributes()"
+      [disabled]="createStore.saving()"
+      [showRequiredIndicator]="true"
+      idPrefix="create"
+      (fieldChange)="onAttributeFieldChange($event)"
+    />
   </div>
 
   <!-- Actions -->
@@ -207,39 +124,4 @@
     cancelLabel="Keep Editing"
     (confirmed)="onConfirm($event)"
   />
-}
-
-@if (guidPickerService.active()) {
-  <div class="guid-picker-overlay">
-    <div class="guid-picker-card">
-      <div class="guid-picker-header">
-        <span>Select Feature</span>
-        <button class="guid-picker-close" (click)="cancelGuidPick()">✕</button>
-      </div>
-
-      @if (guidPickerService.candidates().length === 0) {
-        <div class="guid-picker-prompt">
-          <calcite-icon icon="cursor-click" scale="m"></calcite-icon>
-          <p>Click on a feature in the map to select its ID</p>
-        </div>
-      } @else {
-        <div class="guid-picker-list">
-          @for (candidate of guidPickerService.candidates(); track candidate.idValue) {
-            <button class="guid-picker-item" (click)="selectGuidCandidate(candidate)">
-              <div class="guid-picker-item-info">
-                <span class="guid-picker-item-layer">{{ candidate.layerTitle }}</span>
-                <span class="guid-picker-item-label">{{ candidate.displayLabel }}</span>
-                <span class="guid-picker-item-id">{{ candidate.idValue }}</span>
-              </div>
-              <calcite-icon icon="check" scale="s"></calcite-icon>
-            </button>
-          }
-        </div>
-      }
-
-      <div class="guid-picker-actions">
-        <button class="create-btn create-btn--cancel" (click)="cancelGuidPick()">Cancel</button>
-      </div>
-    </div>
-  </div>
 }

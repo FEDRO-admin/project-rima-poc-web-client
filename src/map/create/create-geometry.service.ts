@@ -3,13 +3,12 @@ import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import type Map from '@arcgis/core/Map';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
-import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
 import { MapViewService } from '../view/view.service';
 import { CreateStore } from './create.store';
 import { getDefaultCreateTool } from './create-config';
 import { EDIT_POINT_SYMBOL, EDIT_LINE_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit/edit-config';
+import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
 
 @Injectable({
   providedIn: 'root',
@@ -48,7 +47,7 @@ export class CreateGeometryService {
       polygonSymbol: EDIT_POLYGON_SYMBOL,
       snappingOptions: {
         enabled: true,
-        featureSources: this.buildSnappingSources(view.map),
+        featureSources: buildSnappingSources(view.map),
       },
     });
 
@@ -62,7 +61,7 @@ export class CreateGeometryService {
         this.store.setSketchActive(false);
         this.startAdjusting();
       }
-      this.updateUndoRedoState();
+      updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
     this.sketchViewModel.create(createTool);
@@ -109,7 +108,7 @@ export class CreateGeometryService {
       if (event.state === 'complete') {
         this.reenterUpdate();
       }
-      this.updateUndoRedoState();
+      updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
     const tool = this.getAdjustTool(this.sketchGraphic.geometry?.type);
@@ -123,12 +122,12 @@ export class CreateGeometryService {
 
   undo(): void {
     this.sketchViewModel?.undo();
-    this.updateUndoRedoState();
+    updateUndoRedoState(this.sketchViewModel, this.store);
   }
 
   redo(): void {
     this.sketchViewModel?.redo();
-    this.updateUndoRedoState();
+    updateUndoRedoState(this.sketchViewModel, this.store);
   }
 
   cancel(): void {
@@ -142,20 +141,10 @@ export class CreateGeometryService {
     this.updateEventHandle = undefined;
     this.sketchGraphic = undefined;
 
-    if (this.sketchViewModel) {
-      this.sketchViewModel.cancel();
-      this.sketchViewModel.destroy();
-      this.sketchViewModel = undefined;
-    }
-
-    if (this.sketchLayer) {
-      const view = this.viewService.mapView();
-      if (view?.map) {
-        view.map.remove(this.sketchLayer);
-      }
-      this.sketchLayer.destroy();
-      this.sketchLayer = undefined;
-    }
+    const view = this.viewService.mapView();
+    const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
+    this.sketchViewModel = cleaned.sketchViewModel;
+    this.sketchLayer = cleaned.sketchLayer;
 
     this.store.deactivateSketch();
   }
@@ -176,7 +165,7 @@ export class CreateGeometryService {
       if (event.state === 'complete') {
         this.reenterUpdate();
       }
-      this.updateUndoRedoState();
+      updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
     const tool = this.getAdjustTool(this.sketchGraphic.geometry?.type);
@@ -202,37 +191,5 @@ export class CreateGeometryService {
 
   private getAdjustTool(geometryType: string | undefined): 'transform' | 'reshape' {
     return 'transform';
-  }
-
-  private cleanupSketchResources(): void {
-    this.sketchGraphic = undefined;
-
-    if (this.sketchViewModel) {
-      this.sketchViewModel.destroy();
-      this.sketchViewModel = undefined;
-    }
-
-    if (this.sketchLayer) {
-      const view = this.viewService.mapView();
-      if (view?.map) {
-        view.map.remove(this.sketchLayer);
-      }
-      this.sketchLayer.destroy();
-      this.sketchLayer = undefined;
-    }
-  }
-
-  private updateUndoRedoState(): void {
-    this.store.setUndoRedo(this.sketchViewModel?.canUndo() ?? false, this.sketchViewModel?.canRedo() ?? false);
-  }
-
-  private buildSnappingSources(map: Map): FeatureSnappingLayerSource[] {
-    const sources: FeatureSnappingLayerSource[] = [];
-    map.allLayers.forEach((layer) => {
-      if (layer instanceof FeatureLayer) {
-        sources.push(new FeatureSnappingLayerSource({ layer, enabled: true }));
-      }
-    });
-    return sources;
   }
 }

@@ -7,7 +7,7 @@ import {
   AttributeCodedValueOption,
   AttributeEditField,
   convertAttributeFieldType,
-} from '../edit/attributes/attribute-edit-field';
+} from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
 import { getSubtypeFieldName, getSubtypes } from './layer-sub-types';
 

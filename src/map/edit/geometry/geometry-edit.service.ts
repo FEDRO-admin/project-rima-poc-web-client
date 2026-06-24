@@ -4,13 +4,12 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
-import type Map from '@arcgis/core/Map';
-import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource';
 import { MapViewService } from '../../view/view.service';
 import type MapView from '@arcgis/core/views/MapView';
 import { GeometryEditStore } from './geometry-edit.store';
 import { EditSaveError } from '../edit-errors';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit-config';
+import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../../shared/sketch-utils';
 
 type SketchTool = 'move' | 'reshape' | 'transform';
 
@@ -111,12 +110,12 @@ export class GeometryEditService {
 
   undo(): void {
     this.sketchViewModel?.undo();
-    this.updateUndoRedoState();
+    updateUndoRedoState(this.sketchViewModel, this.store);
   }
 
   redo(): void {
     this.sketchViewModel?.redo();
-    this.updateUndoRedoState();
+    updateUndoRedoState(this.sketchViewModel, this.store);
   }
 
   private activateSketch(view: MapView, geometry: Geometry): void {
@@ -141,7 +140,7 @@ export class GeometryEditService {
       },
       snappingOptions: {
         enabled: true,
-        featureSources: this.buildSnappingSources(view.map!),
+        featureSources: buildSnappingSources(view.map!),
       },
     });
 
@@ -155,7 +154,7 @@ export class GeometryEditService {
       if (event.state === 'complete') {
         this.onSketchComplete();
       }
-      this.updateUndoRedoState();
+      updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
     this.sketchViewModel.update(this.sketchGraphic);
@@ -167,20 +166,10 @@ export class GeometryEditService {
     this.eventHandle = undefined;
     this.sketchGraphic = undefined;
 
-    if (this.sketchViewModel) {
-      this.sketchViewModel.cancel();
-      this.sketchViewModel.destroy();
-      this.sketchViewModel = undefined;
-    }
-
-    if (this.sketchLayer) {
-      const view = this.viewService.mapView();
-      if (view?.map) {
-        view.map.remove(this.sketchLayer);
-      }
-      this.sketchLayer.destroy();
-      this.sketchLayer = undefined;
-    }
+    const view = this.viewService.mapView();
+    const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
+    this.sketchViewModel = cleaned.sketchViewModel;
+    this.sketchLayer = cleaned.sketchLayer;
 
     this.store.deactivateSketch();
   }
@@ -194,10 +183,6 @@ export class GeometryEditService {
     if (this.sketchViewModel && this.sketchGraphic) {
       this.sketchViewModel.update(this.sketchGraphic);
     }
-  }
-
-  private updateUndoRedoState(): void {
-    this.store.setUndoRedo(this.sketchViewModel?.canUndo() ?? false, this.sketchViewModel?.canRedo() ?? false);
   }
 
   private getToolForGeometryType(geometryType: string): SketchTool {
@@ -222,15 +207,5 @@ export class GeometryEditService {
       default:
         return EDIT_POLYGON_SYMBOL;
     }
-  }
-
-  private buildSnappingSources(map: Map): FeatureSnappingLayerSource[] {
-    const sources: FeatureSnappingLayerSource[] = [];
-    map.allLayers.forEach((layer) => {
-      if (layer instanceof FeatureLayer) {
-        sources.push(new FeatureSnappingLayerSource({ layer, enabled: true }));
-      }
-    });
-    return sources;
   }
 }

@@ -1,10 +1,10 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
-import { AttributeEditField } from '../../edit/attributes/attribute-edit-field';
+import { AttributeEditField } from '../../shared/attribute-edit-field';
+import { AttributeValue } from '../../shared/attribute-value-conversion';
 import { resolveCreatableFields, buildDefaultAttributes } from '../create-attribute.service';
 import { DrawingToolOption, getDrawingToolsForGeometryType } from '../create-config';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
@@ -12,13 +12,13 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { PopupStore } from '../../popup/popup.store';
 import { CreateFormLoadError as SaveAndOpenPopupError } from '../create-errors';
-import { GuidPickerService, GuidPickerCandidate } from '../guid-picker.service';
+import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
 @Component({
   selector: 'rima-create-form',
-  imports: [FormsModule, ConfirmDialogComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -31,7 +31,6 @@ export class CreateFormComponent {
   private readonly createService = inject(CreateService);
   private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly guidPickerService = inject(GuidPickerService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -65,18 +64,8 @@ export class CreateFormComponent {
     this.createStore.setAttributes(defaults);
   }
 
-  protected getFieldValue(fieldName: string): string | number | boolean | null {
-    return this.createStore.attributes()[fieldName] ?? null;
-  }
-
-  protected onFieldChange(fieldName: string, event: Event): void {
-    const target = event.target as HTMLInputElement | HTMLSelectElement;
-    const field = this.fields().find((f) => f.name === fieldName);
-    if (!field) return;
-
-    const rawValue = target.value;
-    const typedValue = this.convertValue(rawValue, field);
-    this.createStore.updateField(fieldName, typedValue);
+  protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
+    this.createStore.updateField(event.fieldName, event.value);
   }
 
   protected selectTool(tool: CreateTool): void {
@@ -104,21 +93,6 @@ export class CreateFormComponent {
 
   protected redo(): void {
     this.createGeometryService.redo();
-  }
-
-  protected async startGuidPick(fieldName: string): Promise<void> {
-    const value = await this.guidPickerService.startPicking(fieldName);
-    if (value != null) {
-      this.createStore.updateField(fieldName, value);
-    }
-  }
-
-  protected selectGuidCandidate(candidate: GuidPickerCandidate): void {
-    this.guidPickerService.confirmSelection(candidate);
-  }
-
-  protected cancelGuidPick(): void {
-    this.guidPickerService.cancel();
   }
 
   protected requestSave(): void {
@@ -171,35 +145,5 @@ export class CreateFormComponent {
     } catch (error) {
       throw new SaveAndOpenPopupError(error);
     }
-  }
-
-  private convertValue(rawValue: string, field: AttributeEditField): string | number | null {
-    if (rawValue === '') {
-      return field.nullable ? null : '';
-    }
-
-    switch (field.fieldType) {
-      case 'integer':
-        return Number.isNaN(Number(rawValue)) ? null : Math.round(Number(rawValue));
-      case 'double':
-        return Number.isNaN(Number(rawValue)) ? null : Number(rawValue);
-      case 'coded-value':
-        return this.convertCodedValue(rawValue, field);
-      case 'guid':
-      case 'string':
-      case 'date':
-        return rawValue;
-    }
-  }
-
-  private convertCodedValue(rawValue: string, field: AttributeEditField): string | number | null {
-    const numericValue = Number(rawValue);
-    if (!Number.isNaN(numericValue)) {
-      const match = field.codedValues.find((cv) => cv.code === numericValue);
-      if (match) return numericValue;
-    }
-    const stringMatch = field.codedValues.find((cv) => String(cv.code) === rawValue);
-    if (stringMatch) return stringMatch.code;
-    return Number.isNaN(numericValue) ? rawValue : numericValue;
   }
 }

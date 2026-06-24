@@ -6,7 +6,7 @@ import {
   AttributeCodedValueOption,
   AttributeEditField,
   convertAttributeFieldType,
-} from '../edit/attributes/attribute-edit-field';
+} from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
 import { getSubtypeFieldName } from '../layer/layer-sub-types';
 
@@ -21,7 +21,7 @@ export function resolveCreatableFields(layer: FeatureLayer, subtypeValue?: strin
 
   return layer.fields
     .filter((field) => !isImmutableField(field.name, layer))
-    .map((field) => buildCreatableField(field, layer, subtypeDomains));
+    .map((field) => buildCreatableField(field, subtypeDomains));
 }
 
 export function buildDefaultAttributes(
@@ -72,11 +72,7 @@ function resolveSubtypeDomains(
   return undefined;
 }
 
-function buildCreatableField(
-  field: Field,
-  layer: FeatureLayer,
-  subtypeDomains: Record<string, Domain> | undefined,
-): AttributeEditField {
+function buildCreatableField(field: Field, subtypeDomains: Record<string, Domain> | undefined): AttributeEditField {
   const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
   const fieldType = convertAttributeFieldType(field, effectiveDomain);
   const codedValues = resolveCodedValues(effectiveDomain);
