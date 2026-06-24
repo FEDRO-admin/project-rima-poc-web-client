@@ -12,6 +12,7 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { PopupStore } from '../../popup/popup.store';
 import { CreateFormLoadError as SaveAndOpenPopupError } from '../create-errors';
+import { GuidPickerService, GuidPickerCandidate } from '../guid-picker.service';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -30,6 +31,7 @@ export class CreateFormComponent {
   private readonly createService = inject(CreateService);
   private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly guidPickerService = inject(GuidPickerService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -104,6 +106,21 @@ export class CreateFormComponent {
     this.createGeometryService.redo();
   }
 
+  protected async startGuidPick(fieldName: string): Promise<void> {
+    const value = await this.guidPickerService.startPicking(fieldName);
+    if (value != null) {
+      this.createStore.updateField(fieldName, value);
+    }
+  }
+
+  protected selectGuidCandidate(candidate: GuidPickerCandidate): void {
+    this.guidPickerService.confirmSelection(candidate);
+  }
+
+  protected cancelGuidPick(): void {
+    this.guidPickerService.cancel();
+  }
+
   protected requestSave(): void {
     this.confirmAction.set('save');
   }
@@ -168,6 +185,7 @@ export class CreateFormComponent {
         return Number.isNaN(Number(rawValue)) ? null : Number(rawValue);
       case 'coded-value':
         return this.convertCodedValue(rawValue, field);
+      case 'guid':
       case 'string':
       case 'date':
         return rawValue;

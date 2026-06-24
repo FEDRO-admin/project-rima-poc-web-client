@@ -85,6 +85,7 @@ export class AttributeEditFormComponent {
         return Number.isNaN(Number(rawValue)) ? null : Number(rawValue);
       case 'coded-value':
         return this.convertCodedValue(rawValue, field);
+      case 'guid':
       case 'string':
       case 'date':
         return rawValue;

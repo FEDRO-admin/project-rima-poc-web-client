@@ -1,6 +1,6 @@
 import type Field from '@arcgis/core/layers/support/Field';
 
-export type AttributeEditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value';
+export type AttributeEditFieldType = 'string' | 'integer' | 'double' | 'date' | 'coded-value' | 'guid';
 
 export interface AttributeCodedValueOption {
   code: string | number;
@@ -45,9 +45,10 @@ export function convertAttributeFieldType(
     case 'geometry':
     case 'blob':
     case 'raster':
-    case 'guid':
     case 'global-id':
     case 'xml':
       return 'string';
+    case 'guid':
+      return 'guid';
   }
 }
