@@ -56,6 +56,26 @@
               (change)="onAttributeFieldChange(field.name, $event)"
             />
           }
+          @case ('guid') {
+            <div class="guid-field-row">
+              <input
+                class="edit-field-input guid-field-input"
+                type="text"
+                [id]="'edit-' + field.name"
+                [value]="getAttributeFieldValue(field.name)"
+                [attr.maxlength]="field.length"
+                (change)="onAttributeFieldChange(field.name, $event)"
+              />
+              <button
+                class="guid-pick-btn"
+                (click)="startGuidPick(field.name)"
+                [disabled]="attributeEditStore.saving() || guidPickerService.active()"
+                title="Pick from map"
+              >
+                <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
+              </button>
+            </div>
+          }
           @default {
             <input
               class="edit-field-input"
@@ -103,4 +123,39 @@
     cancelLabel="Keep Editing"
     (confirmed)="onConfirm($event)"
   />
+}
+
+@if (guidPickerService.active()) {
+  <div class="guid-picker-overlay">
+    <div class="guid-picker-card">
+      <div class="guid-picker-header">
+        <span>Select Feature</span>
+        <button class="guid-picker-close" (click)="cancelGuidPick()">✕</button>
+      </div>
+
+      @if (guidPickerService.candidates().length === 0) {
+        <div class="guid-picker-prompt">
+          <calcite-icon icon="cursor-click" scale="m"></calcite-icon>
+          <p>Click on a feature in the map to select its ID</p>
+        </div>
+      } @else {
+        <div class="guid-picker-list">
+          @for (candidate of guidPickerService.candidates(); track candidate.idValue) {
+            <button class="guid-picker-item" (click)="selectGuidCandidate(candidate)">
+              <div class="guid-picker-item-info">
+                <span class="guid-picker-item-layer">{{ candidate.layerTitle }}</span>
+                <span class="guid-picker-item-label">{{ candidate.displayLabel }}</span>
+                <span class="guid-picker-item-id">{{ candidate.idValue }}</span>
+              </div>
+              <calcite-icon icon="check" scale="s"></calcite-icon>
+            </button>
+          }
+        </div>
+      }
+
+      <div class="guid-picker-actions">
+        <button class="edit-btn edit-btn--cancel" (click)="cancelGuidPick()">Cancel</button>
+      </div>
+    </div>
+  </div>
 }

@@ -7,6 +7,7 @@ import { AttributeEditField } from '../attribute-edit-field';
 import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../../../layer/layer-attribute-domain-resolver';
+import { GuidPickerService, GuidPickerCandidate } from '../../../create/guid-picker.service';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -23,6 +24,7 @@ export class AttributeEditFormComponent {
   protected readonly attributeEditStore = inject(AttributeEditStore);
   private readonly attributeEditService = inject(AttributeEditService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly guidPickerService = inject(GuidPickerService);
 
   constructor() {
     this.destroyRef.onDestroy(() => this.attributeEditService.cancel());
@@ -44,6 +46,21 @@ export class AttributeEditFormComponent {
     const rawValue = target.value;
     const typedValue = this.convertValue(rawValue, field);
     this.attributeEditStore.updateField(fieldName, typedValue);
+  }
+
+  protected async startGuidPick(fieldName: string): Promise<void> {
+    const value = await this.guidPickerService.startPicking(fieldName);
+    if (value != null) {
+      this.attributeEditStore.updateField(fieldName, value);
+    }
+  }
+
+  protected selectGuidCandidate(candidate: GuidPickerCandidate): void {
+    this.guidPickerService.confirmSelection(candidate);
+  }
+
+  protected cancelGuidPick(): void {
+    this.guidPickerService.cancel();
   }
 
   protected requestSave(): void {
