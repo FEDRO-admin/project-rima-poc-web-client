@@ -3,8 +3,9 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { CreateStore } from './create.store';
 import { CreateGeometryService } from './create-geometry.service';
-import { CreateSaveError } from './create-errors';
+import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
+import { PopupStore } from '../popup/popup.store';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -14,6 +15,7 @@ type AttributeValue = string | number | boolean | null;
 export class CreateService {
   private readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
+  private readonly popupStore = inject(PopupStore);
 
   async save(): Promise<number | undefined> {
     const layer = this.createStore.layer();
@@ -73,5 +75,30 @@ export class CreateService {
     }
 
     return payload;
+  }
+
+  async saveAndOpenInPopup(): Promise<void> {
+    const layer = this.createStore.layer();
+    if (!(layer instanceof FeatureLayer)) return;
+
+    try {
+      const objectId = await this.save();
+      if (objectId == null) return;
+
+      layer.refresh();
+
+      const query = layer.createQuery();
+      query.objectIds = [objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await layer.queryFeatures(query);
+      const graphic = featureSet.features[0];
+      if (graphic) {
+        this.popupStore.open([graphic]);
+      }
+    } catch (error) {
+      throw new SaveAndOpenPopupError(error);
+    }
   }
 }

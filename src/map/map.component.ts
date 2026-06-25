@@ -7,11 +7,12 @@ import { LayerService } from './layer/layer.service';
 import { TocComponent } from './toc/toc.component';
 import { ViewInitialisationError } from './view/view-errors';
 import { PopupComponent } from './popup/popup.component';
-import { CreatePanelComponent } from './create/create-panel/create-panel.component';
+import { CreateFormComponent } from './create/create-form/create-form.component';
+import { EditFormComponent } from './edit/edit-form/edit-form.component';
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent, CreatePanelComponent],
+  imports: [TocComponent, PopupComponent, CreateFormComponent, EditFormComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

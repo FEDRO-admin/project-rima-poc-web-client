@@ -1,20 +1,19 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, signal } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
-import { resolveCreatableFields, buildDefaultAttributes } from '../create-attribute.service';
+import { resolveCreatableFields } from '../create-attribute.service';
 import { DrawingToolOption, getDrawingToolsForGeometryType } from '../create-config';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
-import { PopupStore } from '../../popup/popup.store';
 import { CreateFormLoadError as SaveAndOpenPopupError } from '../create-errors';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 
-type ConfirmAction = 'save' | 'cancel' | null;
+type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-create-form',
@@ -24,12 +23,9 @@ type ConfirmAction = 'save' | 'cancel' | null;
   styleUrl: './create-form.component.scss',
 })
 export class CreateFormComponent {
-  readonly layer = input.required<FeatureLayer>();
-
   protected readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
-  private readonly popupStore = inject(PopupStore);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
@@ -40,14 +36,19 @@ export class CreateFormComponent {
     this.destroyRef.onDestroy(() => this.createGeometryService.cancel());
   }
 
+  protected readonly layer = computed(() => this.createStore.layer());
+
   protected readonly fields = computed<AttributeEditField[]>(() => {
-    const layer = this.layer();
+    const layer = this.createStore.layer();
     const subtype = this.createStore.subtypeValue();
+    if (!layer) return [];
     return resolveCreatableFields(layer, subtype);
   });
 
   protected readonly drawingTools = computed<DrawingToolOption[]>(() => {
-    return getDrawingToolsForGeometryType(this.layer().geometryType);
+    const layer = this.createStore.layer();
+    if (!layer) return [];
+    return getDrawingToolsForGeometryType(layer.geometryType);
   });
 
   protected readonly canSave = computed<boolean>(() => {
@@ -56,21 +57,16 @@ export class CreateFormComponent {
     return hasGeometry && notSaving;
   });
 
-  initializeForm(): void {
-    const layer = this.layer();
-    const subtypeValue = this.createStore.subtypeValue();
-    const fields = resolveCreatableFields(layer, subtypeValue);
-    const defaults = buildDefaultAttributes(layer, fields);
-    this.createStore.setAttributes(defaults);
-  }
-
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
     this.createStore.updateField(event.fieldName, event.value);
   }
 
   protected selectTool(tool: CreateTool): void {
     this.activeTool.set(tool);
-    this.createGeometryService.startDrawing(this.layer(), tool);
+    const layer = this.createStore.layer();
+    if (layer) {
+      this.createGeometryService.startDrawing(layer, tool);
+    }
   }
 
   protected clearGeometry(): void {
@@ -103,9 +99,20 @@ export class CreateFormComponent {
     if (this.createStore.isDirty()) {
       this.confirmAction.set('cancel');
     } else {
-      this.createGeometryService.cancel();
-      this.createStore.reset();
+      this.close();
     }
+  }
+
+  protected requestClose(): void {
+    if (this.createStore.isDirty()) {
+      this.confirmAction.set('close');
+    } else {
+      this.close();
+    }
+  }
+
+  protected onEscape(): void {
+    this.requestClose();
   }
 
   protected async onConfirm(confirmed: boolean): Promise<void> {
@@ -115,35 +122,14 @@ export class CreateFormComponent {
     if (!confirmed) return;
 
     if (action === 'save') {
-      await this.saveAndOpenInPopup();
-    } else if (action === 'cancel') {
-      this.createGeometryService.cancel();
-      this.createStore.reset();
+      await this.createService.saveAndOpenInPopup();
+    } else if (action === 'cancel' || action === 'close') {
+      this.close();
     }
   }
 
-  async saveAndOpenInPopup(): Promise<void> {
-    const layer = this.createStore.layer();
-    if (!(layer instanceof FeatureLayer)) return;
-
-    try {
-      const objectId = await this.createService.save();
-      if (objectId == null) return;
-
-      layer.refresh();
-
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
-
-      const featureSet = await layer.queryFeatures(query);
-      const graphic = featureSet.features[0];
-      if (graphic) {
-        this.popupStore.open([graphic]);
-      }
-    } catch (error) {
-      throw new SaveAndOpenPopupError(error);
-    }
+  private close(): void {
+    this.createGeometryService.cancel();
+    this.createStore.reset();
   }
 }

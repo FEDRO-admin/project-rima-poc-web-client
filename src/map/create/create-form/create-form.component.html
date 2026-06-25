@@ -1,127 +1,151 @@
-<div class="create-form">
-  <!-- Geometry Section -->
-  <div class="create-section">
-    <div class="create-section-header">
-      <calcite-icon icon="polygon-vertices" scale="s"></calcite-icon>
-      <span>Geometry</span>
-    </div>
+@if (createStore.active()) {
+  <div class="create-container" role="dialog" (keydown.escape)="onEscape()">
+    <div class="create-card">
+      <div class="create-header">
+        <calcite-icon icon="plus-circle" scale="s"></calcite-icon>
+        <span class="create-header-title">Create Feature</span>
+        <span class="create-header-spacer"></span>
+        <button class="create-header-btn create-close" (click)="requestClose()" aria-label="Close create panel">
+          ✕
+        </button>
+      </div>
 
-    @if (createStore.adjusting()) {
-      <div class="geometry-status geometry-status--adjusting">
-        <span>Adjust geometry...</span>
-        <div class="geometry-tools">
-          <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
-            <calcite-icon icon="undo" scale="s"></calcite-icon>
-          </button>
-          <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
-            <calcite-icon icon="redo" scale="s"></calcite-icon>
-          </button>
-          <button
-            class="geometry-tool-btn geometry-tool-btn--confirm"
-            (click)="confirmPlacement()"
-            title="Confirm placement"
-          >
-            <calcite-icon icon="check" scale="s"></calcite-icon>
-          </button>
-          <button class="geometry-tool-btn" (click)="clearGeometry()" title="Redraw">
-            <calcite-icon icon="refresh" scale="s"></calcite-icon>
-          </button>
-        </div>
-      </div>
-    } @else if (createStore.geometry()) {
-      <div class="geometry-status geometry-status--complete">
-        <calcite-icon icon="check-circle" scale="s"></calcite-icon>
-        <span>Geometry added</span>
-        <button class="geometry-redraw-btn" (click)="editGeometry()" [disabled]="createStore.saving()">
-          <calcite-icon icon="pencil" scale="s"></calcite-icon>
-          Edit
-        </button>
-        <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="createStore.saving()">
-          <calcite-icon icon="refresh" scale="s"></calcite-icon>
-          Redraw
-        </button>
-      </div>
-    } @else if (createStore.sketchActive()) {
-      <div class="geometry-status geometry-status--active">
-        <span>Drawing...</span>
-        <div class="geometry-tools">
-          <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
-            <calcite-icon icon="undo" scale="s"></calcite-icon>
-          </button>
-          <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
-            <calcite-icon icon="redo" scale="s"></calcite-icon>
-          </button>
-        </div>
-      </div>
-    } @else {
-      <div class="geometry-toolbar">
-        <span class="geometry-toolbar-label">Add geometry:</span>
-        <div class="geometry-toolbar-buttons">
-          @for (tool of drawingTools(); track tool.tool) {
-            <button
-              class="geometry-toolbar-btn"
-              [class.active]="activeTool() === tool.tool"
-              (click)="selectTool(tool.tool)"
-              [disabled]="createStore.saving()"
-              [title]="tool.label"
-            >
-              <calcite-icon [icon]="tool.icon" scale="s"></calcite-icon>
-              <span class="geometry-toolbar-btn-label">{{ tool.label }}</span>
-            </button>
+      @if (layer()) {
+        <div class="create-layer-info">
+          <span class="create-layer-name">{{ layer()!.title }}</span>
+          @if (createStore.subtypeValue() != null) {
+            <span class="create-layer-type">Type: {{ createStore.subtypeValue() }}</span>
           }
         </div>
-      </div>
-    }
-  </div>
 
-  <!-- Attributes Section -->
-  <div class="create-section">
-    <div class="create-section-header">
-      <calcite-icon icon="list" scale="s"></calcite-icon>
-      <span>Attributes</span>
+        <div class="create-form">
+          <!-- Geometry Section -->
+          <div class="create-section">
+            <div class="create-section-header">
+              <calcite-icon icon="polygon-vertices" scale="s"></calcite-icon>
+              <span>Geometry</span>
+            </div>
+
+            @if (createStore.adjusting()) {
+              <div class="geometry-status geometry-status--adjusting">
+                <span>Adjust geometry...</span>
+                <div class="geometry-tools">
+                  <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
+                    <calcite-icon icon="undo" scale="s"></calcite-icon>
+                  </button>
+                  <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
+                    <calcite-icon icon="redo" scale="s"></calcite-icon>
+                  </button>
+                  <button
+                    class="geometry-tool-btn geometry-tool-btn--confirm"
+                    (click)="confirmPlacement()"
+                    title="Confirm placement"
+                  >
+                    <calcite-icon icon="check" scale="s"></calcite-icon>
+                  </button>
+                  <button class="geometry-tool-btn" (click)="clearGeometry()" title="Redraw">
+                    <calcite-icon icon="refresh" scale="s"></calcite-icon>
+                  </button>
+                </div>
+              </div>
+            } @else if (createStore.geometry()) {
+              <div class="geometry-status geometry-status--complete">
+                <calcite-icon icon="check-circle" scale="s"></calcite-icon>
+                <span>Geometry added</span>
+                <button class="geometry-redraw-btn" (click)="editGeometry()" [disabled]="createStore.saving()">
+                  <calcite-icon icon="pencil" scale="s"></calcite-icon>
+                  Edit
+                </button>
+                <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="createStore.saving()">
+                  <calcite-icon icon="refresh" scale="s"></calcite-icon>
+                  Redraw
+                </button>
+              </div>
+            } @else if (createStore.sketchActive()) {
+              <div class="geometry-status geometry-status--active">
+                <span>Drawing...</span>
+                <div class="geometry-tools">
+                  <button class="geometry-tool-btn" (click)="undo()" [disabled]="!createStore.canUndo()" title="Undo">
+                    <calcite-icon icon="undo" scale="s"></calcite-icon>
+                  </button>
+                  <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
+                    <calcite-icon icon="redo" scale="s"></calcite-icon>
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="geometry-toolbar">
+                <span class="geometry-toolbar-label">Add geometry:</span>
+                <div class="geometry-toolbar-buttons">
+                  @for (tool of drawingTools(); track tool.tool) {
+                    <button
+                      class="geometry-toolbar-btn"
+                      [class.active]="activeTool() === tool.tool"
+                      (click)="selectTool(tool.tool)"
+                      [disabled]="createStore.saving()"
+                      [title]="tool.label"
+                    >
+                      <calcite-icon [icon]="tool.icon" scale="s"></calcite-icon>
+                      <span class="geometry-toolbar-btn-label">{{ tool.label }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Attributes Section -->
+          <div class="create-section">
+            <div class="create-section-header">
+              <calcite-icon icon="list" scale="s"></calcite-icon>
+              <span>Attributes</span>
+            </div>
+
+            <rima-attribute-form
+              [fields]="fields()"
+              [values]="createStore.attributes()"
+              [disabled]="createStore.saving()"
+              [showRequiredIndicator]="true"
+              idPrefix="create"
+              (fieldChange)="onAttributeFieldChange($event)"
+            />
+          </div>
+
+          <!-- Actions -->
+          <div class="create-form-actions">
+            <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="createStore.saving()">
+              Cancel
+            </button>
+            <button class="create-btn create-btn--save" (click)="requestSave()" [disabled]="!canSave()">
+              @if (createStore.saving()) {
+                Saving...
+              } @else {
+                Create Feature
+              }
+            </button>
+          </div>
+        </div>
+      }
     </div>
 
-    <rima-attribute-form
-      [fields]="fields()"
-      [values]="createStore.attributes()"
-      [disabled]="createStore.saving()"
-      [showRequiredIndicator]="true"
-      idPrefix="create"
-      (fieldChange)="onAttributeFieldChange($event)"
-    />
+    @if (confirmAction() === 'save') {
+      <rima-confirm-dialog
+        title="Create Feature"
+        message="Are you sure you want to create this feature?"
+        confirmLabel="Create"
+        cancelLabel="Cancel"
+        (confirmed)="onConfirm($event)"
+      />
+    }
+
+    @if (confirmAction() === 'cancel' || confirmAction() === 'close') {
+      <rima-confirm-dialog
+        title="Discard Changes"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep Editing"
+        (confirmed)="onConfirm($event)"
+      />
+    }
   </div>
-
-  <!-- Actions -->
-  <div class="create-form-actions">
-    <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="createStore.saving()">
-      Cancel
-    </button>
-    <button class="create-btn create-btn--save" (click)="requestSave()" [disabled]="!canSave()">
-      @if (createStore.saving()) {
-        Saving...
-      } @else {
-        Create Feature
-      }
-    </button>
-  </div>
-</div>
-
-@if (confirmAction() === 'save') {
-  <rima-confirm-dialog
-    title="Create Feature"
-    message="Are you sure you want to create this feature?"
-    confirmLabel="Create"
-    cancelLabel="Cancel"
-    (confirmed)="onConfirm($event)"
-  />
-}
-
-@if (confirmAction() === 'cancel') {
-  <rima-confirm-dialog
-    title="Discard Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirmLabel="Discard"
-    cancelLabel="Keep Editing"
-    (confirmed)="onConfirm($event)"
-  />
 }

@@ -1,12 +1,8 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import type Field from '@arcgis/core/layers/support/Field';
 import { GraphicLayer } from '@arcgis/core/Graphic';
-import { AttributeEditFormComponent } from '../../../edit/attributes/attribute-edit-form/attribute-edit-form.component';
-import { AttributeEditStore } from '../../../edit/attributes/attribute-edit.store';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { isLayerEditable } from '../../../layer/layer-capabilities';
 import { isImmutableField } from '../../../layer/layer-attributes';
 import { resolveFieldDisplayValue } from '../../../layer/layer-attribute-domain-resolver';
 
@@ -19,18 +15,13 @@ interface FieldEntry {
 
 @Component({
   selector: 'rima-attributes-tab',
-  imports: [AttributeEditFormComponent],
+  imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './attributes-tab.component.html',
   styleUrl: './attributes-tab.component.scss',
 })
 export class AttributesTabComponent {
   readonly graphic = input.required<Graphic>();
-
-  private readonly editStore = inject(AttributeEditStore);
-
-  readonly editMode = computed(() => this.editStore.editing());
-  readonly isEditable = computed(() => isLayerEditable(this.graphic()));
 
   readonly fields = computed<FieldEntry[]>(() => {
     const graphic: Graphic = this.graphic();
@@ -65,8 +56,4 @@ export class AttributesTabComponent {
 
     return [];
   });
-
-  startEdit(): void {
-    this.editStore.startEditing(this.graphic());
-  }
 }

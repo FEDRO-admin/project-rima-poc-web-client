@@ -8,11 +8,6 @@
     >
       Attributes
     </button>
-    @if (hasGeometry()) {
-      <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'geometry'" (click)="selectTab('geometry')">
-        Geometry
-      </button>
-    }
     <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
       Hierarchy
     </button>
@@ -25,11 +20,6 @@
     @case ('attributes') {
       <div class="popup-panel">
         <rima-attributes-tab [graphic]="graphic()" />
-      </div>
-    }
-    @case ('geometry') {
-      <div class="popup-panel">
-        <rima-geometry-tab [graphic]="graphic()" />
       </div>
     }
     @case ('hierarchy') {

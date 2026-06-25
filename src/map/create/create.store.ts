@@ -2,6 +2,7 @@ import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
+import { resolveCreatableFields, buildDefaultAttributes } from './create-attribute.service';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -44,11 +45,15 @@ export const CreateStore = signalStore(
     }),
   })),
   withMethods((store) => ({
-    activate(layer: FeatureLayer): void {
+    activate(layer: FeatureLayer, subtypeField?: string, subtypeValue?: number | string): void {
+      const fields = resolveCreatableFields(layer, subtypeValue);
+      const attributes = buildDefaultAttributes(layer, fields);
       patchState(store, {
         active: true,
         layer,
-        attributes: {},
+        subtypeField,
+        subtypeValue,
+        attributes,
         geometry: undefined,
         sketchActive: false,
         adjusting: false,

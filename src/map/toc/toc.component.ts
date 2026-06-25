@@ -86,16 +86,14 @@ export class TocComponent {
     await layer.load();
     const subtypeField = getSubtypeFieldName(layer);
 
+    let subtypeValue: number | string | undefined;
     if (subtypeField) {
       const query = layer.createQuery();
       query.num = 1;
       query.outFields = [subtypeField];
       const result = await layer.queryFeatures(query);
-      const typeValue = result.features[0]?.attributes?.[subtypeField] as number | string | undefined;
-      if (typeValue != null) {
-        this.createStore.setSubtype(subtypeField, typeValue);
-      }
+      subtypeValue = result.features[0]?.attributes?.[subtypeField] as number | string | undefined;
     }
-    this.createStore.activate(layer);
+    this.createStore.activate(layer, subtypeField, subtypeValue);
   }
 }
