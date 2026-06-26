@@ -1,5 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, signal } from '@angular/core';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal } from '@angular/core';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
@@ -10,8 +9,8 @@ import { DrawingToolOption, getDrawingToolsForGeometryType } from '../create-con
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
-import { CreateFormLoadError as SaveAndOpenPopupError } from '../create-errors';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
+import { getSubtypes, SubtypeEntry } from '../../layer/layer-sub-types';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -22,18 +21,17 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
 })
-export class CreateFormComponent {
+export class CreateFormComponent implements OnDestroy {
   protected readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.createGeometryService.cancel());
+  ngOnDestroy(): void {
+    this.createGeometryService.cancel();
   }
 
   protected readonly layer = computed(() => this.createStore.layer());
@@ -51,6 +49,12 @@ export class CreateFormComponent {
     return getDrawingToolsForGeometryType(layer.geometryType);
   });
 
+  protected readonly subtypes = computed<SubtypeEntry[]>(() => {
+    const layer = this.createStore.layer();
+    if (!layer) return [];
+    return getSubtypes(layer);
+  });
+
   protected readonly canSave = computed<boolean>(() => {
     const hasGeometry = this.createStore.geometry() != null;
     const notSaving = !this.createStore.saving();
@@ -59,6 +63,16 @@ export class CreateFormComponent {
 
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
     this.createStore.updateField(event.fieldName, event.value);
+  }
+
+  protected onSubtypeChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const rawValue = target.value;
+    const subtypes = this.subtypes();
+    const match = subtypes.find((s) => String(s.code) === rawValue);
+    if (match) {
+      this.createStore.changeSubtype(match.code);
+    }
   }
 
   protected selectTool(tool: CreateTool): void {

@@ -16,3 +16,7 @@ export function getSubtypes(layer: FeatureLayer): SubtypeEntry[] {
   const sourceSubtypes = layer.sourceJSON?.['subtypes'] as SubtypeEntry[] | undefined;
   return sourceSubtypes ?? [];
 }
+
+export function getDefaultSubtypeCode(layer: FeatureLayer): number | string | undefined {
+  return layer.sourceJSON?.['defaultSubtypeCode'] as number | string | undefined;
+}

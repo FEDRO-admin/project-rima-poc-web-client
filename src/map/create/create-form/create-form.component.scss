@@ -102,6 +102,30 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
+// Subtype
+
+.subtype-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.subtype-select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #1a73e8;
+  }
+}
+
 // Geometry status
 
 .geometry-status {

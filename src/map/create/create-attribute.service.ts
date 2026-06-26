@@ -31,6 +31,10 @@ export function buildDefaultAttributes(
   const attributes: Record<string, AttributeValue> = {};
 
   for (const editField of fields) {
+    if (editField.fieldType === 'guid') {
+      attributes[editField.name] = null;
+      continue;
+    }
     const layerField = layer.fields.find((f) => f.name === editField.name);
     const defaultValue = layerField?.defaultValue as AttributeValue | undefined;
     attributes[editField.name] = defaultValue ?? null;

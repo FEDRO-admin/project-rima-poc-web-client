@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
@@ -13,10 +13,9 @@ import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } fro
 @Injectable({
   providedIn: 'root',
 })
-export class CreateGeometryService {
+export class CreateGeometryService implements OnDestroy {
   private readonly viewService = inject(MapViewService);
   private readonly store = inject(CreateStore);
-  private readonly destroyRef = inject(DestroyRef);
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
@@ -24,8 +23,8 @@ export class CreateGeometryService {
   private updateEventHandle: { remove(): void } | undefined;
   private sketchGraphic: Graphic | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.cleanup());
+  ngOnDestroy(): void {
+    this.cleanup();
   }
 
   startDrawing(layer: FeatureLayer, tool?: CreateTool): void {

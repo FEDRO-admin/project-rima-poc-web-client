@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, OnDestroy, signal } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Graphic from '@arcgis/core/Graphic';
 import type { GraphicHit } from '@arcgis/core/views/types';
@@ -11,72 +11,74 @@ export interface GuidPickerCandidate {
   idValue: string;
 }
 
+export interface GuidPickerResult {
+  fieldName: string;
+  value: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class GuidPickerService {
+export class GuidPickerService implements OnDestroy {
   private readonly viewService = inject(MapViewService);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly active = signal(false);
   readonly candidates = signal<GuidPickerCandidate[]>([]);
   readonly fieldName = signal<string | undefined>(undefined);
+  readonly lastSelection = signal<GuidPickerResult | undefined>(undefined);
 
   private clickHandle: { remove(): void } | undefined;
-  private resolveSelection: ((value: string | undefined) => void) | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.cancel());
+  ngOnDestroy(): void {
+    this.cancel();
   }
 
-  startPicking(forField: string): Promise<string | undefined> {
+  startPicking(forField: string): void {
     this.cancel();
     this.fieldName.set(forField);
     this.active.set(true);
     this.candidates.set([]);
+    this.lastSelection.set(undefined);
 
     const view = this.viewService.mapView();
     if (!view) {
       this.active.set(false);
-      return Promise.resolve(undefined);
+      return;
     }
 
-    return new Promise<string | undefined>((resolve) => {
-      this.resolveSelection = resolve;
+    this.clickHandle = view.on('click', async (event) => {
+      event.stopPropagation();
 
-      this.clickHandle = view.on('click', async (event) => {
-        event.stopPropagation();
-
-        const response = await view.hitTest(event, {
-          include: view.map!.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],
-        });
-
-        const hits = response.results
-          .filter((result): result is GraphicHit => result.type === 'graphic')
-          .map((result) => result.graphic);
-
-        if (hits.length === 0) return;
-
-        const candidates = hits.map((graphic) => this.buildCandidate(graphic));
-        this.candidates.set(candidates);
+      const response = await view.hitTest(event, {
+        include: view.map!.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],
       });
+
+      const hits = response.results
+        .filter((result): result is GraphicHit => result.type === 'graphic')
+        .map((result) => result.graphic);
+
+      if (hits.length === 0) return;
+
+      const candidates = hits.map((graphic) => this.buildCandidate(graphic));
+      this.candidates.set(candidates);
     });
   }
 
   confirmSelection(candidate: GuidPickerCandidate): void {
-    this.resolveSelection?.(candidate.idValue);
+    const field = this.fieldName();
+    if (field) {
+      this.lastSelection.set({ fieldName: field, value: candidate.idValue });
+    }
     this.cleanup();
   }
 
   cancel(): void {
-    this.resolveSelection?.(undefined);
     this.cleanup();
   }
 
   private cleanup(): void {
     this.clickHandle?.remove();
     this.clickHandle = undefined;
-    this.resolveSelection = undefined;
     this.active.set(false);
     this.candidates.set([]);
     this.fieldName.set(undefined);

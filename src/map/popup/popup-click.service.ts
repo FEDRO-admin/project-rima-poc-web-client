@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { EditEffects } from '../edit/edit-effects';
 import { CreateEffects } from '../create/create-effects';
@@ -13,16 +13,15 @@ interface Handle {
 @Injectable({
   providedIn: 'root',
 })
-export class PopupClickService {
+export class PopupClickService implements OnDestroy {
   private readonly popupStore = inject(PopupStore);
   private readonly editEffects = inject(EditEffects);
   private readonly createEffects = inject(CreateEffects);
-  private readonly destroyRef = inject(DestroyRef);
 
   private clickHandle: Handle | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.detach());
+  ngOnDestroy(): void {
+    this.detach();
   }
 
   public attach(view: MapView): void {

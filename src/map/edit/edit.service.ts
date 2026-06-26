@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
@@ -19,11 +19,10 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 @Injectable({
   providedIn: 'root',
 })
-export class EditService {
+export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly popupStore = inject(PopupStore);
   private readonly viewService = inject(MapViewService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
@@ -35,8 +34,8 @@ export class EditService {
 
   private _originalGeometry: Geometry | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.reset());
+  ngOnDestroy(): void {
+    this.reset();
   }
 
   activate(graphic: Graphic): void {

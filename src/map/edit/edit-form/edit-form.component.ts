@@ -1,4 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { EditStore } from '../edit.store';
 import { EditService } from '../edit.service';
@@ -18,15 +18,14 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
   templateUrl: './edit-form.component.html',
   styleUrl: './edit-form.component.scss',
 })
-export class EditFormComponent {
+export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
   private readonly editService = inject(EditService);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.editService.reset());
+  ngOnDestroy(): void {
+    this.editService.reset();
   }
 
   protected readonly fields = computed<AttributeEditField[]>(() => {

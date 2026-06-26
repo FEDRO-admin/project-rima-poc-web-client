@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, input, output } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { AttributeEditField } from '../attribute-edit-field';
@@ -23,6 +23,15 @@ export class AttributeFormComponent {
 
   protected readonly guidPickerService = inject(GuidPickerService);
 
+  constructor() {
+    effect(() => {
+      const selection = this.guidPickerService.lastSelection();
+      if (selection) {
+        this.fieldChange.emit({ fieldName: selection.fieldName, value: selection.value });
+      }
+    });
+  }
+
   protected getFieldValue(fieldName: string): AttributeValue {
     return this.values()[fieldName] ?? null;
   }
@@ -37,11 +46,8 @@ export class AttributeFormComponent {
     this.fieldChange.emit({ fieldName, value: typedValue });
   }
 
-  protected async startGuidPick(fieldName: string): Promise<void> {
-    const value = await this.guidPickerService.startPicking(fieldName);
-    if (value != null) {
-      this.fieldChange.emit({ fieldName, value });
-    }
+  protected startGuidPick(fieldName: string): void {
+    this.guidPickerService.startPicking(fieldName);
   }
 
   protected selectGuidCandidate(candidate: GuidPickerCandidate): void {
