@@ -10,7 +10,6 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { getSubtypes, SubtypeEntry } from '../../layer/layer-sub-types';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -49,12 +48,6 @@ export class CreateFormComponent implements OnDestroy {
     return getDrawingToolsForGeometryType(layer.geometryType);
   });
 
-  protected readonly subtypes = computed<SubtypeEntry[]>(() => {
-    const layer = this.createStore.layer();
-    if (!layer) return [];
-    return getSubtypes(layer);
-  });
-
   protected readonly canSave = computed<boolean>(() => {
     const hasGeometry = this.createStore.geometry() != null;
     const notSaving = !this.createStore.saving();
@@ -63,16 +56,6 @@ export class CreateFormComponent implements OnDestroy {
 
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
     this.createStore.updateField(event.fieldName, event.value);
-  }
-
-  protected onSubtypeChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const rawValue = target.value;
-    const subtypes = this.subtypes();
-    const match = subtypes.find((s) => String(s.code) === rawValue);
-    if (match) {
-      this.createStore.changeSubtype(match.code);
-    }
   }
 
   protected selectTool(tool: CreateTool): void {

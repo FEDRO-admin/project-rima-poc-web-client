@@ -20,3 +20,11 @@ export function getSubtypes(layer: FeatureLayer): SubtypeEntry[] {
 export function getDefaultSubtypeCode(layer: FeatureLayer): number | string | undefined {
   return layer.sourceJSON?.['defaultSubtypeCode'] as number | string | undefined;
 }
+
+export function getSubtypeCodeFromLayerName(layer: FeatureLayer): number | string | undefined {
+  const layerName = layer.sourceJSON?.['name'] as string | undefined;
+  if (!layerName) return undefined;
+  const subtypes = getSubtypes(layer);
+  const match = subtypes.find((s) => s.name === layerName);
+  return match?.code;
+}

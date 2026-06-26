@@ -16,30 +16,6 @@
         </div>
 
         <div class="create-form">
-          <!-- Subtype Section -->
-          @if (subtypes().length > 0) {
-            <div class="create-section">
-              <div class="create-section-header">
-                <calcite-icon icon="category" scale="s"></calcite-icon>
-                <span>Subtype</span>
-              </div>
-              <div class="subtype-field">
-                <select
-                  class="subtype-select"
-                  [value]="createStore.subtypeValue()"
-                  (change)="onSubtypeChange($event)"
-                  [disabled]="createStore.saving()"
-                >
-                  @for (subtype of subtypes(); track subtype.code) {
-                    <option [value]="subtype.code" [selected]="createStore.subtypeValue() === subtype.code">
-                      {{ subtype.name }} ({{ subtype.code }})
-                    </option>
-                  }
-                </select>
-              </div>
-            </div>
-          }
-
           <!-- Geometry Section -->
           <div class="create-section">
             <div class="create-section-header">
@@ -91,6 +67,9 @@
                   </button>
                   <button class="geometry-tool-btn" (click)="redo()" [disabled]="!createStore.canRedo()" title="Redo">
                     <calcite-icon icon="redo" scale="s"></calcite-icon>
+                  </button>
+                  <button class="geometry-tool-btn" (click)="clearGeometry()" title="Cancel drawing">
+                    <calcite-icon icon="x" scale="s"></calcite-icon>
                   </button>
                 </div>
               </div>

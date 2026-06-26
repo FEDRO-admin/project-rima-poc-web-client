@@ -80,13 +80,6 @@ export const CreateStore = signalStore(
     setSubtype(subtypeField: string, subtypeValue: number | string): void {
       patchState(store, { subtypeField, subtypeValue });
     },
-    changeSubtype(subtypeValue: number | string): void {
-      const layer = store.layer();
-      if (!layer) return;
-      const fields = resolveCreatableFields(layer, subtypeValue);
-      const attributes = buildDefaultAttributes(layer, fields);
-      patchState(store, { subtypeValue, attributes });
-    },
     updateField(fieldName: string, value: AttributeValue): void {
       const attributes = { ...store.attributes(), [fieldName]: value };
       patchState(store, { attributes });
