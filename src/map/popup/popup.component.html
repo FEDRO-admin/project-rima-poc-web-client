@@ -16,6 +16,11 @@
               <calcite-icon icon="pencil" scale="s"></calcite-icon>
             </button>
           }
+          @if (isDeletable()) {
+            <button class="popup-header-btn" (click)="startDelete()" aria-label="Delete feature">
+              <calcite-icon icon="trash" scale="s"></calcite-icon>
+            </button>
+          }
         }
         <span class="popup-header-spacer"></span>
         <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>
@@ -42,6 +47,16 @@
 
       @if (store.showDetail() && store.selectedGraphic()) {
         <rima-popup-content [graphic]="store.selectedGraphic()!" />
+      }
+
+      @if (deleteStore.confirmRequested()) {
+        <rima-confirm-dialog
+          title="Delete Feature"
+          message="Are you sure you want to delete this feature? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          (confirmed)="onDeleteConfirm($event)"
+        />
       }
     </div>
   </div>

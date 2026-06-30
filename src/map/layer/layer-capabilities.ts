@@ -20,6 +20,24 @@ export function isLayerEditable(graphic: Graphic): boolean {
   return true;
 }
 
+export function isLayerDeletable(graphic: Graphic): boolean {
+  const layer = graphic.layer;
+  if (!(layer instanceof FeatureLayer)) {
+    return false;
+  }
+
+  if (!layer.editingEnabled) {
+    return false;
+  }
+
+  const operations = layer.capabilities?.operations;
+  if (!operations?.supportsDelete) {
+    return false;
+  }
+
+  return true;
+}
+
 export function isLayerCreatable(layer: FeatureLayer): boolean {
   if (!layer.editingEnabled) {
     return false;
