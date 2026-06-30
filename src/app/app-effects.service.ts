@@ -3,6 +3,7 @@ import { LanguageEffect } from '../i18n/language-effects';
 import { PopupEffects } from '../map/popup/popup-effects';
 import { EditEffects } from '../map/edit/edit-effects';
 import { CreateEffects } from '../map/create/create-effects';
+import { DeleteEffects } from '../map/delete/delete-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -17,5 +18,6 @@ export class AppEffectsService {
     inject(PopupEffects);
     inject(EditEffects);
     inject(CreateEffects);
+    inject(DeleteEffects);
   }
 }
