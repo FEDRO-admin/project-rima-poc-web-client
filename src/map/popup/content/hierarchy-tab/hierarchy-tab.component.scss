@@ -2,9 +2,56 @@
   display: block;
 }
 
-.hierarchy-placeholder {
-  color: #888;
+.hierarchy-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.hierarchy-error {
+  color: #d83020;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.hierarchy-empty {
+  color: #6a6a6a;
   font-style: italic;
   padding: 12px 0;
   margin: 0;
+}
+
+.node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+
+  &--active {
+    font-weight: 600;
+    background-color: rgba(0, 122, 194, 0.1);
+    border-left: 3px solid #007ac2;
+    padding-left: 4px;
+  }
+
+  &--group {
+    cursor: default;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+.node-display-label {
+  color: #323232;
+}
+
+.node-layer-title {
+  font-size: 0.8em;
+  color: #6a6a6a;
+  font-style: italic;
 }
