@@ -1,0 +1,208 @@
+:host {
+  display: contents;
+}
+
+.edit-container {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: min(22.5rem, 32vw);
+  align-self: stretch;
+  order: -1;
+  border-right: 1px solid color-mix(in srgb, #0079c1 35%, white);
+  background-color: color-mix(in srgb, #0079c1 6%, white);
+  overflow: hidden;
+}
+
+.edit-card {
+  position: relative;
+  padding: 12px 16px;
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px -4px 0;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.edit-header-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-header-spacer {
+  flex: 1;
+}
+
+.edit-header-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: #666;
+  padding: 2px 6px;
+  border-radius: 3px;
+
+  &:hover {
+    color: #333;
+    background-color: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.edit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+// Geometry controls
+
+.geometry-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.geometry-status--active {
+  background: #e8f0fe;
+  color: #0079c1;
+}
+
+.geometry-status--modified {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+
+.geometry-tools {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.geometry-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.8;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &--confirm {
+    color: #1e7e34;
+    border-color: #1e7e34;
+
+    &:hover:not(:disabled) {
+      background: rgba(30, 126, 52, 0.1);
+    }
+  }
+}
+
+.geometry-start-btn,
+.geometry-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: #0079c1;
+    color: #0079c1;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// Actions
+
+.edit-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  margin-top: auto;
+}
+
+.edit-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.edit-btn--cancel {
+  background: #f0f0f0;
+  color: #333;
+
+  &:hover:not(:disabled) {
+    background: #e0e0e0;
+  }
+}
+
+.edit-btn--save {
+  background: #0079c1;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #005a8e;
+  }
+}

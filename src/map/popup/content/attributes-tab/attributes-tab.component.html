@@ -1,0 +1,29 @@
+@if (fields().length === 0) {
+  <p class="attributes-placeholder">No attributes available.</p>
+} @else {
+  <table class="attributes-table">
+    @for (field of fields(); track field.label) {
+      <tr>
+        <td class="attributes-key">{{ field.label }}</td>
+        <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+          {{ field.value == null ? 'null' : field.value }}
+        </td>
+      </tr>
+    }
+  </table>
+}
+@if (immutableFields().length > 0) {
+  <details class="attributes-system-fields">
+    <summary>Immutable</summary>
+    <table class="attributes-table">
+      @for (field of immutableFields(); track field.label) {
+        <tr>
+          <td class="attributes-key">{{ field.label }}</td>
+          <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+            {{ field.value == null ? 'null' : field.value }}
+          </td>
+        </tr>
+      }
+    </table>
+  </details>
+}

@@ -16,31 +16,31 @@ title RIMA PoC - Object Info (Popup) Flow\nTask 580 / June 2026
 
 actor "User" as user #LightBlue
 participant "ArcGIS MapView" as mapView #FFEBEE
+participant "PopupEffects" as popupEffects #F3E5F5
 participant "PopupClickService" as clickSvc #F3E5F5
+participant "EditEffects" as editEffects #F3E5F5
 participant "PopupStore\n[SignalStore]" as store #F3E5F5
 participant "PopupHighlightService" as highlightSvc #F3E5F5
 participant "PopupComponent" as popupComp #E8F5E9
 participant "PopupContentComponent" as contentComp #E8F5E9
+participant "AttributesTabComponent" as attrTab #E8F5E9
+participant "GeometryTabComponent" as geoTab #E8F5E9
 participant "FeatureLayerView" as layerView #FFEBEE
 
 == Initialisation ==
 
-note over clickSvc
-  PopupClickService constructor:
-  registers effect() watching mapView() signal.
-  When view becomes available:
+note over popupEffects
+  PopupEffects constructor registers
+  4 reactive effects:
+  1. attachClickHandler() — watch mapView()
+  2. highlightSelected() — watch selectedGraphic()
+  3. highlightHovered() — watch hoveredIndex()
+  4. clearHighlight() — watch visible()
 end note
 
+popupEffects -> clickSvc : effect(): mapView() available\n-> attach(view)
 clickSvc -> mapView : view.popupEnabled = false\n(disables native SDK popup)
 clickSvc -> mapView : view.on('click', handleClick)
-
-note over highlightSvc
-  PopupHighlightService constructor:
-  registers 3 reactive effects:
-  1. Watch selectedGraphic() -> highlight on map
-  2. Watch hoveredIndex() -> highlight on map
-  3. Watch visible() -> clear all when false
-end note
 
 == User Clicks on Map ==
 
@@ -48,38 +48,47 @@ user -> mapView : clicks on map
 mapView -> clickSvc : click event { x, y }
 activate clickSvc
 
-clickSvc -> mapView : [ASYNC] view.hitTest(event,\n  { include: all FeatureLayers })
-activate mapView
-mapView --> clickSvc : HitTestResult { results[] }
-deactivate mapView
+clickSvc -> editEffects : editing()
+alt editEffects.editing() === true
+  note over clickSvc
+    Click IGNORED — edit session active.
+    Prevents accidental popup change.
+  end note
+else not editing
+  clickSvc -> mapView : [ASYNC] view.hitTest(event,\n  { include: all FeatureLayers })
+  activate mapView
+  mapView --> clickSvc : HitTestResult { results[] }
+  deactivate mapView
 
-clickSvc -> clickSvc : Extract Graphic[] from results\n(filter type === 'graphic')
+  clickSvc -> clickSvc : Extract Graphic[] from results\n(filter type === 'graphic')
 
-alt graphics.length > 0
-  clickSvc -> store : open(graphics)
-  activate store
+  alt graphics.length > 0
+    clickSvc -> store : open(graphics)
+    activate store
 
-  alt graphics.length === 1
-    store -> store : patchState({\n  graphics,\n  selectedIndex: 0,\n  visible: true\n})\n-> jumps directly to detail view
-  else graphics.length > 1
-    store -> store : patchState({\n  graphics,\n  selectedIndex: undefined,\n  visible: true\n})\n-> shows feature list view
+    alt graphics.length === 1
+      store -> store : patchState({\n  graphics,\n  selectedIndex: 0,\n  visible: true\n})\n-> jumps directly to detail view
+    else graphics.length > 1
+      store -> store : patchState({\n  graphics,\n  selectedIndex: undefined,\n  visible: true\n})\n-> shows feature list view
+    end
+
+    deactivate store
+  else no graphics hit
+    clickSvc -> store : close()
+    store -> store : reset all state
   end
-
-  deactivate store
-else no graphics hit
-  clickSvc -> store : close()
-  store -> store : reset all state
 end
 
 deactivate clickSvc
 
 == Highlight Reacts to Store ==
 
-note over highlightSvc
+note over popupEffects
   effect() fires: selectedGraphic() changed
 end note
 
-highlightSvc -> highlightSvc : clearSelectionHighlight()
+popupEffects -> highlightSvc : clearSelectionHighlight()
+popupEffects -> highlightSvc : highlightGraphic(graphic, 'selection')
 highlightSvc -> mapView : [ASYNC] view.whenLayerView(graphic.layer)
 mapView --> highlightSvc : FeatureLayerView
 highlightSvc -> layerView : layerView.highlight(graphic)
@@ -99,12 +108,21 @@ alt store.showList() (multiple features)
 
   user -> popupComp : hovers over list item [index]
   popupComp -> store : hoverFeature(index)
-  note over highlightSvc : effect() fires:\nhoveredIndex() changed\n-> highlight hovered feature
+
+  note over popupEffects
+    effect() fires: hoveredIndex() changed
+  end note
+  popupEffects -> highlightSvc : clearHoverHighlight()
+  popupEffects -> highlightSvc : highlightGraphic(graphic, 'hover')
 
   user -> popupComp : clicks list item [index]
   popupComp -> store : selectFeature(index)
   store -> store : patchState({ selectedIndex: index })
-  note over highlightSvc : effect() fires:\nselectedGraphic() changed\n-> update selection highlight
+
+  note over popupEffects
+    effect() fires: selectedGraphic() changed
+    -> update selection highlight
+  end note
 
 else store.showDetail() (single feature)
 
@@ -112,19 +130,40 @@ else store.showDetail() (single feature)
   popupComp -> contentComp : [graphic] = selectedGraphic
   activate contentComp
 
-  contentComp -> contentComp : Compute title from graphic.layer.title\nCompute fields from layer.fields + attributes
+  contentComp -> contentComp : Compute title from graphic.layer.title
 
   note over contentComp
     Tabbed view:
-    [Attributes] [Hierarchy] [Documents]
+    [Attributes] [Geometry] [Hierarchy] [Documents]
     Default: Attributes tab active
+    Geometry tab only shown if graphic has geometry.
+  end note
 
-    Attributes tab:
+  contentComp -> attrTab : [graphic] = graphic
+  note over attrTab
+    Read mode:
     - Key-value table using field.alias as label
-    - Falls back to raw attribute key names
+    - Coded-value domains resolved to names
+    - System fields in collapsible <details>
+    - "Edit" button if isLayerEditable(graphic)
 
-    Hierarchy tab: placeholder
-    Documents tab: placeholder
+    Edit mode (after clicking Edit):
+    - attributeEditStore.startEditing(graphic)
+    - Renders <rima-edit-form>
+    - See 583-editing documentation
+  end note
+
+  contentComp -> geoTab : [graphic] = graphic
+  note over geoTab
+    Read mode:
+    - Geometry type, length, area info
+    - "Edit Geometry" button if
+      layer supports geometry update
+
+    Edit mode (after clicking Edit Geometry):
+    - geometryEditService.startEditing(graphic)
+    - Renders <rima-geometry-edit-form>
+    - See 583-editing documentation
   end note
 
   deactivate contentComp
@@ -139,25 +178,36 @@ popupComp -> mapView : [ASYNC] view.goTo(\n  { target: geometry, zoom: 15 })
 user -> popupComp : clicks "Back" (chevron)
 popupComp -> store : backToList()
 store -> store : patchState({ selectedIndex: undefined })
-note over highlightSvc : selection highlight cleared\n(no selectedGraphic)
+note over popupEffects : selection highlight cleared\n(no selectedGraphic)
 note over popupComp : UI returns to feature list view
 
 == Close Popup ==
 
 alt user clicks close button
-  user -> popupComp : clicks X
-  popupComp -> store : close()
+  user -> popupComp : clicks ✕
+  popupComp -> popupComp : requestClose()
 else user presses Escape
-  user -> popupComp : @HostListener Escape
-  popupComp -> store : close()
+  user -> popupComp : onEscape()
+  popupComp -> popupComp : requestClose()
 else user clicks empty map area
   user -> mapView : click (no features hit)
   clickSvc -> store : close()
 end
 
+alt editEffects.isDirty()
+  popupComp -> user : <rima-confirm-dialog>\n"You have unsaved edits.\nAre you sure you want to close?"
+  alt user confirms
+    popupComp -> store : close()
+  else user cancels
+    note over popupComp : Popup stays open,\nediting continues
+  end
+else not dirty
+  popupComp -> store : close()
+end
+
 store -> store : patchState({\n  graphics: [],\n  selectedIndex: undefined,\n  hoveredIndex: undefined,\n  visible: false\n})
 
-note over highlightSvc : effect() fires:\nvisible() = false\n-> clearAllHighlights()
+note over popupEffects : effect() fires:\nvisible() = false\n-> clearAllHighlights()
 
 note over popupComp : @if (store.visible()) hides\nthe entire popup card
 

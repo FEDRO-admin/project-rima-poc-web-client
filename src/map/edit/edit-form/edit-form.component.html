@@ -1,0 +1,108 @@
+@if (store.active()) {
+  <div class="edit-container" role="dialog" (keydown.escape)="onEscape()">
+    <div class="edit-card">
+      <div class="edit-header">
+        <calcite-icon icon="pencil" scale="s"></calcite-icon>
+        <span class="edit-header-title">Edit Feature</span>
+        <span class="edit-header-spacer"></span>
+        <button class="edit-header-btn edit-close" (click)="requestClose()" aria-label="Close edit panel">✕</button>
+      </div>
+
+      <!-- Geometry Section -->
+      @if (hasGeometry() && supportsGeometryUpdate()) {
+        <div class="edit-section">
+          <div class="edit-section-header">
+            <calcite-icon icon="polygon-vertices" scale="s"></calcite-icon>
+            <span>Geometry</span>
+          </div>
+
+          @if (store.sketchActive()) {
+            <div class="geometry-status geometry-status--active">
+              <span>Editing geometry...</span>
+              <div class="geometry-tools">
+                <button class="geometry-tool-btn" (click)="undo()" [disabled]="!store.canUndo()" title="Undo">
+                  <calcite-icon icon="undo" scale="s"></calcite-icon>
+                </button>
+                <button class="geometry-tool-btn" (click)="redo()" [disabled]="!store.canRedo()" title="Redo">
+                  <calcite-icon icon="redo" scale="s"></calcite-icon>
+                </button>
+                <button
+                  class="geometry-tool-btn geometry-tool-btn--confirm"
+                  (click)="confirmGeometry()"
+                  title="Confirm geometry"
+                >
+                  <calcite-icon icon="check" scale="s"></calcite-icon>
+                </button>
+                <button class="geometry-tool-btn" (click)="discardGeometry()" title="Discard geometry changes">
+                  <calcite-icon icon="reset" scale="s"></calcite-icon>
+                </button>
+              </div>
+            </div>
+          } @else if (store.editedGeometry()) {
+            <div class="geometry-status geometry-status--modified">
+              <calcite-icon icon="check-circle" scale="s"></calcite-icon>
+              <span>Geometry modified</span>
+              <button class="geometry-edit-btn" (click)="reenterSketch()" [disabled]="store.saving()">
+                <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+                Continue Editing
+              </button>
+            </div>
+          } @else {
+            <button class="geometry-start-btn" (click)="startGeometryEditing()" [disabled]="store.saving()">
+              <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+              Edit Geometry
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Attributes Section -->
+      <div class="edit-section">
+        <div class="edit-section-header">
+          <calcite-icon icon="list" scale="s"></calcite-icon>
+          <span>Attributes</span>
+        </div>
+
+        <rima-attribute-form
+          [fields]="fields()"
+          [values]="store.editedAttributes()"
+          [disabled]="store.saving()"
+          idPrefix="edit"
+          (fieldChange)="onAttributeFieldChange($event)"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div class="edit-form-actions">
+        <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="store.saving()">Cancel</button>
+        <button class="edit-btn edit-btn--save" (click)="requestSave()" [disabled]="!canSave()">
+          @if (store.saving()) {
+            Saving...
+          } @else {
+            Save
+          }
+        </button>
+      </div>
+    </div>
+
+    @if (confirmAction() === 'save') {
+      <rima-confirm-dialog
+        title="Save Changes"
+        message="Are you sure you want to save the changes to this feature?"
+        confirmLabel="Save"
+        cancelLabel="Cancel"
+        (confirmed)="onConfirm($event)"
+      />
+    }
+
+    @if (confirmAction() === 'cancel' || confirmAction() === 'close') {
+      <rima-confirm-dialog
+        title="Discard Changes"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep Editing"
+        (confirmed)="onConfirm($event)"
+      />
+    }
+  </div>
+}

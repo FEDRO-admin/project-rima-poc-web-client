@@ -1,5 +1,7 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { PopupStore } from './popup.store';
+import { EditEffects } from '../edit/edit-effects';
+import { CreateEffects } from '../create/create-effects';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
 import type { GraphicHit } from '@arcgis/core/views/types';
@@ -11,14 +13,15 @@ interface Handle {
 @Injectable({
   providedIn: 'root',
 })
-export class PopupClickService {
+export class PopupClickService implements OnDestroy {
   private readonly popupStore = inject(PopupStore);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly editEffects = inject(EditEffects);
+  private readonly createEffects = inject(CreateEffects);
 
   private clickHandle: Handle | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.detach());
+  ngOnDestroy(): void {
+    this.detach();
   }
 
   public attach(view: MapView): void {
@@ -38,6 +41,11 @@ export class PopupClickService {
 
   private async handleClick(view: MapView, event: { x: number; y: number }): Promise<void> {
     if (!view.map) return;
+
+    // Ignore all map clicks while in edit or create mode
+    if (this.editEffects.editing() || this.createEffects.creating()) {
+      return;
+    }
 
     const response = await view.hitTest(event, {
       include: view.map.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],
