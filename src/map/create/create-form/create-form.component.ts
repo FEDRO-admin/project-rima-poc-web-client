@@ -1,4 +1,13 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  CUSTOM_ELEMENTS_SCHEMA,
+  effect,
+  inject,
+  OnDestroy,
+  signal,
+  untracked,
+} from '@angular/core';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
@@ -10,12 +19,15 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
+import { ReferencePointListComponent } from '../../shared/reference-point/reference-point-list/reference-point-list.component';
+import { ReferencePointStore } from '../../shared/reference-point/reference-point.store';
+import { ReferencePointService } from '../../shared/reference-point/reference-point.service';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-create-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -24,10 +36,23 @@ export class CreateFormComponent implements OnDestroy {
   protected readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
+  protected readonly refPointStore = inject(ReferencePointStore);
+  private readonly referencePointService = inject(ReferencePointService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
+
+  constructor() {
+    effect(() => {
+      const layer = this.createStore.layer();
+      untracked(() => {
+        if (layer) {
+          this.referencePointService.initializeForCreate(layer);
+        }
+      });
+    });
+  }
 
   ngOnDestroy(): void {
     this.createGeometryService.cancel();

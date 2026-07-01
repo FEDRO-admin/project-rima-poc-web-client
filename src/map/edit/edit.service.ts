@@ -12,6 +12,7 @@ import { EditSaveError } from './edit-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
+import { ReferencePointService } from '../shared/reference-point/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -23,6 +24,7 @@ export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly popupStore = inject(PopupStore);
   private readonly viewService = inject(MapViewService);
+  private readonly referencePointService = inject(ReferencePointService);
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
@@ -43,6 +45,7 @@ export class EditService implements OnDestroy {
     this.store.activate(graphic);
     this.popupStore.close();
     this.showHighlight(graphic.geometry!);
+    this.referencePointService.loadForFeature(graphic);
   }
 
   startGeometryEditing(): void {
@@ -116,7 +119,14 @@ export class EditService implements OnDestroy {
         throw new EditSaveError(updateResult.error);
       }
 
+      // Save reference points
+      const parentId = graphic.attributes.id;
+      if (parentId) {
+        await this.referencePointService.saveAll(parentId);
+      }
+
       layer.refresh();
+      this.referencePointService.reset();
       this.store.reset();
 
       // Reopen popup with refreshed feature
@@ -153,6 +163,7 @@ export class EditService implements OnDestroy {
     this.deactivateSketch();
     this.removeHighlight();
     this._originalGeometry = undefined;
+    this.referencePointService.reset();
     this.store.reset();
   }
 

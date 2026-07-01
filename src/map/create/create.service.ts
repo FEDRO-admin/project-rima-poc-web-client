@@ -6,6 +6,7 @@ import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
+import { ReferencePointService } from '../shared/reference-point/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -16,6 +17,7 @@ export class CreateService {
   private readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
+  private readonly referencePointService = inject(ReferencePointService);
 
   async save(): Promise<number | undefined> {
     const layer = this.createStore.layer();
@@ -59,6 +61,7 @@ export class CreateService {
 
   cancel(): void {
     this.createGeometryService.cancel();
+    this.referencePointService.reset();
     this.createStore.reset();
   }
 
@@ -95,6 +98,12 @@ export class CreateService {
       const featureSet = await layer.queryFeatures(query);
       const graphic = featureSet.features[0];
       if (graphic) {
+        // Save reference points with the new feature's id
+        const parentId = graphic.attributes.id;
+        if (parentId) {
+          await this.referencePointService.saveAll(parentId);
+        }
+        this.referencePointService.reset();
         this.popupStore.open([graphic]);
       }
     } catch (error) {

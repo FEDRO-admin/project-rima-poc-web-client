@@ -82,7 +82,7 @@
                       class="geometry-toolbar-btn"
                       [class.active]="activeTool() === tool.tool"
                       (click)="selectTool(tool.tool)"
-                      [disabled]="createStore.saving()"
+                      [disabled]="createStore.saving() || refPointStore.sketchActive()"
                       [title]="tool.label"
                     >
                       <calcite-icon [icon]="tool.icon" scale="s"></calcite-icon>
@@ -110,6 +110,20 @@
               (fieldChange)="onAttributeFieldChange($event)"
             />
           </div>
+
+          <!-- Reference Points Section -->
+          @if (refPointStore.hasRelationships()) {
+            <div class="create-section">
+              <rima-reference-point-list
+                type="von"
+                [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+              />
+              <rima-reference-point-list
+                type="bis"
+                [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+              />
+            </div>
+          }
 
           <!-- Actions -->
           <div class="create-form-actions">

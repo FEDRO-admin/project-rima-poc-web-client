@@ -42,13 +42,21 @@
             <div class="geometry-status geometry-status--modified">
               <calcite-icon icon="check-circle" scale="s"></calcite-icon>
               <span>Geometry modified</span>
-              <button class="geometry-edit-btn" (click)="reenterSketch()" [disabled]="store.saving()">
+              <button
+                class="geometry-edit-btn"
+                (click)="reenterSketch()"
+                [disabled]="store.saving() || refPointSketchActive()"
+              >
                 <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
                 Continue Editing
               </button>
             </div>
           } @else {
-            <button class="geometry-start-btn" (click)="startGeometryEditing()" [disabled]="store.saving()">
+            <button
+              class="geometry-start-btn"
+              (click)="startGeometryEditing()"
+              [disabled]="store.saving() || refPointSketchActive()"
+            >
               <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
               Edit Geometry
             </button>
@@ -71,6 +79,14 @@
           (fieldChange)="onAttributeFieldChange($event)"
         />
       </div>
+
+      <!-- Reference Points Section -->
+      @if (refPointStore.hasRelationships()) {
+        <div class="edit-section">
+          <rima-reference-point-list type="von" [disabled]="store.saving() || store.sketchActive()" />
+          <rima-reference-point-list type="bis" [disabled]="store.saving() || store.sketchActive()" />
+        </div>
+      }
 
       <!-- Actions -->
       <div class="edit-form-actions">

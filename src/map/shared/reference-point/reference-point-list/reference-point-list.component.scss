@@ -1,0 +1,341 @@
+.refpoint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refpoint-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.refpoint-count {
+  font-weight: 400;
+  color: #888;
+  font-size: 12px;
+}
+
+.refpoint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.refpoint-item {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+
+  &--editing {
+    border-color: #0079c1;
+    background: #f8fbfe;
+  }
+}
+
+.refpoint-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 32px;
+}
+
+.refpoint-item-label {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.refpoint-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+
+  &--new {
+    background: #e6f4ea;
+    color: #1e7e34;
+  }
+
+  &--modified {
+    background: #fff3cd;
+    color: #856404;
+  }
+}
+
+.refpoint-item-spacer {
+  flex: 1;
+}
+
+.refpoint-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &--delete {
+    color: #c0392b;
+
+    &:hover:not(:disabled) {
+      background: rgba(192, 57, 43, 0.08);
+      color: #a93226;
+    }
+  }
+}
+
+.refpoint-editor {
+  padding: 8px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refpoint-editor-geometry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.refpoint-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.refpoint-empty {
+  font-size: 12px;
+  color: #999;
+  padding: 6px 0;
+  font-style: italic;
+}
+
+// Adding section
+
+.refpoint-adding {
+  border: 1px dashed #0079c1;
+  border-radius: 4px;
+  padding: 10px;
+  background: #f8fbfe;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.refpoint-adding-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0079c1;
+}
+
+.refpoint-adding-geometry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refpoint-geo-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.refpoint-geo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: #0079c1;
+    color: #0079c1;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.refpoint-geo-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #0079c1;
+  background: #e8f0fe;
+  border-radius: 3px;
+}
+
+.refpoint-geo-status {
+  font-size: 11px;
+  color: #0079c1;
+  font-style: italic;
+}
+
+.refpoint-geo-placed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #1e7e34;
+}
+
+.refpoint-coordinate-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.refpoint-coord-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #666;
+  }
+
+  input {
+    padding: 4px 6px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: #0079c1;
+    }
+  }
+}
+
+.refpoint-coord-error {
+  font-size: 11px;
+  color: #c0392b;
+}
+
+.refpoint-coord-apply {
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #0079c1;
+  border-radius: 3px;
+  background: #0079c1;
+  color: #fff;
+  cursor: pointer;
+
+  &:hover {
+    background: #005a8e;
+  }
+}
+
+// Actions
+
+.refpoint-adding-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.refpoint-cancel-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+
+  &:hover {
+    background: #e0e0e0;
+  }
+}
+
+.refpoint-confirm-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  background: #0079c1;
+  color: #fff;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #005a8e;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.refpoint-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px dashed #aaa;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) {
+    border-color: #0079c1;
+    color: #0079c1;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

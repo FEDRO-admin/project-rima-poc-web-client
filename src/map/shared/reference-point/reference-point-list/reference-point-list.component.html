@@ -1,0 +1,178 @@
+@if (relationship()) {
+  <div class="refpoint-section">
+    <div class="refpoint-section-header">
+      <calcite-icon icon="pin-plus" scale="s"></calcite-icon>
+      <span>{{ title() }}</span>
+      <span class="refpoint-count">({{ points().length }})</span>
+    </div>
+
+    <!-- Point list -->
+    @if (points().length > 0) {
+      <div class="refpoint-list">
+        @for (point of points(); track $index) {
+          <div class="refpoint-item" [class.refpoint-item--editing]="activeEditForThisType()?.index === $index">
+            <div class="refpoint-item-row">
+              <calcite-icon icon="pin" scale="s"></calcite-icon>
+              <span class="refpoint-item-label">{{ getPointLabel(point) }}</span>
+              @if (point.isNew) {
+                <span class="refpoint-badge refpoint-badge--new">new</span>
+              }
+              @if (point.isModified) {
+                <span class="refpoint-badge refpoint-badge--modified">modified</span>
+              }
+              <span class="refpoint-item-spacer"></span>
+              <button
+                class="refpoint-action-btn"
+                (click)="startEditing($index)"
+                [disabled]="disabled() || store.sketchActive()"
+                title="Edit point"
+              >
+                <calcite-icon icon="pencil" scale="s"></calcite-icon>
+              </button>
+              <button
+                class="refpoint-action-btn refpoint-action-btn--delete"
+                (click)="deletePoint($index)"
+                [disabled]="disabled() || store.sketchActive()"
+                title="Delete point"
+              >
+                <calcite-icon icon="trash" scale="s"></calcite-icon>
+              </button>
+            </div>
+
+            <!-- Inline editor -->
+            @if (activeEditForThisType()?.index === $index) {
+              <div class="refpoint-editor">
+                <div class="refpoint-editor-geometry">
+                  <button
+                    class="refpoint-geo-btn"
+                    (click)="startEditingGeometry($index)"
+                    [disabled]="store.sketchActive()"
+                  >
+                    <calcite-icon icon="pin-tear" scale="s"></calcite-icon>
+                    Move Point on Map
+                  </button>
+                  @if (store.sketchActive()) {
+                    <span class="refpoint-geo-status">Moving point... click to place</span>
+                  }
+                </div>
+
+                <rima-attribute-form
+                  [fields]="fields()"
+                  [values]="point.attributes"
+                  [disabled]="disabled() || store.sketchActive()"
+                  [idPrefix]="'refpoint-edit-' + $index"
+                  (fieldChange)="onEditFieldChange($index, $event)"
+                />
+
+                <div class="refpoint-editor-actions">
+                  <button class="refpoint-confirm-btn" (click)="confirmEdit()">Done</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else if (!isAddingThisType()) {
+      <div class="refpoint-empty">No reference points</div>
+    }
+
+    <!-- Adding new point -->
+    @if (isAddingThisType()) {
+      <div class="refpoint-adding">
+        <div class="refpoint-adding-header">
+          <calcite-icon icon="plus" scale="s"></calcite-icon>
+          <span>Add new point</span>
+        </div>
+
+        <!-- Geometry input -->
+        <div class="refpoint-adding-geometry">
+          @if (!store.addingGeometry()) {
+            <div class="refpoint-geo-options">
+              <button class="refpoint-geo-btn" (click)="placeOnMap()" [disabled]="store.sketchActive()">
+                <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
+                Place on Map
+              </button>
+              <button class="refpoint-geo-btn" (click)="toggleCoordinateInput()">
+                <calcite-icon icon="number-circle-1" scale="s"></calcite-icon>
+                Enter Coordinates
+              </button>
+            </div>
+
+            @if (store.sketchActive()) {
+              <div class="refpoint-geo-status-bar">
+                <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
+                <span>Click on map to place the point...</span>
+              </div>
+            }
+
+            @if (useCoordinateInput) {
+              <div class="refpoint-coordinate-input">
+                <div class="refpoint-coord-field">
+                  <label for="refpoint-coord-x">Easting (X)</label>
+                  <input
+                    id="refpoint-coord-x"
+                    type="number"
+                    [(ngModel)]="coordinateX"
+                    placeholder="e.g. 2600000"
+                    step="any"
+                  />
+                </div>
+                <div class="refpoint-coord-field">
+                  <label for="refpoint-coord-y">Northing (Y)</label>
+                  <input
+                    id="refpoint-coord-y"
+                    type="number"
+                    [(ngModel)]="coordinateY"
+                    placeholder="e.g. 1200000"
+                    step="any"
+                  />
+                </div>
+                @if (coordinateError) {
+                  <div class="refpoint-coord-error">{{ coordinateError }}</div>
+                }
+                <button class="refpoint-coord-apply" (click)="applyCoordinates()">Apply</button>
+              </div>
+            }
+          } @else {
+            <div class="refpoint-geo-placed">
+              <calcite-icon icon="check-circle" scale="s"></calcite-icon>
+              <span
+                >Point placed ({{ store.addingGeometry()!.x | number: '1.0-0' }},
+                {{ store.addingGeometry()!.y | number: '1.0-0' }})</span
+              >
+            </div>
+          }
+        </div>
+
+        <!-- Attributes for new point -->
+        @if (store.addingGeometry()) {
+          <rima-attribute-form
+            [fields]="fields()"
+            [values]="store.addingAttributes()"
+            [disabled]="false"
+            idPrefix="refpoint-add"
+            (fieldChange)="onAddingFieldChange($event)"
+          />
+        }
+
+        <!-- Add/Cancel actions -->
+        <div class="refpoint-adding-actions">
+          <button class="refpoint-cancel-btn" (click)="cancelAdd()">Cancel</button>
+          <button class="refpoint-confirm-btn" (click)="confirmAdd()" [disabled]="!store.addingGeometry()">
+            Add Point
+          </button>
+        </div>
+      </div>
+    } @else {
+      <!-- Add button -->
+      <button
+        class="refpoint-add-btn"
+        (click)="startAdding()"
+        [disabled]="disabled() || store.sketchActive() || store.isAdding()"
+      >
+        <calcite-icon icon="plus" scale="s"></calcite-icon>
+        Add Point
+      </button>
+    }
+  </div>
+}
