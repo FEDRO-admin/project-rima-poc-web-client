@@ -1,5 +1,6 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
 import { PopupStore } from './popup.store';
+import { EditEffects } from '../edit/edit-effects';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapView from '@arcgis/core/views/MapView';
 import type { GraphicHit } from '@arcgis/core/views/types';
@@ -13,6 +14,7 @@ interface Handle {
 })
 export class PopupClickService {
   private readonly popupStore = inject(PopupStore);
+  private readonly editEffects = inject(EditEffects);
   private readonly destroyRef = inject(DestroyRef);
 
   private clickHandle: Handle | undefined;
@@ -38,6 +40,11 @@ export class PopupClickService {
 
   private async handleClick(view: MapView, event: { x: number; y: number }): Promise<void> {
     if (!view.map) return;
+
+    // Ignore all map clicks while in edit mode
+    if (this.editEffects.editing()) {
+      return;
+    }
 
     const response = await view.hitTest(event, {
       include: view.map.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],

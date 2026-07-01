@@ -13,7 +13,7 @@
           </button>
         }
         <span class="popup-header-spacer"></span>
-        <button class="popup-header-btn popup-close" (click)="close()" aria-label="Close popup">✕</button>
+        <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>
       </div>
 
       @if (store.showList()) {
@@ -37,6 +37,16 @@
 
       @if (store.showDetail() && store.selectedGraphic()) {
         <rima-popup-content [graphic]="store.selectedGraphic()!" />
+      }
+
+      @if (showCloseConfirm()) {
+        <rima-confirm-dialog
+          title="Discard Changes"
+          message="You have unsaved edits. Are you sure you want to close?"
+          confirmLabel="Discard"
+          cancelLabel="Keep Editing"
+          (confirmed)="onCloseConfirm($event)"
+        />
       }
     </div>
   </div>

@@ -1,0 +1,262 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Feature Editing Flow\nTask 583 / June 2026
+
+actor "User" as user #LightBlue
+participant "PopupComponent" as popup #E8F5E9
+participant "AttributesTabComponent" as attrTab #E8F5E9
+participant "GeometryTabComponent" as geoTab #E8F5E9
+participant "AttributeEditFormComponent" as editForm #E8F5E9
+participant "GeometryEditFormComponent" as geoForm #E8F5E9
+participant "AttributeEditStore\n[SignalStore]" as attrStore #F3E5F5
+participant "AttributeEditService" as attrService #F3E5F5
+participant "GeometryEditStore\n[SignalStore]" as geoStore #F3E5F5
+participant "GeometryEditService" as geoService #F3E5F5
+participant "EditEffects" as editEffects #F3E5F5
+participant "PopupStore\n[SignalStore]" as popupStore #F3E5F5
+participant "PopupClickService" as clickSvc #F3E5F5
+participant "SketchViewModel" as sketchVM #FFEBEE
+participant "FeatureLayer" as featureLayer #FFEBEE
+participant "ArcGIS MapView" as mapView #FFEBEE
+
+== Capability Check ==
+
+note over attrTab, geoTab
+  On popup detail view render:
+  - AttributesTab: isLayerEditable(graphic)
+    checks layer.editingEnabled
+    and capabilities.editing.supportsUpdateByOthers
+  - GeometryTab: supportsGeometryUpdate
+    checks capabilities.editing.supportsGeometryUpdate
+  If false, no edit buttons are shown.
+end note
+
+== Attribute Editing: Start ==
+
+user -> attrTab : clicks "Edit" button (pencil icon)
+attrTab -> attrStore : startEditing(graphic)
+activate attrStore
+attrStore -> attrStore : patchState({\n  graphic,\n  originalAttributes: { ...attrs },\n  editedAttributes: { ...attrs },\n  saving: false\n})
+deactivate attrStore
+
+note over attrTab
+  editMode() signal becomes true.
+  Read-only attribute table is replaced
+  with <rima-edit-form>.
+end note
+
+attrTab -> editForm : render with [graphic]
+
+note over editForm
+  resolveEditableAttributeFields(graphic):
+  1. Filter out non-editable & system fields
+  2. Resolve subtype-specific domains
+  3. Map to AttributeEditField[] with:
+     - fieldType: string|integer|double|date|coded-value
+     - codedValues: dropdown options
+     - alias, nullable, length
+end note
+
+editForm -> editForm : Render dynamic form:\n@switch(field.fieldType)\n  coded-value -> <select>\n  integer -> <input type=number step=1>\n  double -> <input type=number step=any>\n  date -> <input type=datetime-local>\n  string -> <input type=text>
+
+== Attribute Editing: User Edits ==
+
+user -> editForm : changes a field value
+editForm -> editForm : convertValue(rawValue, field)\n(string -> typed value)
+editForm -> attrStore : updateField(fieldName, typedValue)
+attrStore -> attrStore : patchState({ editedAttributes:\n  { ...edited, [fieldName]: value } })
+
+note over attrStore
+  isDirty() recomputes:
+  compares editedAttributes vs originalAttributes
+end note
+
+note over editEffects
+  isDirty() = attributeEditing && attributeDirty
+  editing() = true
+end note
+
+== Attribute Editing: Save ==
+
+user -> editForm : clicks "Save"
+editForm -> editForm : confirmAction.set('save')
+editForm -> user : <rima-confirm-dialog>\n"Are you sure you want to save?"
+
+user -> editForm : confirms
+editForm -> attrService : save()
+activate attrService
+
+attrService -> attrStore : setSaving(true)
+attrService -> attrService : buildUpdatePayload(graphic, editedAttributes)\n- includes objectId field\n- includes only editable, non-system fields
+
+attrService -> featureLayer : [ASYNC] layer.applyEdits({\n  updateFeatures: [updateGraphic]\n})
+activate featureLayer
+featureLayer --> attrService : result
+deactivate featureLayer
+
+alt success
+  attrService -> attrStore : reset()
+  note over attrTab : editMode() = false\nreverts to read-only table
+else error
+  attrService -> attrStore : setSaving(false)
+  attrService -> attrService : throw EditSaveError
+end
+
+deactivate attrService
+
+== Attribute Editing: Auto-Refresh Popup ==
+
+note over editEffects
+  effect() watches popupStore.selectedGraphic().
+  Listens on layer 'edits' event.
+end note
+
+featureLayer -> editEffects : 'edits' event fires\n(updatedFeatures includes objectId)
+editEffects -> popupStore : refreshSelectedGraphic()
+activate popupStore
+popupStore -> featureLayer : [ASYNC] layer.queryFeatures({\n  objectIds: [objectId],\n  outFields: ['*'],\n  returnGeometry: true\n})
+featureLayer --> popupStore : refreshed feature
+popupStore -> popupStore : patchState({ graphics: updated })
+deactivate popupStore
+
+note over attrTab
+  Attribute table re-renders
+  with latest server values.
+end note
+
+== Attribute Editing: Cancel ==
+
+user -> editForm : clicks "Cancel"
+
+alt isDirty()
+  editForm -> user : <rima-confirm-dialog>\n"You have unsaved changes.\nDiscard them?"
+  user -> editForm : confirms
+end
+
+editForm -> attrService : cancel()
+attrService -> attrStore : reset()
+
+note over attrTab : editMode() = false\nreverts to read-only table
+
+== Click Suppression During Editing ==
+
+user -> mapView : clicks on map (during edit)
+mapView -> clickSvc : click event
+clickSvc -> editEffects : editing()
+note over clickSvc
+  editEffects.editing() === true
+  -> click is IGNORED
+  Prevents accidental popup change
+  while editing.
+end note
+
+== Geometry Editing: Start ==
+
+user -> geoTab : clicks "Edit Geometry" button
+geoTab -> geoService : startEditing(graphic)
+activate geoService
+
+geoService -> geoService : Clone original geometry\nfor rollback
+geoService -> geoStore : setEditing(true)
+
+geoService -> mapView : Create temporary GraphicsLayer\n(listMode: 'hide')
+geoService -> mapView : Add sketch graphic with\nedit symbol (dashed blue)
+
+geoService -> sketchVM ** : new SketchViewModel({\n  view,\n  layer: sketchLayer,\n  updateOnGraphicClick: false,\n  defaultUpdateOptions: {\n    tool: reshape/move,\n    enableRotation: false,\n    enableScaling: false\n  },\n  snappingOptions: {\n    enabled: true,\n    featureSources: [all FeatureLayers]\n  }\n})
+
+geoService -> sketchVM : on('update', handler)
+geoService -> sketchVM : update(sketchGraphic)
+geoService -> geoStore : setSketchActive(true)
+
+deactivate geoService
+
+note over geoTab
+  editing() = true
+  Renders <rima-geometry-edit-form>
+  with undo/redo controls.
+end note
+
+== Geometry Editing: User Reshapes ==
+
+user -> sketchVM : drags vertex / moves point
+sketchVM -> geoService : 'update' event\n(state: 'active')
+geoService -> geoStore : updateGeometry(geometry)
+geoService -> geoStore : setUndoRedo(canUndo, canRedo)
+
+note over geoStore
+  isDirty() = editedGeometry != null
+end note
+
+== Geometry Editing: Undo / Redo ==
+
+user -> geoForm : clicks Undo
+geoForm -> geoService : undo()
+geoService -> sketchVM : sketchViewModel.undo()
+geoService -> geoStore : setUndoRedo(canUndo, canRedo)
+
+user -> geoForm : clicks Redo
+geoForm -> geoService : redo()
+geoService -> sketchVM : sketchViewModel.redo()
+geoService -> geoStore : setUndoRedo(canUndo, canRedo)
+
+== Geometry Editing: Save ==
+
+user -> geoForm : clicks "Save Geometry"
+geoForm -> geoService : save()
+activate geoService
+
+geoService -> geoStore : setSaving(true)
+geoService -> geoService : deactivateSketch()\n- cancel & destroy SketchViewModel\n- remove temporary GraphicsLayer
+
+geoService -> featureLayer : [ASYNC] layer.applyEdits({\n  updateFeatures: [{ objectId, geometry }]\n})
+activate featureLayer
+featureLayer --> geoService : result
+deactivate featureLayer
+
+alt success
+  geoService -> geoService : reset()
+  note over geoTab : editing() = false\nreverts to geometry info view
+else error
+  geoService -> geoStore : setSaving(false)
+  geoService -> geoService : throw EditSaveError
+end
+
+deactivate geoService
+
+== Geometry Editing: Cancel ==
+
+user -> geoForm : clicks "Cancel"
+geoForm -> geoService : cancel()
+geoService -> geoService : Restore original geometry\non graphic
+geoService -> geoService : reset()\n- deactivateSketch\n- clear all state
+
+note over geoTab : editing() = false\nreverts to geometry info view
+
+== Popup Close Guard ==
+
+user -> popup : clicks close / presses Escape
+
+alt editEffects.isDirty()
+  popup -> user : <rima-confirm-dialog>\n"You have unsaved edits.\nAre you sure you want to close?"
+  alt user confirms
+    popup -> popupStore : close()
+  else user cancels
+    note over popup : Popup remains open,\nediting continues
+  end
+else not dirty
+  popup -> popupStore : close()
+end
+
+@enduml

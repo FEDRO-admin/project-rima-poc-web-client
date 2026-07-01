@@ -46,37 +46,3 @@
   padding: 4px 0;
   min-height: 40px;
 }
-
-.popup-placeholder {
-  color: #888;
-  font-style: italic;
-  padding: 12px 0;
-  margin: 0;
-}
-
-.popup-attr-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  tr:nth-child(even) {
-    background-color: #f8f9fa;
-  }
-}
-
-.popup-attr-key {
-  font-weight: 600;
-  padding: 4px 8px 4px 0;
-  white-space: nowrap;
-  vertical-align: top;
-  color: #555;
-}
-
-.popup-attr-value {
-  padding: 4px 0;
-  word-break: break-word;
-
-  &--null {
-    color: #999;
-    font-style: italic;
-  }
-}

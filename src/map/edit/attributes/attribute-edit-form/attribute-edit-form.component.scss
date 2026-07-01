@@ -1,0 +1,139 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+.edit-form {
+  padding: 4px 0;
+}
+
+.edit-form-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.edit-form-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.edit-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: none;
+}
+
+.edit-field-input {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #1a73e8;
+  }
+}
+
+.edit-field-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+
+  .edit-field-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.edit-field-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f8f9fa;
+  cursor: pointer;
+  color: #555;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    background: #e8e8e8;
+    border-color: #aaa;
+  }
+}
+
+.edit-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.edit-btn {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &--cancel {
+    background: #fff;
+    color: #555;
+
+    &:hover:not(:disabled) {
+      background: #f5f5f5;
+    }
+  }
+
+  &--save {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+
+    &:hover:not(:disabled) {
+      background: #1557b0;
+    }
+  }
+}
