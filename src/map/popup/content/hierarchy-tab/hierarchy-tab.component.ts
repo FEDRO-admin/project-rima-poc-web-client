@@ -7,6 +7,7 @@ import '@esri/calcite-components/dist/components/calcite-tree-item';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import { HierarchyStore } from './hierarchy.store';
 import { HierarchyNode } from './hierarchy-node';
+import type FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 import { MapViewService } from '../../../view/view.service';
 
 interface HighlightHandle {
@@ -26,6 +27,7 @@ export class HierarchyTabComponent implements OnDestroy {
   protected readonly hierarchyStore = inject(HierarchyStore);
   private readonly viewService = inject(MapViewService);
   private highlightHandle: HighlightHandle | undefined;
+  private flashCounter = 0;
 
   constructor() {
     effect(() => {
@@ -54,10 +56,34 @@ export class HierarchyTabComponent implements OnDestroy {
     if (layer instanceof FeatureLayer) {
       const objectId = graphic.attributes[layer.objectIdField];
       const layerView = await view.whenLayerView(layer);
-      this.highlightHandle = layerView.highlight(objectId);
+      this.flashAndHighlight(layerView, objectId);
     }
+  }
 
-    view.goTo({ target: graphic.geometry });
+  private flashAndHighlight(layerView: FeatureLayerView, objectId: number): void {
+    this.flashCounter++;
+    const currentFlash = this.flashCounter;
+    let count = 0;
+    const totalBlinks = 3;
+    const interval = 150;
+
+    const blink = (): void => {
+      if (currentFlash !== this.flashCounter) return;
+
+      if (count < totalBlinks * 2) {
+        if (count % 2 === 0) {
+          this.highlightHandle = layerView.highlight(objectId);
+        } else {
+          this.clearHighlight();
+        }
+        count++;
+        setTimeout(blink, interval);
+      } else {
+        this.highlightHandle = layerView.highlight(objectId);
+      }
+    };
+
+    blink();
   }
 
   private clearHighlight(): void {

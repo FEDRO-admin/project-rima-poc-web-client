@@ -48,12 +48,7 @@ export class HierarchyService {
         break;
       }
 
-      const parentRelationship = this.findParentRelationship(layer);
-      if (!parentRelationship) {
-        break;
-      }
-
-      const parentGraphic = await this.queryParent(layer, current, parentRelationship);
+      const parentGraphic = await this.findParent(layer, current);
       if (!parentGraphic) break;
 
       chain.unshift(this.buildNode(parentGraphic, false));
@@ -130,9 +125,16 @@ export class HierarchyService {
     };
   }
 
-  private findParentRelationship(layer: FeatureLayer): Relationship | undefined {
+  private async findParent(layer: FeatureLayer, graphic: Graphic): Promise<Graphic | undefined> {
     if (!layer.relationships) return undefined;
-    return layer.relationships.find((rel) => rel.role === 'destination');
+    const parentRelationships = layer.relationships.filter((rel) => rel.role === 'destination');
+
+    for (const rel of parentRelationships) {
+      const parent = await this.queryParent(layer, graphic, rel);
+      if (parent) return parent;
+    }
+
+    return undefined;
   }
 
   private findChildRelationships(layer: FeatureLayer): Relationship[] {
