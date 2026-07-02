@@ -1,5 +1,9 @@
 <div class="map-container">
+  <rima-create-form />
+  <rima-edit-form />
   <rima-popup></rima-popup>
-  <arcgis-map id="rima-map" #arcgisMap [extent]="switzerlandExtent"></arcgis-map>
+  <div class="map-area">
+    <arcgis-map id="rima-map" #arcgisMap [extent]="switzerlandExtent"></arcgis-map>
+  </div>
   <rima-toc></rima-toc>
 </div>
