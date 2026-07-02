@@ -1,1 +1,41 @@
-<p class="hierarchy-placeholder">Hierarchy view coming soon.</p>
+@if (hierarchyStore.isLoading()) {
+  <div class="hierarchy-loading">
+    <calcite-loader scale="m"></calcite-loader>
+  </div>
+}
+
+@if (hierarchyStore.hasError()) {
+  <p class="hierarchy-error">{{ hierarchyStore.error() }}</p>
+}
+
+@if (hierarchyStore.isEmpty()) {
+  <p class="hierarchy-empty">No relationships found for this feature.</p>
+}
+
+@if (hierarchyStore.tree(); as tree) {
+  <calcite-tree lines selection-mode="none">
+    <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: tree }" />
+  </calcite-tree>
+}
+
+<ng-template #nodeTemplate let-node>
+  <calcite-tree-item [expanded]="node.expanded">
+    @if (node.isGroup) {
+      <span class="node-label node-label--group">
+        <span class="node-display-label">{{ node.displayLabel }}</span>
+      </span>
+    } @else {
+      <span class="node-label" [class.node-label--active]="node.isClickedFeature" (click)="onNodeClick($event, node)">
+        <span class="node-display-label">{{ node.displayLabel }}</span>
+        <span class="node-layer-title">[{{ node.layerTitle }}]</span>
+      </span>
+    }
+    @if (node.children?.length) {
+      <calcite-tree slot="children">
+        @for (child of node.children; track $index) {
+          <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: child }" />
+        }
+      </calcite-tree>
+    }
+  </calcite-tree-item>
+</ng-template>

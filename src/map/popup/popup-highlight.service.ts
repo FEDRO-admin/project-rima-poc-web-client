@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { MapViewService } from '../view/view.service';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -11,15 +11,14 @@ interface Handle {
 @Injectable({
   providedIn: 'root',
 })
-export class PopupHighlightService {
+export class PopupHighlightService implements OnDestroy {
   private readonly viewService = inject(MapViewService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private hoverHighlight: Handle | undefined;
   private selectionHighlight: Handle | undefined;
 
-  constructor() {
-    this.destroyRef.onDestroy(() => this.clearAllHighlights());
+  ngOnDestroy(): void {
+    this.clearAllHighlights();
   }
 
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
