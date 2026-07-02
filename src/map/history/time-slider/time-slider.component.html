@@ -1,0 +1,10 @@
+@if (historyStore.active()) {
+  <arcgis-time-slider
+    #timeSlider
+    mode="instant"
+    layout="wide"
+    loop
+    time-visible
+    (arcgisPropertyChange)="onTimeExtentChange($event)"
+  ></arcgis-time-slider>
+}

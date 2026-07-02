@@ -10,4 +10,15 @@
     visibility-appearance="checkbox"
     (arcgisTriggerAction)="onTriggerAction($event)"
   ></arcgis-layer-list>
+  <div class="toc-footer">
+    <calcite-button
+      appearance="outline"
+      kind="neutral"
+      icon-start="clock"
+      width="full"
+      [attr.active]="historyStore.active() ? '' : null"
+      (click)="toggleHistory()"
+      >Time Slider</calcite-button
+    >
+  </div>
 </aside>

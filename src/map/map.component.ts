@@ -9,10 +9,11 @@ import { ViewInitialisationError } from './view/view-errors';
 import { PopupComponent } from './popup/popup.component';
 import { CreateFormComponent } from './create/create-form/create-form.component';
 import { EditFormComponent } from './edit/edit-form/edit-form.component';
+import { TimeSliderComponent } from './history/time-slider/time-slider.component';
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent, CreateFormComponent, EditFormComponent],
+  imports: [TocComponent, PopupComponent, CreateFormComponent, EditFormComponent, TimeSliderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
