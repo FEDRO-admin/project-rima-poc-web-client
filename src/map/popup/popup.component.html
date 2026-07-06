@@ -1,5 +1,5 @@
 @if (store.visible()) {
-  <div class="popup-container" (keydown.escape)="onEscape()">
+  <div class="popup-container" (keydown.escape)="onEscape()" tabindex="-1">
     <div class="popup-card">
       <div class="popup-header">
         @if (store.showDetail()) {

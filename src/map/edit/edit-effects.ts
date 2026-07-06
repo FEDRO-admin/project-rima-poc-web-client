@@ -2,15 +2,15 @@ import { computed, effect, inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { FeatureEditResult } from '@arcgis/core/editing/types';
 import { PopupStore } from '../popup/popup.store';
-import { PopupRefreshService } from '../popup/popup-refresh.service';
 import { EditStore } from './edit.store';
+import { PopupService } from '../popup/popup.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EditEffects {
   private readonly popupStore = inject(PopupStore);
-  private readonly popupRefreshService = inject(PopupRefreshService);
+  private readonly popupService = inject(PopupService);
   private readonly editStore = inject(EditStore);
 
   readonly editing = computed(() => this.editStore.active());
@@ -37,7 +37,7 @@ export class EditEffects {
         const wasUpdated = event.updatedFeatures.some((feature: FeatureEditResult) => feature.objectId === objectId);
         if (!wasUpdated) return;
 
-        this.popupRefreshService.refreshSelectedGraphic();
+        this.popupService.refreshSelectedGraphic();
       });
 
       onCleanup(() => handle.remove());
