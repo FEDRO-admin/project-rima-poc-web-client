@@ -110,7 +110,7 @@ export class CreateGeometryService implements OnDestroy {
       updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
-    const tool = this.getAdjustTool(this.sketchGraphic.geometry?.type);
+    const tool = this.getAdjustTool();
     this.sketchViewModel.update(this.sketchGraphic, {
       tool,
       enableRotation: true,
@@ -167,7 +167,7 @@ export class CreateGeometryService implements OnDestroy {
       updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
-    const tool = this.getAdjustTool(this.sketchGraphic.geometry?.type);
+    const tool = this.getAdjustTool();
     this.sketchViewModel.update(this.sketchGraphic, {
       tool,
       enableRotation: true,
@@ -178,7 +178,7 @@ export class CreateGeometryService implements OnDestroy {
 
   private reenterUpdate(): void {
     if (this.sketchViewModel && this.sketchGraphic) {
-      const tool = this.getAdjustTool(this.sketchGraphic.geometry?.type);
+      const tool = this.getAdjustTool();
       this.sketchViewModel.update(this.sketchGraphic, {
         tool,
         enableRotation: true,
@@ -188,7 +188,7 @@ export class CreateGeometryService implements OnDestroy {
     }
   }
 
-  private getAdjustTool(geometryType: string | undefined): 'transform' | 'reshape' {
+  private getAdjustTool(): 'transform' | 'reshape' {
     return 'transform';
   }
 }
