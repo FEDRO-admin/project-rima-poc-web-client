@@ -20,22 +20,10 @@ export class HistoryEffects {
   readonly active = computed(() => this.historyStore.active());
 
   constructor() {
-    this.initializeOnActivate();
     this.closePopupOnActivate();
     this.cancelEditsOnActivate();
     this.cancelCreateOnActivate();
     this.clearHistoricMomentOnDeactivate();
-  }
-
-  private initializeOnActivate(): void {
-    effect(() => {
-      const active = this.historyStore.active();
-      untracked(() => {
-        if (active) {
-          this.historyService.initialize();
-        }
-      });
-    });
   }
 
   private closePopupOnActivate(): void {

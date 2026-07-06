@@ -1,9 +1,8 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracked, viewChild } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
-import '@esri/calcite-components/dist/components/calcite-button';
 import { MapViewService } from '../view/view.service';
 import { CreateStore } from '../create/create.store';
-import { HistoryStore } from '../history/history.store';
+import { HistoryPickerComponent } from '../history/history-picker/history-picker.component';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
@@ -13,7 +12,7 @@ import { getDefaultSubtypeCode, getSubtypeCodeFromLayerName, getSubtypeFieldName
 
 @Component({
   selector: 'rima-toc',
-  imports: [],
+  imports: [HistoryPickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './toc.component.html',
   styleUrl: './toc.component.scss',
@@ -21,7 +20,6 @@ import { getDefaultSubtypeCode, getSubtypeCodeFromLayerName, getSubtypeFieldName
 export class TocComponent {
   private readonly viewService = inject(MapViewService);
   private readonly createStore = inject(CreateStore);
-  protected readonly historyStore = inject(HistoryStore);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -102,9 +100,5 @@ export class TocComponent {
       }
     }
     this.createStore.activate(layer, subtypeField, subtypeValue);
-  }
-
-  protected toggleHistory(): void {
-    this.historyStore.toggle();
   }
 }

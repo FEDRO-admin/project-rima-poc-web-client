@@ -1,31 +1,27 @@
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import type TimeExtent from '@arcgis/core/time/TimeExtent';
 
 interface HistoryState {
   active: boolean;
-  fullTimeExtent: TimeExtent | null;
+  selectedDate: Date | null;
 }
 
 const initialState: HistoryState = {
   active: false,
-  fullTimeExtent: null,
+  selectedDate: null,
 };
 
 export const HistoryStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withMethods((store) => ({
-    activate(): void {
-      patchState(store, { active: true });
+    activate(date: Date): void {
+      patchState(store, { active: true, selectedDate: date });
     },
     deactivate(): void {
-      patchState(store, { active: false });
+      patchState(store, { active: false, selectedDate: null });
     },
     toggle(): void {
       patchState(store, { active: !store.active() });
-    },
-    setFullTimeExtent(fullTimeExtent: TimeExtent): void {
-      patchState(store, { fullTimeExtent });
     },
     reset(): void {
       patchState(store, initialState);
