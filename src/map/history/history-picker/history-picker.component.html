@@ -3,6 +3,7 @@
     <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
       >Return to Present</calcite-button
     >
+    <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy' }}</span>
   }
   <calcite-dropdown width-scale="m">
     <calcite-button
@@ -16,7 +17,10 @@
     >
     <calcite-dropdown-group selection-mode="single">
       @for (moment of moments; track moment.name) {
-        <calcite-dropdown-item (calciteDropdownItemSelect)="selectMoment(moment)">
+        <calcite-dropdown-item
+          [attr.selected]="isSelected(moment) ? '' : null"
+          (calciteDropdownItemSelect)="selectMoment(moment)"
+        >
           {{ moment.name }} ({{ moment.date | date: 'dd.MM.yyyy' }})
         </calcite-dropdown-item>
       }

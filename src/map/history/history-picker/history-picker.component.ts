@@ -19,14 +19,21 @@ export class HistoryPickerComponent {
   protected readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
   protected readonly moments = HISTORIC_MOMENTS;
+  protected selectedMoment: HistoricMomentEntry | null = null;
 
   protected selectMoment(entry: HistoricMomentEntry): void {
     const date = new Date(entry.date);
+    this.selectedMoment = entry;
     this.historyStore.activate(date);
     this.historyService.applyHistoricMoment(date);
   }
 
   protected returnToPresent(): void {
+    this.selectedMoment = null;
     this.historyStore.deactivate();
+  }
+
+  protected isSelected(entry: HistoricMomentEntry): boolean {
+    return this.selectedMoment === entry;
   }
 }
