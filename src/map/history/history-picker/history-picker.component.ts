@@ -1,5 +1,6 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Subscription } from 'rxjs';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dropdown';
 import '@esri/calcite-components/dist/components/calcite-dropdown-group';
@@ -8,7 +9,8 @@ import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-input-time-picker';
 import { HistoryStore } from '../history.store';
 import { HistoryService } from '../history.service';
-import { HISTORIC_MOMENTS, HistoricMomentEntry } from '../history-config';
+import { HistoricMomentEntry } from '../history-config';
+import { HistoricMomentsService } from '../historic-moments.service';
 
 @Component({
   selector: 'rima-history-picker',
@@ -17,14 +19,28 @@ import { HISTORIC_MOMENTS, HistoricMomentEntry } from '../history-config';
   templateUrl: './history-picker.component.html',
   styleUrl: './history-picker.component.scss',
 })
-export class HistoryPickerComponent {
+export class HistoryPickerComponent implements OnInit, OnDestroy {
   protected readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
-  protected readonly moments = HISTORIC_MOMENTS;
+  private readonly historicMomentsService = inject(HistoricMomentsService);
+  private readonly subscription = new Subscription();
+  protected moments: HistoricMomentEntry[] = [];
   protected selectedMoment: HistoricMomentEntry | null = null;
   protected customExpanded = false;
   protected customDate = '';
   protected customTime = '';
+
+  ngOnInit(): void {
+    this.subscription.add(
+      this.historicMomentsService.getHistoricMoments().subscribe((moments) => {
+        this.moments = moments;
+      }),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
 
   protected selectMoment(entry: HistoricMomentEntry): void {
     const date = new Date(entry.date);

@@ -16,13 +16,17 @@
       >Historical Moments</calcite-button
     >
     <calcite-dropdown-group selection-mode="single">
-      @for (moment of moments; track moment.name) {
-        <calcite-dropdown-item
-          [attr.selected]="isSelected(moment) ? '' : null"
-          (calciteDropdownItemSelect)="selectMoment(moment)"
-        >
-          {{ moment.name }} ({{ moment.date | date: 'dd.MM.yyyy' }})
-        </calcite-dropdown-item>
+      @if (moments.length === 0) {
+        <calcite-dropdown-item disabled>No historical markers found</calcite-dropdown-item>
+      } @else {
+        @for (moment of moments; track moment.name) {
+          <calcite-dropdown-item
+            [attr.selected]="isSelected(moment) ? '' : null"
+            (calciteDropdownItemSelect)="selectMoment(moment)"
+          >
+            {{ moment.name }} ({{ moment.date | date: 'dd.MM.yyyy' }})
+          </calcite-dropdown-item>
+        }
       }
     </calcite-dropdown-group>
   </calcite-dropdown>
@@ -40,10 +44,12 @@
       <div class="custom-date-inputs">
         <calcite-input-date-picker
           layout="horizontal"
+          lang="de-CH"
           (calciteInputDatePickerChange)="onCustomDateChange($event)"
         ></calcite-input-date-picker>
         <calcite-input-time-picker
           step="60"
+          hour-format="24"
           (calciteInputTimePickerChange)="onCustomTimeChange($event)"
         ></calcite-input-time-picker>
         <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
