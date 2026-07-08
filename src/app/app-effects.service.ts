@@ -2,6 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { LanguageEffect } from '../i18n/language-effects';
 import { PopupEffects } from '../map/popup/popup-effects';
 import { EditEffects } from '../map/edit/edit-effects';
+import { CreateEffects } from '../map/create/create-effects';
+import { DeleteEffects } from '../map/delete/delete-effects';
+import { HierarchyEffects } from '../map/popup/content/hierarchy-tab/hierarchy-effects';
+import { HistoryEffects } from '../map/history/history-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -15,5 +19,9 @@ export class AppEffectsService {
     inject(LanguageEffect);
     inject(PopupEffects);
     inject(EditEffects);
+    inject(CreateEffects);
+    inject(DeleteEffects);
+    inject(HierarchyEffects);
+    inject(HistoryEffects);
   }
 }
