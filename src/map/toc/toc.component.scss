@@ -15,5 +15,13 @@
 }
 
 arcgis-layer-list {
+  flex: 1;
   width: 100%;
+  min-height: 0;
+}
+
+.toc-footer {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, #0079c1 25%, white);
 }

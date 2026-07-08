@@ -25,7 +25,13 @@
         <span class="node-display-label">{{ node.displayLabel }}</span>
       </span>
     } @else {
-      <span class="node-label" [class.node-label--active]="node.isClickedFeature" (click)="onNodeClick($event, node)">
+      <span
+        class="node-label"
+        [class.node-label--active]="node.isClickedFeature"
+        (click)="onNodeClick($event, node)"
+        (keydown.enter)="onNodeClick($event, node)"
+        tabindex="0"
+      >
         <span class="node-display-label">{{ node.displayLabel }}</span>
         <span class="node-layer-title">[{{ node.layerTitle }}]</span>
       </span>

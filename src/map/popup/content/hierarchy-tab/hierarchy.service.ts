@@ -4,6 +4,7 @@ import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import { MapViewService } from '../../../view/view.service';
+import { HistoryStore } from '../../../history/history.store';
 import { HierarchyNode } from './hierarchy-node';
 
 @Injectable({
@@ -11,6 +12,7 @@ import { HierarchyNode } from './hierarchy-node';
 })
 export class HierarchyService {
   private readonly viewService = inject(MapViewService);
+  private readonly historyStore = inject(HistoryStore);
 
   async buildHierarchyTree(graphic: Graphic): Promise<HierarchyNode | undefined> {
     const parentChain = await this.getParentChain(graphic);
@@ -154,6 +156,7 @@ export class HierarchyService {
       relationshipId: relationship.id,
       outFields: ['*'],
       returnGeometry: true,
+      historicMoment: this.historyStore.selectedDate() ?? undefined,
     });
 
     const result = await layer.queryRelatedFeatures(query);
@@ -177,6 +180,7 @@ export class HierarchyService {
       relationshipId: relationship.id,
       outFields: ['*'],
       returnGeometry: true,
+      historicMoment: this.historyStore.selectedDate() ?? undefined,
     });
 
     const result = await layer.queryRelatedFeatures(query);

@@ -1,0 +1,97 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Feature Delete Flow\nTask 656 / July 2026
+
+actor "User" as user #LightBlue
+participant "PopupComponent" as popup #E8F5E9
+participant "DeleteStore\n[SignalStore]" as deleteStore #F3E5F5
+participant "DeleteService" as deleteService #F3E5F5
+participant "DeleteEffects" as deleteEffects #F3E5F5
+participant "PopupStore\n[SignalStore]" as popupStore #F3E5F5
+participant "PopupService" as popupSvc #F3E5F5
+participant "FeatureLayer" as featureLayer #FFEBEE
+participant "ArcGIS MapView" as mapView #FFEBEE
+
+== Capability Check ==
+
+note over popup
+  Popup header shows trash icon only if
+  isLayerDeletable(graphic):
+    layer is a FeatureLayer
+    && layer.editingEnabled == true
+    && capabilities.operations.supportsDelete == true
+end note
+
+== Request ==
+
+user -> popup : clicks trash icon
+popup -> deleteService : requestDelete(graphic)
+deleteService -> deleteStore : requestDelete(graphic)\npatchState({\n  graphic,\n  confirmRequested: true,\n  deleting: false\n})
+
+note over popup
+  deleteStore.confirmRequested() = true.
+  Popup renders inline <rima-confirm-dialog>:
+  "Are you sure you want to delete
+  this feature? This action cannot
+  be undone."
+  Actions: Delete | Cancel
+end note
+
+== Confirm ==
+
+user -> popup : clicks "Delete"
+popup -> deleteService : confirmDelete()
+activate deleteService
+
+deleteService -> deleteStore : setDeleting(true)
+deleteService -> deleteService : resolve objectIdField\nfrom layer
+
+deleteService -> featureLayer : [ASYNC] layer.applyEdits({\n  deleteFeatures: [{ [objectIdField]: objectId }]\n})
+activate featureLayer
+featureLayer --> deleteService : { deleteFeatureResults: [result] }
+deactivate featureLayer
+
+alt success
+  deleteService -> featureLayer : layer.refresh()
+  deleteService -> popupStore : close()
+  deleteService -> deleteStore : reset()
+  note over mapView : Feature removed\nfrom map display
+else result.error or exception
+  deleteService -> deleteStore : setDeleting(false)
+  deleteService -> deleteService : throw DeleteFeatureError
+end
+
+deactivate deleteService
+
+== Cancel ==
+
+user -> popup : clicks "Cancel"
+popup -> deleteService : cancelDelete()
+deleteService -> deleteStore : reset()
+
+note over popup : Confirmation dialog dismissed.\nPopup remains open with\nfeature detail view.
+
+== Click Suppression ==
+
+user -> mapView : clicks on map\n(while confirmation dialog is visible)
+mapView -> popupSvc : click event
+note over popupSvc
+  deleteEffects.deleting() === true
+  → click is IGNORED.
+  Prevents a new popup from opening
+  while the confirmation is pending.
+end note
+
+@enduml

@@ -1,0 +1,55 @@
+<div class="history-picker">
+  @if (historyStore.active()) {
+    <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
+      >Return to Present</calcite-button
+    >
+    <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
+  }
+  <calcite-dropdown width-scale="m">
+    <calcite-button
+      slot="trigger"
+      appearance="outline"
+      kind="neutral"
+      icon-start="clock"
+      icon-end="chevron-down"
+      width="full"
+      >Historical Moments</calcite-button
+    >
+    <calcite-dropdown-group selection-mode="single">
+      @for (moment of moments; track moment.name) {
+        <calcite-dropdown-item
+          [attr.selected]="isSelected(moment) ? '' : null"
+          (calciteDropdownItemSelect)="selectMoment(moment)"
+        >
+          {{ moment.name }} ({{ moment.date | date: 'dd.MM.yyyy' }})
+        </calcite-dropdown-item>
+      }
+    </calcite-dropdown-group>
+  </calcite-dropdown>
+  <div class="custom-date-section">
+    <calcite-button
+      appearance="outline"
+      kind="neutral"
+      icon-start="calendar"
+      [attr.icon-end]="customExpanded ? 'chevron-up' : 'chevron-down'"
+      width="full"
+      (click)="customExpanded = !customExpanded"
+      >Custom Date &amp; Time</calcite-button
+    >
+    @if (customExpanded) {
+      <div class="custom-date-inputs">
+        <calcite-input-date-picker
+          layout="horizontal"
+          (calciteInputDatePickerChange)="onCustomDateChange($event)"
+        ></calcite-input-date-picker>
+        <calcite-input-time-picker
+          step="60"
+          (calciteInputTimePickerChange)="onCustomTimeChange($event)"
+        ></calcite-input-time-picker>
+        <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
+          >Apply</calcite-button
+        >
+      </div>
+    }
+  </div>
+</div>

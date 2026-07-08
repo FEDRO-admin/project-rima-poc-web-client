@@ -1,0 +1,213 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Feature Create Flow\nTask 655 / July 2026
+
+actor "User" as user #LightBlue
+participant "TocComponent" as toc #E8F5E9
+participant "CreateFormComponent\n<rima-create-form>" as createForm #E8F5E9
+participant "CreateStore\n[SignalStore]" as createStore #F3E5F5
+participant "CreateService" as createService #F3E5F5
+participant "CreateGeometryService" as createGeoService #F3E5F5
+participant "CreateEffects" as createEffects #F3E5F5
+participant "ReferencePointService" as refSvc #FFF3E0
+participant "PopupStore\n[SignalStore]" as popupStore #F3E5F5
+participant "PopupService" as popupSvc #F3E5F5
+participant "SketchViewModel" as sketchVM #FFEBEE
+participant "FeatureLayer" as featureLayer #FFEBEE
+participant "ArcGIS MapView" as mapView #FFEBEE
+
+== Activation ==
+
+user -> toc : clicks "Create" action\non a FeatureLayer in the TOC
+toc -> featureLayer : [ASYNC] layer.load()
+toc -> toc : getSubtypeFieldName(layer)
+toc -> featureLayer : [ASYNC] layer.queryFeatures()\n(resolve default subtype value)
+featureLayer --> toc : subtypeValue
+
+toc -> createStore : activate(layer, subtypeField?, subtypeValue?)
+activate createStore
+createStore -> createStore : resolveCreatableFields(layer, subtypeValue)\nbuildDefaultAttributes(layer, fields)\npatchState({\n  active: true, layer,\n  subtypeField, subtypeValue,\n  attributes: defaults,\n  geometry: undefined,\n  sketchActive: false, adjusting: false\n})
+deactivate createStore
+
+note over createEffects
+  closePopupOnCreate effect:
+  createStore.active() → popupStore.close()
+
+  cancelEditsOnCreate effect:
+  if editEffects.editing() → editService.reset()
+end note
+
+createEffects -> popupStore : close()
+
+note over createForm
+  CreateFormComponent renders when
+  createStore.active() = true.
+  Shows layer title, geometry tool selector,
+  attribute form, reference points,
+  Cancel / "Create Feature" actions.
+end note
+
+createForm -> refSvc : initializeForCreate(layer)\n(load relationship metadata\nfor "von"/"bis" reference points)
+
+== Phase 1: Draw ==
+
+user -> createForm : selects a drawing tool\n(point / polyline / polygon / etc.)
+createForm -> createGeoService : startDrawing(layer, tool)
+activate createGeoService
+
+createGeoService -> mapView : add sketchLayer (GraphicsLayer hidden)
+createGeoService -> sketchVM ** : new SketchViewModel({\n  pointSymbol, polylineSymbol, polygonSymbol,\n  snappingOptions: {\n    enabled: true,\n    featureSources: [all FeatureLayers]\n  }\n})
+createGeoService -> sketchVM : create(tool)
+createGeoService -> createStore : setSketchActive(true)
+deactivate createGeoService
+
+note over createForm
+  Geometry section shows:
+  "Drawing..." + Undo / Redo / Cancel (✕)
+end note
+
+user -> sketchVM : draws geometry on map
+sketchVM -> createGeoService : 'create' event (state: active)
+createGeoService -> createStore : setSketchActive(true)
+createGeoService -> createStore : setUndoRedo(canUndo, canRedo)
+
+== Phase 1: Undo / Redo during Draw ==
+
+user -> createForm : clicks Undo / Redo
+createForm -> createGeoService : undo() / redo()
+createGeoService -> sketchVM : undo() / redo()
+createGeoService -> createStore : setUndoRedo(canUndo, canRedo)
+
+== Phase 1: Drawing Complete — auto-enter Adjust ==
+
+sketchVM -> createGeoService : 'create' event (state: complete)
+createGeoService -> createStore : updateGeometry(geometry)
+createGeoService -> createStore : setSketchActive(false)
+createGeoService -> createGeoService : startAdjusting()\n(switch SketchViewModel to 'update'\nmode with enableRotation: true,\ntoggleToolOnClick: true)
+createGeoService -> createStore : setAdjusting(true)
+
+note over createForm
+  Geometry section shows:
+  "Adjust geometry..." +
+  Undo / Redo / Confirm (✓) / Redraw (↺)
+end note
+
+== Phase 2: Adjust ==
+
+user -> sketchVM : moves / rotates geometry
+sketchVM -> createGeoService : 'update' event (state: active/complete)
+createGeoService -> createStore : updateGeometry(geometry)
+createGeoService -> createStore : setUndoRedo(canUndo, canRedo)
+
+== Phase 2: Undo / Redo during Adjust ==
+
+user -> createForm : clicks Undo / Redo
+createForm -> createGeoService : undo() / redo()
+createGeoService -> sketchVM : undo() / redo()
+createGeoService -> createStore : setUndoRedo(canUndo, canRedo)
+
+== Phase 3: Confirm Placement ==
+
+user -> createForm : clicks Confirm (✓)
+createForm -> createGeoService : confirmPlacement()
+createGeoService -> sketchVM : cancel()
+createGeoService -> createStore : setAdjusting(false)
+
+note over createForm
+  Geometry section shows:
+  "Geometry added" ✓ +
+  Edit (pencil) / Redraw (↺) buttons
+end note
+
+== Phase 3: Re-enter Adjust (optional) ==
+
+user -> createForm : clicks Edit (pencil)
+createForm -> createGeoService : reenterAdjusting()
+createGeoService -> createStore : setAdjusting(true)
+createGeoService -> sketchVM : update(sketchGraphic, {\n  tool: transform,\n  enableRotation: true,\n  toggleToolOnClick: true\n})
+
+== Phase 3: Redraw (optional) ==
+
+user -> createForm : clicks Redraw (↺)
+createForm -> createGeoService : redraw(layer, tool?)
+createGeoService -> createGeoService : cleanup()\n(destroy SketchViewModel, remove sketchLayer)
+createGeoService -> createStore : updateGeometry(undefined)
+createGeoService -> createGeoService : startDrawing(layer, tool)
+note over createForm : Returns to Phase 1
+
+== Fill Attributes ==
+
+user -> createForm : fills in attribute fields
+createForm -> createStore : updateField(fieldName, typedValue)
+
+note over createStore
+  isDirty() recomputes:
+  any attribute non-null/non-empty
+  or geometry != null
+end note
+
+== Save ==
+
+user -> createForm : clicks "Create Feature"
+createForm -> createForm : confirmAction.set('save')
+createForm -> user : <rima-confirm-dialog>\n"Are you sure you want to\ncreate this feature?"
+
+user -> createForm : confirms
+createForm -> createService : saveAndOpenInPopup()
+activate createService
+
+createService -> createGeoService : cleanup()\n(destroy SketchViewModel, remove sketchLayer)
+createService -> createService : buildCreatePayload:\n  mutable attributes\n  + subtypeField value\n  + geometry
+
+createService -> featureLayer : [ASYNC] layer.applyEdits({\n  addFeatures: [newGraphic]\n})
+activate featureLayer
+featureLayer --> createService : { addFeatureResults: [{ objectId }] }
+deactivate featureLayer
+
+createService -> featureLayer : layer.refresh()
+createService -> featureLayer : [ASYNC] layer.queryFeatures(objectId)
+featureLayer --> createService : new graphic
+
+createService -> refSvc : saveAll(parentId)\n(persist any pending reference points)
+createService -> createStore : reset()
+createService -> popupStore : open([newGraphic])
+
+note over createService : Popup opens showing\nthe new feature
+deactivate createService
+
+== Cancel ==
+
+user -> createForm : clicks "Cancel" or presses Escape
+
+alt createStore.isDirty()
+  createForm -> user : <rima-confirm-dialog>\n"You have unsaved changes.\nAre you sure you want to discard them?"
+  user -> createForm : confirms
+end
+
+createForm -> createGeoService : cancel()\n(cleanup sketch resources)
+createForm -> createStore : reset()
+
+== Click Suppression ==
+
+user -> mapView : clicks on map (during create)
+mapView -> popupSvc : click event
+note over popupSvc
+  createEffects.creating() === true
+  → click is IGNORED.
+  Prevents accidental popup change
+  while drawing.
+end note
+
+@enduml
