@@ -2,6 +2,7 @@ import { inject, Injectable, OnDestroy } from '@angular/core';
 import { MapViewService } from '../view/view.service';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import { PopupHighlightError, PopupRefreshError } from './popup-errors';
 import { PopupStore } from './popup.store';
 import { EditStore } from '../edit/edit.store';
@@ -35,7 +36,7 @@ export class PopupService implements OnDestroy {
 
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
     const view = this.viewService.mapView();
-    if (!view || !(graphic.layer instanceof FeatureLayer)) return;
+    if (!view || (!(graphic.layer instanceof FeatureLayer) && !(graphic.layer instanceof SubtypeGroupLayer))) return;
 
     try {
       const layerView = await view.whenLayerView(graphic.layer);
@@ -73,7 +74,7 @@ export class PopupService implements OnDestroy {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
     try {
       const objectId = graphic.attributes[layer.objectIdField];
@@ -116,7 +117,9 @@ export class PopupService implements OnDestroy {
     }
 
     const response = await view.hitTest(event, {
-      include: view.map.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],
+      include: view.map.allLayers
+        .filter((layer) => layer.type === 'feature' || layer.type === 'subtype-group')
+        .toArray() as FeatureLayer[],
     });
 
     const graphics = response.results

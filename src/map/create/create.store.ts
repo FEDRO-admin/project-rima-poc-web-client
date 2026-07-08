@@ -1,14 +1,14 @@
 import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
+import { EditableLayer } from '../layer/editable-layer';
 import { resolveCreatableFields, buildDefaultAttributes } from './create-attribute.service';
 
 type AttributeValue = string | number | boolean | null;
 
 interface CreateState {
   active: boolean;
-  layer: FeatureLayer | undefined;
+  layer: EditableLayer | undefined;
   subtypeField: string | undefined;
   subtypeValue: number | string | undefined;
   attributes: Record<string, AttributeValue>;
@@ -45,7 +45,7 @@ export const CreateStore = signalStore(
     }),
   })),
   withMethods((store) => ({
-    activate(layer: FeatureLayer, subtypeField?: string, subtypeValue?: number | string): void {
+    activate(layer: EditableLayer, subtypeField?: string, subtypeValue?: number | string): void {
       const fields = resolveCreatableFields(layer, subtypeValue);
       const attributes = buildDefaultAttributes(layer, fields);
       patchState(store, {
@@ -64,7 +64,7 @@ export const CreateStore = signalStore(
     open(): void {
       patchState(store, { active: true });
     },
-    setLayer(layer: FeatureLayer): void {
+    setLayer(layer: EditableLayer): void {
       patchState(store, {
         layer,
         subtypeField: undefined,

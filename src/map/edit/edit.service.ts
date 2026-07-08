@@ -1,6 +1,7 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
@@ -13,6 +14,7 @@ import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
 import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { EditableLayer } from '../layer/editable-layer';
 
 type AttributeValue = string | number | boolean | null;
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -93,7 +95,7 @@ export class EditService implements OnDestroy {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
     this.store.setSaving(true);
 
@@ -276,7 +278,7 @@ export class EditService implements OnDestroy {
     graphic: Graphic,
     editedAttributes: Record<string, AttributeValue>,
   ): Record<string, AttributeValue> {
-    const layer = graphic.layer as FeatureLayer;
+    const layer = graphic.layer as EditableLayer;
     const payload: Record<string, AttributeValue> = {};
     const objectIdField = layer.objectIdField;
 

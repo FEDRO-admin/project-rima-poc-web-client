@@ -1,9 +1,8 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, viewChild, ElementRef, effect, untracked } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-map';
 import { MapViewService } from './view/view.service';
-import { CatalogService } from './catalog/catalog.service';
+import { WebmapService } from './webmap/webmap.service';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
-import { LayerService } from './layer/layer.service';
 import { TocComponent } from './toc/toc.component';
 import { ViewInitialisationError } from './view/view-errors';
 import { PopupComponent } from './popup/popup.component';
@@ -19,8 +18,7 @@ import { EditFormComponent } from './edit/edit-form/edit-form.component';
 })
 export class MapComponent {
   private readonly viewService = inject(MapViewService);
-  private readonly catalogService = inject(CatalogService);
-  private readonly layerService = inject(LayerService);
+  private readonly webmapService = inject(WebmapService);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 
@@ -45,9 +43,11 @@ export class MapComponent {
       throw new ViewInitialisationError('MapView is not available on the arcgis-map element');
     }
     await this.viewService.registerMapView(view);
+
+    const webMap = await this.webmapService.loadWebMap();
+    view.map = webMap;
     this.viewService.addBasemap();
+
     await view.when();
-    const catalog = await this.catalogService.buildMapCatalog();
-    this.layerService.addCatalogToMap(catalog);
   }
 }

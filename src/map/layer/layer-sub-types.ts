@@ -1,15 +1,15 @@
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { EditableLayer } from './editable-layer';
 
 export interface SubtypeEntry {
   code: string | number;
   name: string;
 }
 
-export function getSubtypeFieldName(layer: FeatureLayer): string | undefined {
+export function getSubtypeFieldName(layer: EditableLayer): string | undefined {
   return layer.subtypeField || (layer.sourceJSON?.['subtypeFieldName'] as string | undefined) || undefined;
 }
 
-export function getSubtypes(layer: FeatureLayer): SubtypeEntry[] {
+export function getSubtypes(layer: EditableLayer): SubtypeEntry[] {
   if (layer.subtypes?.length) {
     return layer.subtypes.map((subtype) => ({ code: subtype.code, name: subtype.name }));
   }
@@ -17,11 +17,11 @@ export function getSubtypes(layer: FeatureLayer): SubtypeEntry[] {
   return sourceSubtypes ?? [];
 }
 
-export function getDefaultSubtypeCode(layer: FeatureLayer): number | string | undefined {
+export function getDefaultSubtypeCode(layer: EditableLayer): number | string | undefined {
   return layer.sourceJSON?.['defaultSubtypeCode'] as number | string | undefined;
 }
 
-export function getSubtypeCodeFromLayerName(layer: FeatureLayer): number | string | undefined {
+export function getSubtypeCodeFromLayerName(layer: EditableLayer): number | string | undefined {
   const layerName = layer.sourceJSON?.['name'] as string | undefined;
   if (!layerName) return undefined;
   const subtypes = getSubtypes(layer);

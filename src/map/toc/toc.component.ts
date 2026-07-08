@@ -4,11 +4,12 @@ import { MapViewService } from '../view/view.service';
 import { CreateStore } from '../create/create.store';
 import { HistoryPickerComponent } from '../history/history-picker/history-picker.component';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
+import SubtypeSublayer from '@arcgis/core/layers/support/SubtypeSublayer';
 import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import { getDefaultSubtypeCode, getSubtypeCodeFromLayerName, getSubtypeFieldName } from '../layer/layer-sub-types';
 
 @Component({
   selector: 'rima-toc',
@@ -39,7 +40,11 @@ export class TocComponent {
     const { item } = event;
     const sections = [];
 
-    if (item.layer instanceof FeatureLayer || item.layer instanceof MapImageLayer) {
+    if (
+      item.layer instanceof FeatureLayer ||
+      item.layer instanceof MapImageLayer ||
+      item.layer instanceof SubtypeGroupLayer
+    ) {
       const zoomAction = {
         title: 'Zoom to',
         icon: 'zoom-to-object',
@@ -49,7 +54,7 @@ export class TocComponent {
       sections.push([zoomAction]);
     }
 
-    if (item.layer instanceof FeatureLayer) {
+    if (item.layer && (item.layer instanceof FeatureLayer || 'subtypeCode' in item.layer)) {
       const createAction = {
         title: 'Create',
         icon: 'plus',
@@ -82,10 +87,20 @@ export class TocComponent {
   }
 
   private async createFeature(layer: Layer): Promise<void> {
+    if ('subtypeCode' in layer) {
+      const sublayer = layer as unknown as SubtypeSublayer;
+      const parentLayer = (sublayer as unknown as { parent: SubtypeGroupLayer }).parent;
+      await parentLayer.load();
+      const subtypeField = parentLayer.subtypeField;
+      const subtypeValue = sublayer.subtypeCode;
+      this.createStore.activate(parentLayer, subtypeField, subtypeValue);
+      return;
+    }
+
     if (!(layer instanceof FeatureLayer)) return;
 
     await layer.load();
-    const subtypeField = getSubtypeFieldName(layer);
+    const subtypeField = layer.subtypeField || undefined;
 
     let subtypeValue: number | string | undefined;
     if (subtypeField) {
@@ -96,7 +111,7 @@ export class TocComponent {
       subtypeValue = result.features[0]?.attributes?.[subtypeField] as number | string | undefined;
 
       if (subtypeValue == null) {
-        subtypeValue = getSubtypeCodeFromLayerName(layer) ?? getDefaultSubtypeCode(layer);
+        subtypeValue = layer.sourceJSON?.['defaultSubtypeCode'] as number | string | undefined;
       }
     }
     this.createStore.activate(layer, subtypeField, subtypeValue);

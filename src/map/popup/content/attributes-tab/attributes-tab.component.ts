@@ -1,6 +1,7 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import { GraphicLayer } from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { isImmutableField } from '../../../layer/layer-attributes';
@@ -28,7 +29,7 @@ export class AttributesTabComponent {
     const layer: GraphicLayer | null | undefined = graphic.layer;
     const attrs: Record<string, AttributeValue> = graphic.attributes ?? {};
 
-    if (layer instanceof FeatureLayer && layer.fields?.length) {
+    if ((layer instanceof FeatureLayer || layer instanceof SubtypeGroupLayer) && layer.fields?.length) {
       return layer.fields
         .filter((field) => !isImmutableField(field.name, layer))
         .map((field) => ({
@@ -45,7 +46,7 @@ export class AttributesTabComponent {
     const layer: GraphicLayer | null | undefined = graphic.layer;
     const attrs: Record<string, AttributeValue> = graphic.attributes ?? {};
 
-    if (layer instanceof FeatureLayer && layer.fields?.length) {
+    if ((layer instanceof FeatureLayer || layer instanceof SubtypeGroupLayer) && layer.fields?.length) {
       return layer.fields
         .filter((field) => isImmutableField(field.name, layer))
         .map((field) => ({

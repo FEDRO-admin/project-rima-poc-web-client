@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, OnDestroy } f
 import { NgTemplateOutlet } from '@angular/common';
 import type Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import '@esri/calcite-components/dist/components/calcite-tree';
 import '@esri/calcite-components/dist/components/calcite-tree-item';
 import '@esri/calcite-components/dist/components/calcite-loader';
@@ -53,7 +54,7 @@ export class HierarchyTabComponent implements OnDestroy {
 
     if (!view || !graphic.geometry) return;
 
-    if (layer instanceof FeatureLayer) {
+    if (layer instanceof FeatureLayer || layer instanceof SubtypeGroupLayer) {
       const objectId = graphic.attributes[layer.objectIdField];
       const layerView = await view.whenLayerView(layer);
       this.flashAndHighlight(layerView, objectId);

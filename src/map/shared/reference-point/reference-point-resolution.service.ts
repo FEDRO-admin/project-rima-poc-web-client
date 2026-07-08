@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
@@ -8,6 +9,7 @@ import { MapViewService } from '../../view/view.service';
 import { AttributeEditField, convertAttributeFieldType } from '../attribute-edit-field';
 import { ReferencePoint, ReferencePointRelationshipInfo, classifyRelationshipName } from './reference-point-types';
 import { isImmutableField } from '../../layer/layer-attributes';
+import { EditableLayer } from '../../layer/editable-layer';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +17,7 @@ import { isImmutableField } from '../../layer/layer-attributes';
 export class ReferencePointResolutionService {
   private readonly viewService = inject(MapViewService);
 
-  resolveRelationships(layer: FeatureLayer): ReferencePointRelationshipInfo[] {
+  resolveRelationships(layer: EditableLayer): ReferencePointRelationshipInfo[] {
     if (!layer.relationships?.length) return [];
 
     const results: ReferencePointRelationshipInfo[] = [];
@@ -42,7 +44,7 @@ export class ReferencePointResolutionService {
     return results;
   }
 
-  async queryExistingPoints(layer: FeatureLayer, graphic: Graphic, relationshipId: number): Promise<ReferencePoint[]> {
+  async queryExistingPoints(layer: EditableLayer, graphic: Graphic, relationshipId: number): Promise<ReferencePoint[]> {
     const objectId = graphic.attributes[layer.objectIdField];
     if (objectId == null) return [];
 
@@ -72,7 +74,7 @@ export class ReferencePointResolutionService {
     };
   }
 
-  private resolveEditableFields(layer: FeatureLayer): AttributeEditField[] {
+  private resolveEditableFields(layer: EditableLayer): AttributeEditField[] {
     if (!layer.fields?.length) return [];
 
     return layer.fields
@@ -98,14 +100,19 @@ export class ReferencePointResolutionService {
     return [];
   }
 
-  private findLayerByRelationship(relationship: Relationship): FeatureLayer | undefined {
+  private findLayerByRelationship(relationship: Relationship): EditableLayer | undefined {
     const view = this.viewService.mapView();
     if (!view?.map) return undefined;
 
     const allLayers = view.map.allLayers;
     return allLayers.find((l) => {
-      if (!(l instanceof FeatureLayer)) return false;
-      return l.layerId === relationship.relatedTableId;
-    }) as FeatureLayer | undefined;
+      if (l instanceof FeatureLayer) {
+        return l.layerId === relationship.relatedTableId;
+      }
+      if (l instanceof SubtypeGroupLayer) {
+        return l.layerId === relationship.relatedTableId;
+      }
+      return false;
+    }) as EditableLayer | undefined;
   }
 }

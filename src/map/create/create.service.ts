@@ -1,12 +1,14 @@
 import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import { CreateStore } from './create.store';
 import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
 import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { EditableLayer } from '../layer/editable-layer';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -21,7 +23,7 @@ export class CreateService {
 
   async save(): Promise<number | undefined> {
     const layer = this.createStore.layer();
-    if (!(layer instanceof FeatureLayer)) return undefined;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return undefined;
 
     const geometry = this.createStore.geometry();
     if (!geometry) return undefined;
@@ -66,7 +68,7 @@ export class CreateService {
   }
 
   private buildCreatePayload(
-    layer: FeatureLayer,
+    layer: EditableLayer,
     attributes: Record<string, AttributeValue>,
   ): Record<string, AttributeValue> {
     const payload: Record<string, AttributeValue> = {};
@@ -82,7 +84,7 @@ export class CreateService {
 
   async saveAndOpenInPopup(): Promise<void> {
     const layer = this.createStore.layer();
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
     try {
       const objectId = await this.save();

@@ -1,5 +1,6 @@
 import { computed, effect, inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import type { FeatureEditResult } from '@arcgis/core/editing/types';
 import { PopupStore } from '../popup/popup.store';
 import { EditStore } from './edit.store';
@@ -28,7 +29,7 @@ export class EditEffects {
       if (!graphic) return;
 
       const layer = graphic.layer;
-      if (!(layer instanceof FeatureLayer)) return;
+      if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
       const objectIdField = layer.objectIdField;
       const objectId = graphic.attributes[objectIdField];

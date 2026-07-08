@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import Graphic from '@arcgis/core/Graphic';
 import { DeleteStore } from './delete.store';
 import { PopupStore } from '../popup/popup.store';
@@ -21,7 +22,7 @@ export class DeleteService {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
     this.store.setDeleting(true);
 

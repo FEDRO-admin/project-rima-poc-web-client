@@ -1,7 +1,7 @@
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { EditableLayer } from './editable-layer';
 import { getSubtypeFieldName } from './layer-sub-types';
 
-export function isImmutableField(fieldName: string, layer: FeatureLayer): boolean {
+export function isImmutableField(fieldName: string, layer: EditableLayer): boolean {
   const lowerName = fieldName.toLowerCase();
   const field = layer.fields?.find((f) => f.name.toLowerCase() === lowerName);
   if (!field) {

@@ -1,11 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import { MapViewService } from '../../../view/view.service';
 import { HistoryStore } from '../../../history/history.store';
 import { HierarchyNode } from './hierarchy-node';
+import { EditableLayer } from '../../../layer/editable-layer';
 
 @Injectable({
   providedIn: 'root',
@@ -45,7 +47,7 @@ export class HierarchyService {
     let current = graphic;
 
     while (true) {
-      const layer = current.layer as FeatureLayer;
+      const layer = current.layer as EditableLayer;
       if (!layer?.relationships?.length) {
         break;
       }
@@ -61,7 +63,7 @@ export class HierarchyService {
   }
 
   private async getChildren(graphic: Graphic): Promise<HierarchyNode[]> {
-    const layer = graphic.layer as FeatureLayer;
+    const layer = graphic.layer as EditableLayer;
     if (!layer?.relationships?.length) {
       return [];
     }
@@ -99,7 +101,7 @@ export class HierarchyService {
   }
 
   private buildNode(graphic: Graphic, isClickedFeature: boolean): HierarchyNode {
-    const layer = graphic.layer as FeatureLayer;
+    const layer = graphic.layer as EditableLayer;
     return {
       graphic,
       layerTitle: layer?.title ?? 'Unknown',
@@ -127,7 +129,7 @@ export class HierarchyService {
     };
   }
 
-  private async findParent(layer: FeatureLayer, graphic: Graphic): Promise<Graphic | undefined> {
+  private async findParent(layer: EditableLayer, graphic: Graphic): Promise<Graphic | undefined> {
     if (!layer.relationships) return undefined;
     const parentRelationships = layer.relationships.filter((rel) => rel.role === 'destination');
 
@@ -139,13 +141,13 @@ export class HierarchyService {
     return undefined;
   }
 
-  private findChildRelationships(layer: FeatureLayer): Relationship[] {
+  private findChildRelationships(layer: EditableLayer): Relationship[] {
     if (!layer?.relationships) return [];
     return layer.relationships.filter((rel) => rel.role === 'origin');
   }
 
   private async queryParent(
-    layer: FeatureLayer,
+    layer: EditableLayer,
     graphic: Graphic,
     relationship: Relationship,
   ): Promise<Graphic | undefined> {
@@ -172,7 +174,7 @@ export class HierarchyService {
     return parentFeature;
   }
 
-  private async queryChildren(layer: FeatureLayer, graphic: Graphic, relationship: Relationship): Promise<Graphic[]> {
+  private async queryChildren(layer: EditableLayer, graphic: Graphic, relationship: Relationship): Promise<Graphic[]> {
     const objectId = graphic.attributes[layer.objectIdField];
 
     const query = new RelationshipQuery({
@@ -197,18 +199,19 @@ export class HierarchyService {
     return featureSet.features;
   }
 
-  private findLayerByRelationship(relationship: Relationship): FeatureLayer | undefined {
+  private findLayerByRelationship(relationship: Relationship): EditableLayer | undefined {
     const view = this.viewService.mapView();
     if (!view?.map) return undefined;
 
     const allLayers = view.map.allLayers;
     return allLayers.find((l) => {
-      if (!(l instanceof FeatureLayer)) return false;
-      return l.layerId === relationship.relatedTableId;
-    }) as FeatureLayer | undefined;
+      if (l instanceof FeatureLayer) return l.layerId === relationship.relatedTableId;
+      if (l instanceof SubtypeGroupLayer) return l.layerId === relationship.relatedTableId;
+      return false;
+    }) as EditableLayer | undefined;
   }
 
-  private buildDisplayLabel(graphic: Graphic, layer: FeatureLayer): string {
+  private buildDisplayLabel(graphic: Graphic, layer: EditableLayer): string {
     if (!layer?.fields || !graphic.attributes) return 'Feature';
 
     const displayField = layer.displayField;

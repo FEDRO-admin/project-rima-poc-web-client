@@ -1,5 +1,6 @@
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import type Field from '@arcgis/core/layers/support/Field';
 import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
 import type Domain from '@arcgis/core/layers/support/Domain';
@@ -10,10 +11,14 @@ import {
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
 import { getSubtypeFieldName, getSubtypes } from './layer-sub-types';
+import { EditableLayer } from './editable-layer';
 
 export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
   const layer = graphic.layer;
-  if (!(layer instanceof FeatureLayer) || !layer.fields?.length) {
+  if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) {
+    return [];
+  }
+  if (!layer.fields?.length) {
     return [];
   }
 
@@ -34,7 +39,7 @@ export function resolveFieldDisplayValue(
   }
 
   const layer = graphic.layer;
-  if (!(layer instanceof FeatureLayer)) {
+  if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) {
     return value;
   }
 
@@ -56,7 +61,7 @@ export function resolveFieldDisplayValue(
   return value;
 }
 
-function resolveSubtypeDomains(graphic: Graphic, layer: FeatureLayer): Record<string, Domain> | undefined {
+function resolveSubtypeDomains(graphic: Graphic, layer: EditableLayer): Record<string, Domain> | undefined {
   const subtypeField = getSubtypeFieldName(layer);
   if (!subtypeField) {
     return undefined;
@@ -64,8 +69,8 @@ function resolveSubtypeDomains(graphic: Graphic, layer: FeatureLayer): Record<st
 
   const subtypeValue = graphic.attributes?.[subtypeField];
 
-  if (layer.types?.length) {
-    const activeType = layer.types.find((t) => t.id === subtypeValue);
+  if ('types' in layer && layer.types?.length) {
+    const activeType = layer.types.find((t: { id: string | number }) => t.id === subtypeValue);
     return activeType?.domains as Record<string, Domain> | undefined;
   }
 

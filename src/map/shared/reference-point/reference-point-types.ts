@@ -1,5 +1,5 @@
 import type Point from '@arcgis/core/geometry/Point';
-import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import type { EditableLayer } from '../../layer/editable-layer';
 import type { AttributeEditField } from '../attribute-edit-field';
 
 export type ReferencePointType = 'von' | 'bis';
@@ -18,7 +18,7 @@ export interface ReferencePoint {
 export interface ReferencePointRelationshipInfo {
   type: ReferencePointType;
   relationshipId: number;
-  relatedLayer: FeatureLayer;
+  relatedLayer: EditableLayer;
   fields: AttributeEditField[];
 }
 

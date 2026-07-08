@@ -1,6 +1,7 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
@@ -58,7 +59,7 @@ export class ReferencePointService implements OnDestroy {
 
   async loadForFeature(graphic: Graphic): Promise<void> {
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return;
 
     const relationships = this.resolutionService.resolveRelationships(layer);
     if (relationships.length === 0) return;
@@ -86,7 +87,7 @@ export class ReferencePointService implements OnDestroy {
     }
   }
 
-  initializeForCreate(layer: FeatureLayer): void {
+  initializeForCreate(layer: FeatureLayer | SubtypeGroupLayer): void {
     const relationships = this.resolutionService.resolveRelationships(layer);
     if (relationships.length === 0) return;
 

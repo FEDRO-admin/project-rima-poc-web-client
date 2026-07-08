@@ -10,3 +10,13 @@ export class WebmapLanguageCategoryMissingError extends FatalError {
     this.translationArguments = { language };
   }
 }
+
+export class WebmapNotFoundError extends FatalError {
+  public override message = 'No WebMap found in portal category';
+  public override translationArguments: Record<'category', string>;
+
+  constructor(category: string) {
+    super();
+    this.translationArguments = { category };
+  }
+}

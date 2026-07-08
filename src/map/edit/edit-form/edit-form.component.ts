@@ -1,5 +1,6 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SubtypeGroupLayer from '@arcgis/core/layers/SubtypeGroupLayer';
 import { EditStore } from '../edit.store';
 import { EditService } from '../edit.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
@@ -41,7 +42,7 @@ export class EditFormComponent implements OnDestroy {
     const graphic = this.store.graphic();
     if (!graphic) return false;
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return false;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SubtypeGroupLayer)) return false;
     return layer.capabilities?.editing?.supportsGeometryUpdate ?? false;
   });
 

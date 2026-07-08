@@ -1,4 +1,3 @@
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Field from '@arcgis/core/layers/support/Field';
 import type CodedValueDomain from '@arcgis/core/layers/support/CodedValueDomain';
 import type Domain from '@arcgis/core/layers/support/Domain';
@@ -9,10 +8,11 @@ import {
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
 import { getSubtypeFieldName } from '../layer/layer-sub-types';
+import { EditableLayer } from '../layer/editable-layer';
 
 type AttributeValue = string | number | boolean | null;
 
-export function resolveCreatableFields(layer: FeatureLayer, subtypeValue?: string | number): AttributeEditField[] {
+export function resolveCreatableFields(layer: EditableLayer, subtypeValue?: string | number): AttributeEditField[] {
   if (!layer.fields?.length) {
     return [];
   }
@@ -25,7 +25,7 @@ export function resolveCreatableFields(layer: FeatureLayer, subtypeValue?: strin
 }
 
 export function buildDefaultAttributes(
-  layer: FeatureLayer,
+  layer: EditableLayer,
   fields: AttributeEditField[],
 ): Record<string, AttributeValue> {
   const attributes: Record<string, AttributeValue> = {};
@@ -44,7 +44,7 @@ export function buildDefaultAttributes(
 }
 
 function resolveSubtypeDomains(
-  layer: FeatureLayer,
+  layer: EditableLayer,
   subtypeValue?: string | number,
 ): Record<string, Domain> | undefined {
   const subtypeField = getSubtypeFieldName(layer);
@@ -52,8 +52,8 @@ function resolveSubtypeDomains(
     return undefined;
   }
 
-  if (layer.types?.length) {
-    const activeType = layer.types.find((t) => t.id === subtypeValue);
+  if ('types' in layer && layer.types?.length) {
+    const activeType = layer.types.find((t: { id: string | number }) => t.id === subtypeValue);
     return activeType?.domains as Record<string, Domain> | undefined;
   }
 

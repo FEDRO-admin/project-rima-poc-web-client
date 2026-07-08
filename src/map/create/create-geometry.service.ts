@@ -2,13 +2,13 @@ import { inject, Injectable, OnDestroy } from '@angular/core';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { MapViewService } from '../view/view.service';
 import { CreateStore } from './create.store';
 import { getDefaultCreateTool } from './create-config';
 import { EDIT_POINT_SYMBOL, EDIT_LINE_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit/edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
+import { EditableLayer } from '../layer/editable-layer';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +27,7 @@ export class CreateGeometryService implements OnDestroy {
     this.cleanup();
   }
 
-  startDrawing(layer: FeatureLayer, tool?: CreateTool): void {
+  startDrawing(layer: EditableLayer, tool?: CreateTool): void {
     const view = this.viewService.mapView();
     if (!view?.map) return;
 
@@ -67,7 +67,7 @@ export class CreateGeometryService implements OnDestroy {
     this.store.setSketchActive(true);
   }
 
-  redraw(layer: FeatureLayer, tool?: CreateTool): void {
+  redraw(layer: EditableLayer, tool?: CreateTool): void {
     const view = this.viewService.mapView();
     if (!view?.map) return;
 
