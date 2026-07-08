@@ -3,7 +3,7 @@
     <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
       >Return to Present</calcite-button
     >
-    <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy' }}</span>
+    <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
   }
   <calcite-dropdown width-scale="m">
     <calcite-button
@@ -26,4 +26,30 @@
       }
     </calcite-dropdown-group>
   </calcite-dropdown>
+  <div class="custom-date-section">
+    <calcite-button
+      appearance="outline"
+      kind="neutral"
+      icon-start="calendar"
+      [attr.icon-end]="customExpanded ? 'chevron-up' : 'chevron-down'"
+      width="full"
+      (click)="customExpanded = !customExpanded"
+      >Custom Date &amp; Time</calcite-button
+    >
+    @if (customExpanded) {
+      <div class="custom-date-inputs">
+        <calcite-input-date-picker
+          layout="horizontal"
+          (calciteInputDatePickerChange)="onCustomDateChange($event)"
+        ></calcite-input-date-picker>
+        <calcite-input-time-picker
+          step="60"
+          (calciteInputTimePickerChange)="onCustomTimeChange($event)"
+        ></calcite-input-time-picker>
+        <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
+          >Apply</calcite-button
+        >
+      </div>
+    }
+  </div>
 </div>

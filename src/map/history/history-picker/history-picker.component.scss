@@ -10,3 +10,19 @@
   text-align: center;
   color: #333;
 }
+
+.custom-date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.custom-date-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid color-mix(in srgb, #0079c1 25%, white);
+  border-radius: 4px;
+  background: white;
+}
