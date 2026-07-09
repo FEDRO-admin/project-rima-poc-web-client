@@ -1,6 +1,16 @@
 import { Injectable } from '@angular/core';
 import esriRequest from '@arcgis/core/request';
-import { HistoricMomentEntry, HISTORIC_MOMENTS_URL } from './history-config';
+import {
+  HistoricMomentEntry,
+  HISTORIC_MOMENTS_URL,
+  HISTORIC_MOMENTS_ADD_URL,
+  HISTORIC_MOMENTS_DELETE_URL,
+} from './history-config';
+
+export interface HistoricMomentResult {
+  success: boolean;
+  message?: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -30,6 +40,38 @@ export class HistoricMomentsService {
         .map(([name, date]) => ({ name, date: date as string }));
     } catch {
       return [];
+    }
+  }
+
+  async addHistoricMoment(name: string, timestamp: string): Promise<HistoricMomentResult> {
+    try {
+      const response = await esriRequest(HISTORIC_MOMENTS_ADD_URL, {
+        query: { f: 'json', name, timestamp },
+        responseType: 'json',
+      });
+      const data = response.data as Record<string, unknown>;
+      if (data?.status === 'error') {
+        return { success: false, message: (data.message as string) ?? 'Unknown error' };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: String(error) };
+    }
+  }
+
+  async deleteHistoricMoment(name: string): Promise<HistoricMomentResult> {
+    try {
+      const response = await esriRequest(HISTORIC_MOMENTS_DELETE_URL, {
+        query: { f: 'json', name },
+        responseType: 'json',
+      });
+      const data = response.data as Record<string, unknown>;
+      if (data?.status === 'error') {
+        return { success: false, message: (data.message as string) ?? 'Unknown error' };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: String(error) };
     }
   }
 }

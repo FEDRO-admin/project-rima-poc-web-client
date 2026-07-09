@@ -1,0 +1,123 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Historical Data Viewer Flow\nTask 584 / July 2026
+
+actor "User" as user #LightBlue
+participant "HistoryPickerComponent\n(TOC footer)" as picker #E8F5E9
+participant "HistoricMomentsService" as momentsSvc #F3E5F5
+participant "HistoryStore\n[SignalStore]" as store #F3E5F5
+participant "HistoryEffects" as effects #F3E5F5
+participant "HistoryService" as historySvc #F3E5F5
+participant "PopupStore" as popupStore #F3E5F5
+participant "EditService" as editSvc #F3E5F5
+participant "CreateStore" as createStore #F3E5F5
+participant "FeatureLayer[]\n(all in map)" as layers #FFEBEE
+participant "RIMA SOE\n(ArcGIS Server)" as soe #FFEBEE
+
+== Initialisation ==
+
+note over effects
+  HistoryEffects constructor registers 4 effects:
+  1. closePopupOnActivate() — watch active()
+  2. cancelEditsOnActivate() — watch active()
+  3. cancelCreateOnActivate() — watch active()
+  4. clearHistoricMomentOnDeactivate() — watch active()
+end note
+
+== User Opens Dropdown (lazy load) ==
+
+user -> picker : clicks "Historical Moments" dropdown
+picker -> momentsSvc : [ASYNC] getHistoricMoments()
+activate momentsSvc
+momentsSvc -> soe : [ASYNC] esriRequest(HISTORIC_MOMENTS_URL,\n  { query: { f: 'json' } })
+activate soe
+soe --> momentsSvc : JSON { name: dateString, ... }
+deactivate soe
+momentsSvc -> momentsSvc : filter out 'DEFAULT'\nmap to HistoricMomentEntry[]
+momentsSvc --> picker : HistoricMomentEntry[]
+deactivate momentsSvc
+picker -> picker : render dropdown items:\n"name (dd.MM.yyyy)" per entry
+
+== User Selects a Named Moment ==
+
+user -> picker : clicks a named moment entry
+picker -> picker : selectMoment(entry)\nparse Date from entry.date
+picker -> store : activate(date)
+activate store
+store -> store : patchState({ active: true,\n  selectedDate: date })
+deactivate store
+
+picker -> historySvc : applyHistoricMoment(date)
+activate historySvc
+historySvc -> layers : forEach FeatureLayer:\n  layer.historicMoment = date\n  layer.refresh()
+note over layers
+  All feature layers now display
+  data as it existed at the selected timestamp.
+  ArcGIS SDK queries the versioned data store.
+end note
+deactivate historySvc
+
+note over effects
+  effect() fires: active() = true
+end note
+
+effects -> popupStore : close()\n(dismiss any open popup)
+alt edit session active
+  effects -> editSvc : reset()\n(cancel edit)
+end
+alt create session active
+  effects -> createStore : reset()\n(cancel create)
+end
+
+picker -> picker : Show "Return to Present" button\n+ "Viewing: dd.MM.yyyy HH:mm"
+
+== User Selects Custom Date/Time ==
+
+user -> picker : expands "Custom Date & Time"
+user -> picker : picks date via calcite-input-date-picker
+user -> picker : picks time via calcite-input-time-picker
+user -> picker : clicks "Apply"
+picker -> picker : applyCustomDate()\ncombine date + time -> Date
+picker -> store : activate(date)
+picker -> historySvc : applyHistoricMoment(date)
+activate historySvc
+historySvc -> layers : forEach FeatureLayer:\n  layer.historicMoment = date\n  layer.refresh()
+deactivate historySvc
+
+== User Returns to Present ==
+
+user -> picker : clicks "Return to Present"
+picker -> store : deactivate()
+activate store
+store -> store : patchState({ active: false,\n  selectedDate: null })
+deactivate store
+
+note over effects
+  effect() fires: active() = false
+  -> clearHistoricMomentOnDeactivate()
+end note
+
+effects -> historySvc : clearHistoricMoment()
+activate historySvc
+historySvc -> layers : forEach FeatureLayer:\n  layer.historicMoment = null\n  layer.refresh()
+note over layers
+  All feature layers now display
+  live (current) data again.
+end note
+deactivate historySvc
+
+picker -> picker : Hide "Return to Present" button\nShow normal dropdown state
+
+@enduml
