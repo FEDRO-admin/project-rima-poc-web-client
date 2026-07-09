@@ -5,59 +5,119 @@
     >
     <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
   }
-  <calcite-dropdown width-scale="m" (calciteDropdownOpen)="onDropdownOpen()">
-    <calcite-button
-      slot="trigger"
-      appearance="outline"
-      kind="neutral"
-      icon-start="clock"
-      icon-end="chevron-down"
-      width="full"
-      >Historical Moments</calcite-button
-    >
-    <calcite-dropdown-group selection-mode="single">
-      @if (momentsLoading) {
-        <calcite-dropdown-item disabled><calcite-loader inline></calcite-loader> Loading...</calcite-dropdown-item>
-      } @else if (moments.length === 0) {
-        <calcite-dropdown-item disabled>No historical markers found</calcite-dropdown-item>
-      } @else {
-        @for (moment of moments; track moment.name) {
-          <calcite-dropdown-item
-            [attr.selected]="isSelected(moment) ? '' : null"
-            (calciteDropdownItemSelect)="selectMoment(moment)"
-          >
-            {{ moment.name }} ({{ moment.date | date: 'dd.MM.yyyy' }})
-          </calcite-dropdown-item>
-        }
+
+  <calcite-button
+    appearance="outline"
+    kind="neutral"
+    icon-start="clock"
+    [attr.icon-end]="panelExpanded ? 'chevron-up' : 'chevron-down'"
+    width="full"
+    (click)="togglePanel()"
+    >Historical Moments</calcite-button
+  >
+
+  @if (panelExpanded) {
+    <div class="moments-panel">
+      @if (errorMessage) {
+        <calcite-notice open kind="danger" closable (calciteNoticeClose)="dismissError()">
+          <span slot="message">{{ errorMessage }}</span>
+        </calcite-notice>
       }
-    </calcite-dropdown-group>
-  </calcite-dropdown>
-  <div class="custom-date-section">
-    <calcite-button
-      appearance="outline"
-      kind="neutral"
-      icon-start="calendar"
-      [attr.icon-end]="customExpanded ? 'chevron-up' : 'chevron-down'"
-      width="full"
-      (click)="customExpanded = !customExpanded"
-      >Custom Date &amp; Time</calcite-button
-    >
-    @if (customExpanded) {
-      <div class="custom-date-inputs">
-        <calcite-input-date-picker
-          layout="horizontal"
-          lang="de-CH"
-          (calciteInputDatePickerChange)="onCustomDateChange($event)"
-        ></calcite-input-date-picker>
-        <calcite-input-time-picker
-          step="60"
-          hour-format="24"
-          (calciteInputTimePickerChange)="onCustomTimeChange($event)"
-        ></calcite-input-time-picker>
-        <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
-          >Apply</calcite-button
+
+      @if (momentsLoading) {
+        <div class="loading"><calcite-loader inline></calcite-loader> Loading...</div>
+      } @else if (moments.length === 0) {
+        <div class="empty-message">No historical markers found</div>
+      } @else {
+        <calcite-list selection-mode="single">
+          @for (moment of moments; track moment.name) {
+            <calcite-list-item
+              [label]="moment.name"
+              [description]="moment.date | date: 'dd.MM.yyyy HH:mm'"
+              [attr.selected]="selectedMoment === moment ? '' : null"
+              (calciteListItemSelect)="selectMoment(moment)"
+            >
+              <calcite-button
+                slot="actions-end"
+                appearance="transparent"
+                kind="danger"
+                icon-start="trash"
+                (click)="confirmDelete(moment); $event.stopPropagation()"
+              ></calcite-button>
+            </calcite-list-item>
+          }
+        </calcite-list>
+      }
+
+      @if (confirmingDelete) {
+        <div class="confirm-delete">
+          <span>Delete "{{ confirmingDelete.name }}"?</span>
+          <div class="confirm-actions">
+            <calcite-button appearance="outline" kind="neutral" scale="s" (click)="cancelDelete()"
+              >Cancel</calcite-button
+            >
+            <calcite-button appearance="solid" kind="danger" scale="s" (click)="executeDelete()">Delete</calcite-button>
+          </div>
+        </div>
+      }
+
+      @if (!addFormVisible) {
+        <calcite-button appearance="outline" kind="brand" icon-start="plus" width="full" (click)="showAddForm()"
+          >Add Marker</calcite-button
         >
-      </div>
-    }
-  </div>
+      } @else {
+        <div class="add-form">
+          <calcite-input-text
+            placeholder="Marker name"
+            (calciteInputTextInput)="onNewNameChange($event)"
+          ></calcite-input-text>
+          <calcite-input-date-picker
+            layout="horizontal"
+            lang="de-CH"
+            (calciteInputDatePickerChange)="onNewDateChange($event)"
+          ></calcite-input-date-picker>
+          <calcite-input-time-picker
+            step="60"
+            hour-format="24"
+            (calciteInputTimePickerChange)="onNewTimeChange($event)"
+          ></calcite-input-time-picker>
+          <div class="add-form-actions">
+            <calcite-button appearance="outline" kind="neutral" width="full" (click)="cancelAdd()"
+              >Cancel</calcite-button
+            >
+            <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="submitAdd()"
+              >Save</calcite-button
+            >
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <calcite-button
+    appearance="outline"
+    kind="neutral"
+    icon-start="calendar"
+    [attr.icon-end]="customExpanded ? 'chevron-up' : 'chevron-down'"
+    width="full"
+    (click)="customExpanded = !customExpanded"
+    >Custom Date &amp; Time</calcite-button
+  >
+  @if (customExpanded) {
+    <div class="custom-date-inputs">
+      <calcite-input-date-picker
+        layout="horizontal"
+        lang="de-CH"
+        (calciteInputDatePickerChange)="onCustomDateChange($event)"
+      ></calcite-input-date-picker>
+      <calcite-input-time-picker
+        step="60"
+        hour-format="24"
+        (calciteInputTimePickerChange)="onCustomTimeChange($event)"
+      ></calcite-input-time-picker>
+      <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
+        >Apply</calcite-button
+      >
+    </div>
+  }
 </div>

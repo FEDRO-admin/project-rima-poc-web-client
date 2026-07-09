@@ -50,8 +50,8 @@ export class HistoricMomentsService {
         responseType: 'json',
       });
       const data = response.data as Record<string, unknown>;
-      if (data?.status === 'error') {
-        return { success: false, message: (data.message as string) ?? 'Unknown error' };
+      if (data?.['status'] === 'error') {
+        return { success: false, message: (data['message'] as string) ?? 'Unknown error' };
       }
       return { success: true };
     } catch (error) {
@@ -66,8 +66,8 @@ export class HistoricMomentsService {
         responseType: 'json',
       });
       const data = response.data as Record<string, unknown>;
-      if (data?.status === 'error') {
-        return { success: false, message: (data.message as string) ?? 'Unknown error' };
+      if (data?.['status'] === 'error') {
+        return { success: false, message: (data['message'] as string) ?? 'Unknown error' };
       }
       return { success: true };
     } catch (error) {

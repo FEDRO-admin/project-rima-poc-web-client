@@ -36,19 +36,19 @@ note over effects
   4. clearHistoricMomentOnDeactivate() — watch active()
 end note
 
-== User Opens Dropdown (lazy load) ==
+== User Opens Panel (lazy load) ==
 
-user -> picker : clicks "Historical Moments" dropdown
+user -> picker : clicks "Historical Moments" button
 picker -> momentsSvc : [ASYNC] getHistoricMoments()
 activate momentsSvc
-momentsSvc -> soe : [ASYNC] esriRequest(HISTORIC_MOMENTS_URL,\n  { query: { f: 'json' } })
+momentsSvc -> soe : [ASYNC] esriRequest(getHistoricMoments,\n  { query: { f: 'json' } })
 activate soe
 soe --> momentsSvc : JSON { name: dateString, ... }
 deactivate soe
 momentsSvc -> momentsSvc : filter out 'DEFAULT'\nmap to HistoricMomentEntry[]
 momentsSvc --> picker : HistoricMomentEntry[]
 deactivate momentsSvc
-picker -> picker : render dropdown items:\n"name (dd.MM.yyyy)" per entry
+picker -> picker : cdr.detectChanges()\nrender list items:\n"name (dd.MM.yyyy HH:mm)" per entry
 
 == User Selects a Named Moment ==
 
@@ -82,6 +82,57 @@ alt create session active
 end
 
 picker -> picker : Show "Return to Present" button\n+ "Viewing: dd.MM.yyyy HH:mm"
+
+== User Adds a Marker ==
+
+user -> picker : clicks "Add Marker"
+picker -> picker : show add form\n(name, date, time inputs)
+user -> picker : fills name, date, time\nclicks "Save"
+picker -> picker : submitAdd()\nbuild ISO timestamp
+picker -> momentsSvc : [ASYNC] addHistoricMoment(name, timestamp)
+activate momentsSvc
+momentsSvc -> soe : [ASYNC] esriRequest(addHistoricMoment,\n  { query: { f: 'json', name, timestamp } })
+activate soe
+alt success
+  soe --> momentsSvc : { status: 'success' }
+  momentsSvc --> picker : { success: true }
+  picker -> momentsSvc : [ASYNC] getHistoricMoments()
+  momentsSvc -> soe : esriRequest(getHistoricMoments)
+  soe --> momentsSvc : updated list
+  momentsSvc --> picker : HistoricMomentEntry[]
+  picker -> picker : refresh list + cdr.detectChanges()
+else error
+  soe --> momentsSvc : { status: 'error', message: '...' }
+  momentsSvc --> picker : { success: false, message: '...' }
+  picker -> picker : show calcite-notice (danger)\nwith error message
+end
+deactivate soe
+deactivate momentsSvc
+
+== User Deletes a Marker ==
+
+user -> picker : clicks trash icon on a marker
+picker -> picker : confirmDelete(entry)\nshow confirmation prompt
+user -> picker : clicks "Delete"
+picker -> momentsSvc : [ASYNC] deleteHistoricMoment(name)
+activate momentsSvc
+momentsSvc -> soe : [ASYNC] esriRequest(delHistoricMoment,\n  { query: { f: 'json', name } })
+activate soe
+alt success
+  soe --> momentsSvc : { status: 'success' }
+  momentsSvc --> picker : { success: true }
+  picker -> momentsSvc : [ASYNC] getHistoricMoments()
+  momentsSvc -> soe : esriRequest(getHistoricMoments)
+  soe --> momentsSvc : updated list
+  momentsSvc --> picker : HistoricMomentEntry[]
+  picker -> picker : refresh list + cdr.detectChanges()
+else error
+  soe --> momentsSvc : { status: 'error', message: '...' }
+  momentsSvc --> picker : { success: false, message: '...' }
+  picker -> picker : show calcite-notice (danger)\nwith error message
+end
+deactivate soe
+deactivate momentsSvc
 
 == User Selects Custom Date/Time ==
 
@@ -118,6 +169,6 @@ note over layers
 end note
 deactivate historySvc
 
-picker -> picker : Hide "Return to Present" button\nShow normal dropdown state
+picker -> picker : Hide "Return to Present" button\nShow normal panel state
 
 @enduml
