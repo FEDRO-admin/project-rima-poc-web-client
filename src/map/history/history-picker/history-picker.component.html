@@ -5,7 +5,7 @@
     >
     <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
   }
-  <calcite-dropdown width-scale="m">
+  <calcite-dropdown width-scale="m" (calciteDropdownOpen)="onDropdownOpen()">
     <calcite-button
       slot="trigger"
       appearance="outline"
@@ -16,7 +16,9 @@
       >Historical Moments</calcite-button
     >
     <calcite-dropdown-group selection-mode="single">
-      @if (moments.length === 0) {
+      @if (momentsLoading) {
+        <calcite-dropdown-item disabled><calcite-loader inline></calcite-loader> Loading...</calcite-dropdown-item>
+      } @else if (moments.length === 0) {
         <calcite-dropdown-item disabled>No historical markers found</calcite-dropdown-item>
       } @else {
         @for (moment of moments; track moment.name) {

@@ -1,12 +1,12 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Subscription } from 'rxjs';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dropdown';
 import '@esri/calcite-components/dist/components/calcite-dropdown-group';
 import '@esri/calcite-components/dist/components/calcite-dropdown-item';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-input-time-picker';
+import '@esri/calcite-components/dist/components/calcite-loader';
 import { HistoryStore } from '../history.store';
 import { HistoryService } from '../history.service';
 import { HistoricMomentEntry } from '../history-config';
@@ -19,27 +19,26 @@ import { HistoricMomentsService } from '../historic-moments.service';
   templateUrl: './history-picker.component.html',
   styleUrl: './history-picker.component.scss',
 })
-export class HistoryPickerComponent implements OnInit, OnDestroy {
+export class HistoryPickerComponent {
   protected readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
   private readonly historicMomentsService = inject(HistoricMomentsService);
-  private readonly subscription = new Subscription();
+  private readonly cdr = inject(ChangeDetectorRef);
   protected moments: HistoricMomentEntry[] = [];
+  protected momentsLoaded = false;
+  protected momentsLoading = false;
   protected selectedMoment: HistoricMomentEntry | null = null;
   protected customExpanded = false;
   protected customDate = '';
   protected customTime = '';
 
-  ngOnInit(): void {
-    this.subscription.add(
-      this.historicMomentsService.getHistoricMoments().subscribe((moments) => {
-        this.moments = moments;
-      }),
-    );
-  }
-
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+  protected async onDropdownOpen(): Promise<void> {
+    if (this.momentsLoaded) return;
+    this.momentsLoading = true;
+    this.moments = await this.historicMomentsService.getHistoricMoments();
+    this.momentsLoading = false;
+    this.momentsLoaded = true;
+    this.cdr.detectChanges();
   }
 
   protected selectMoment(entry: HistoricMomentEntry): void {
