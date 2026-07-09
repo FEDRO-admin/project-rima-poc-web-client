@@ -2,26 +2,20 @@ import { computed, effect, inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { FeatureEditResult } from '@arcgis/core/editing/types';
 import { PopupStore } from '../popup/popup.store';
-import { AttributeEditStore } from './attributes/attribute-edit.store';
-import { GeometryEditStore } from './geometry/geometry-edit.store';
+import { EditStore } from './edit.store';
+import { PopupService } from '../popup/popup.service';
 
 @Injectable({
   providedIn: 'root',
 })
-// This is an attempt to follow the same convention for effects as in the popup
-// and language effects...
 export class EditEffects {
   private readonly popupStore = inject(PopupStore);
-  private readonly attributeEditStore = inject(AttributeEditStore);
-  private readonly geometryEditStore = inject(GeometryEditStore);
+  private readonly popupService = inject(PopupService);
+  private readonly editStore = inject(EditStore);
 
-  readonly editing = computed(() => this.attributeEditStore.editing() || this.geometryEditStore.editing());
+  readonly editing = computed(() => this.editStore.active());
 
-  readonly isDirty = computed(() => {
-    const attributeDirty = this.attributeEditStore.editing() && this.attributeEditStore.isDirty();
-    const geometryDirty = this.geometryEditStore.isDirty();
-    return attributeDirty || geometryDirty;
-  });
+  readonly isDirty = computed(() => this.editStore.isDirty());
 
   constructor() {
     this.refreshPopupOnLayerEdits();
@@ -43,7 +37,7 @@ export class EditEffects {
         const wasUpdated = event.updatedFeatures.some((feature: FeatureEditResult) => feature.objectId === objectId);
         if (!wasUpdated) return;
 
-        this.popupStore.refreshSelectedGraphic();
+        this.popupService.refreshSelectedGraphic();
       });
 
       onCleanup(() => handle.remove());

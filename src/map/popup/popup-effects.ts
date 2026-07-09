@@ -1,6 +1,5 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
-import { PopupClickService } from './popup-click.service';
-import { PopupHighlightService } from './popup-highlight.service';
+import { PopupService } from './popup.service';
 import { PopupStore } from './popup.store';
 import { MapViewService } from '../view/view.service';
 
@@ -9,9 +8,8 @@ import { MapViewService } from '../view/view.service';
 })
 export class PopupEffects {
   private readonly viewService = inject(MapViewService);
+  private readonly popupService = inject(PopupService);
   private readonly popupStore = inject(PopupStore);
-  private readonly popupClickService = inject(PopupClickService);
-  private readonly popupHighlightService = inject(PopupHighlightService);
 
   constructor() {
     this.attachClickHandler();
@@ -25,7 +23,7 @@ export class PopupEffects {
       const view = this.viewService.mapView();
       untracked(() => {
         if (view) {
-          this.popupClickService.attach(view);
+          this.popupService.attach(view);
         }
       });
     });
@@ -36,9 +34,9 @@ export class PopupEffects {
       const selectedGraphic = this.popupStore.selectedGraphic();
       untracked(() => {
         if (!selectedGraphic) return;
-        this.popupHighlightService.clearSelectionHighlight();
+        this.popupService.clearSelectionHighlight();
         if (selectedGraphic) {
-          this.popupHighlightService.highlightGraphic(selectedGraphic, 'selection');
+          this.popupService.highlightGraphic(selectedGraphic, 'selection');
         }
       });
     });
@@ -48,11 +46,11 @@ export class PopupEffects {
     effect(() => {
       const hoveredIndex = this.popupStore.hoveredIndex();
       untracked(() => {
-        this.popupHighlightService.clearHoverHighlight();
+        this.popupService.clearHoverHighlight();
         if (hoveredIndex != null) {
           const graphic = this.popupStore.graphics()[hoveredIndex];
           if (graphic) {
-            this.popupHighlightService.highlightGraphic(graphic, 'hover');
+            this.popupService.highlightGraphic(graphic, 'hover');
           }
         }
       });
@@ -64,8 +62,8 @@ export class PopupEffects {
       const visible = this.popupStore.visible();
       untracked(() => {
         if (!visible) {
-          this.popupHighlightService.clearHoverHighlight();
-          this.popupHighlightService.clearSelectionHighlight();
+          this.popupService.clearHoverHighlight();
+          this.popupService.clearSelectionHighlight();
         }
       });
     });
