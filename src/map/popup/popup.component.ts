@@ -10,6 +10,7 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { isLayerEditable } from '../layer/layer-capabilities';
 import { isLayerDeletable } from '../layer/layer-capabilities';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
+import { HistoryStore } from '../history/history.store';
 
 @Component({
   selector: 'rima-popup',
@@ -21,16 +22,19 @@ import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dial
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
   protected readonly deleteStore = inject(DeleteStore);
+  private readonly historyStore = inject(HistoryStore);
   private readonly editService = inject(EditService);
   private readonly deleteService = inject(DeleteService);
   private readonly viewService = inject(MapViewService);
 
   protected isEditable(): boolean {
+    if (this.historyStore.active()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerEditable(graphic) : false;
   }
 
   protected isDeletable(): boolean {
+    if (this.historyStore.active()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerDeletable(graphic) : false;
   }
