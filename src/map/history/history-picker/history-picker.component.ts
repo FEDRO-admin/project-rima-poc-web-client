@@ -1,6 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import '@esri/calcite-components/dist/components/calcite-button';
+import '@esri/calcite-components/dist/components/calcite-dialog';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-input-time-picker';
 import '@esri/calcite-components/dist/components/calcite-input-text';
@@ -28,16 +29,25 @@ export class HistoryPickerComponent {
   protected async togglePanel(): Promise<void> {
     const expanded = !this.historyStore.panelExpanded();
     this.historyStore.setPanelExpanded(expanded);
-    if (expanded && this.historyStore.momentsState() === undefined) {
-      await this.loadMoments();
+    if (expanded) {
+      this.historyStore.setCustomExpanded(false);
+      if (this.historyStore.momentsState() === undefined) {
+        await this.loadMoments();
+      }
     }
   }
 
   protected selectMoment(entry: HistoricMomentEntry): void {
-    const date = new Date(entry.date);
     this.historyStore.setSelectedMoment(entry);
+  }
+
+  protected applySelectedMoment(): void {
+    const entry = this.historyStore.selectedMoment();
+    if (!entry) return;
+    const date = new Date(entry.date);
     this.historyStore.activate(date);
     this.historyService.applyHistoricMoment(date);
+    this.historyStore.setPanelExpanded(false);
   }
 
   protected applyCustomDate(): void {
@@ -50,6 +60,7 @@ export class HistoryPickerComponent {
     this.historyStore.setSelectedMoment(null);
     this.historyStore.activate(date);
     this.historyService.applyHistoricMoment(date);
+    this.historyStore.setCustomExpanded(false);
   }
 
   protected onCustomDateChange(event: Event): void {
@@ -136,7 +147,19 @@ export class HistoryPickerComponent {
   }
 
   protected toggleCustomPanel(): void {
-    this.historyStore.setCustomExpanded(!this.historyStore.customExpanded());
+    const expanded = !this.historyStore.customExpanded();
+    this.historyStore.setCustomExpanded(expanded);
+    if (expanded) {
+      this.historyStore.setPanelExpanded(false);
+    }
+  }
+
+  protected closeMomentsDialog(): void {
+    this.historyStore.setPanelExpanded(false);
+  }
+
+  protected closeCustomDialog(): void {
+    this.historyStore.setCustomExpanded(false);
   }
 
   private async loadMoments(): Promise<void> {
