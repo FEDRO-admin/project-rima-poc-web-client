@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, untracked } from '@angular/core';
 import { HistoryStore } from './history.store';
 import { HistoryService } from './history.service';
 import { PopupStore } from '../popup/popup.store';
+import { PopupService } from '../popup/popup.service';
 import { EditStore } from '../edit/edit.store';
 import { EditService } from '../edit/edit.service';
 import { CreateStore } from '../create/create.store';
@@ -13,6 +14,7 @@ export class HistoryEffects {
   private readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
   private readonly popupStore = inject(PopupStore);
+  private readonly popupService = inject(PopupService);
   private readonly editStore = inject(EditStore);
   private readonly editService = inject(EditService);
   private readonly createStore = inject(CreateStore);
@@ -20,18 +22,18 @@ export class HistoryEffects {
   readonly active = computed(() => this.historyStore.active());
 
   constructor() {
-    this.closePopupOnActivate();
+    this.refreshPopupOnDateChange();
     this.cancelEditsOnActivate();
     this.cancelCreateOnActivate();
     this.clearHistoricMomentOnDeactivate();
   }
 
-  private closePopupOnActivate(): void {
+  private refreshPopupOnDateChange(): void {
     effect(() => {
-      const active = this.historyStore.active();
+      this.historyStore.selectedDate();
       untracked(() => {
-        if (active) {
-          this.popupStore.close();
+        if (this.popupStore.visible() && this.popupStore.selectedGraphic()) {
+          this.popupService.refreshSelectedGraphic();
         }
       });
     });
