@@ -10,31 +10,31 @@
     appearance="outline"
     kind="neutral"
     icon-start="clock"
-    [attr.icon-end]="panelExpanded ? 'chevron-up' : 'chevron-down'"
+    [attr.icon-end]="historyStore.panelExpanded() ? 'chevron-up' : 'chevron-down'"
     width="full"
     (click)="togglePanel()"
     >Historical Moments</calcite-button
   >
 
-  @if (panelExpanded) {
+  @if (historyStore.panelExpanded()) {
     <div class="moments-panel">
-      @if (errorMessage) {
+      @if (historyStore.errorMessage()) {
         <calcite-notice open kind="danger" closable (calciteNoticeClose)="dismissError()">
-          <span slot="message">{{ errorMessage }}</span>
+          <span slot="message">{{ historyStore.errorMessage() }}</span>
         </calcite-notice>
       }
 
-      @if (momentsLoading) {
+      @if (historyStore.momentsState() === 'loading') {
         <div class="loading"><calcite-loader inline></calcite-loader> Loading...</div>
-      } @else if (moments.length === 0) {
+      } @else if (historyStore.moments().length === 0) {
         <div class="empty-message">No historical markers found</div>
       } @else {
         <calcite-list selection-mode="single">
-          @for (moment of moments; track moment.name) {
+          @for (moment of historyStore.moments(); track moment.name) {
             <calcite-list-item
               [label]="moment.name"
               [description]="moment.date | date: 'dd.MM.yyyy HH:mm'"
-              [attr.selected]="selectedMoment === moment ? '' : null"
+              [attr.selected]="historyStore.selectedMoment() === moment ? '' : null"
               (calciteListItemSelect)="selectMoment(moment)"
             >
               <calcite-button
@@ -49,9 +49,9 @@
         </calcite-list>
       }
 
-      @if (confirmingDelete) {
+      @if (historyStore.confirmingDelete()) {
         <div class="confirm-delete">
-          <span>Delete "{{ confirmingDelete.name }}"?</span>
+          <span>Delete "{{ historyStore.confirmingDelete()!.name }}"?</span>
           <div class="confirm-actions">
             <calcite-button appearance="outline" kind="neutral" scale="s" (click)="cancelDelete()"
               >Cancel</calcite-button
@@ -61,7 +61,7 @@
         </div>
       }
 
-      @if (!addFormVisible) {
+      @if (!historyStore.addFormVisible()) {
         <calcite-button appearance="outline" kind="brand" icon-start="plus" width="full" (click)="showAddForm()"
           >Add Marker</calcite-button
         >
@@ -98,12 +98,12 @@
     appearance="outline"
     kind="neutral"
     icon-start="calendar"
-    [attr.icon-end]="customExpanded ? 'chevron-up' : 'chevron-down'"
+    [attr.icon-end]="historyStore.customExpanded() ? 'chevron-up' : 'chevron-down'"
     width="full"
-    (click)="customExpanded = !customExpanded"
+    (click)="toggleCustomPanel()"
     >Custom Date &amp; Time</calcite-button
   >
-  @if (customExpanded) {
+  @if (historyStore.customExpanded()) {
     <div class="custom-date-inputs">
       <calcite-input-date-picker
         layout="horizontal"
