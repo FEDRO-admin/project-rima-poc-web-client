@@ -62,6 +62,7 @@ export class HistoryPickerComponent {
 
   protected returnToPresent(): void {
     this.historyStore.setSelectedMoment(null);
+    this.historyService.clearHistoricMoment();
     this.historyStore.deactivate();
   }
 
