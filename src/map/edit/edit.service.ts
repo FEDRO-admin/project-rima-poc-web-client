@@ -4,7 +4,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
-import type MapView from '@arcgis/core/views/MapView';
+import type { RimaView } from '../view/view.service';
 import { EditStore } from './edit.store';
 import { PopupStore } from '../popup/popup.store';
 import { MapViewService } from '../view/view.service';
@@ -177,7 +177,7 @@ export class EditService implements OnDestroy {
     updateUndoRedoState(this.sketchViewModel, this.store);
   }
 
-  private activateSketch(view: MapView, geometry: Geometry): void {
+  private activateSketch(view: RimaView, geometry: Geometry): void {
     this.sketchLayer = new GraphicsLayer({ listMode: 'hide' });
     view.map!.add(this.sketchLayer);
 

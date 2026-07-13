@@ -3,7 +3,19 @@
   <rima-edit-form />
   <rima-popup></rima-popup>
   <div class="map-area">
-    <arcgis-map id="rima-map" #arcgisMap [extent]="switzerlandExtent"></arcgis-map>
+    <arcgis-map
+      id="rima-map"
+      #arcgisMap
+      [extent]="switzerlandExtent"
+      [hidden]="sceneStore.mode() === '3d'"
+    ></arcgis-map>
+    <arcgis-scene
+      #arcgisScene
+      ground="world-elevation"
+      basemap="topo-vector"
+      [hidden]="sceneStore.mode() === '2d'"
+    ></arcgis-scene>
+    <rima-scene-toggle />
   </div>
   <rima-toc></rima-toc>
 </div>
