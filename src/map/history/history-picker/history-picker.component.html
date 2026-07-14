@@ -10,7 +10,7 @@
     appearance="outline"
     kind="neutral"
     icon-start="clock"
-    [attr.icon-end]="historyStore.panelExpanded() ? 'chevron-up' : 'chevron-down'"
+    [attr.icon-end]="panelExpanded() ? 'chevron-up' : 'chevron-down'"
     width="full"
     (click)="togglePanel()"
     >Historical Moments</calcite-button
@@ -20,7 +20,7 @@
     appearance="outline"
     kind="neutral"
     icon-start="calendar"
-    [attr.icon-end]="historyStore.customExpanded() ? 'chevron-up' : 'chevron-down'"
+    [attr.icon-end]="customExpanded() ? 'chevron-up' : 'chevron-down'"
     width="full"
     (click)="toggleCustomPanel()"
     >Custom Date &amp; Time</calcite-button
@@ -29,7 +29,7 @@
 
 <calcite-dialog
   heading="Historical Moments"
-  [attr.open]="historyStore.panelExpanded() ? '' : null"
+  [attr.open]="panelExpanded() ? '' : null"
   modal
   width-scale="s"
   (calciteDialogClose)="closeMomentsDialog()"
@@ -49,7 +49,7 @@
       </calcite-notice>
     }
 
-    @if (historyStore.addFormVisible()) {
+    @if (addFormVisible()) {
       <div class="add-form">
         <calcite-input-text
           placeholder="Marker name"
@@ -123,7 +123,7 @@
 
 <calcite-dialog
   heading="Custom Date &amp; Time"
-  [attr.open]="historyStore.customExpanded() ? '' : null"
+  [attr.open]="customExpanded() ? '' : null"
   modal
   width-scale="s"
   (calciteDialogClose)="closeCustomDialog()"

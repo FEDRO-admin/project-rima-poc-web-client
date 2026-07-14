@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dialog';
@@ -11,8 +11,7 @@ import '@esri/calcite-components/dist/components/calcite-list-item';
 import '@esri/calcite-components/dist/components/calcite-notice';
 import { HistoryStore } from '../history.store';
 import { HistoryService } from '../history.service';
-import { HistoricMomentEntry } from '../history-config';
-import { HistoricMomentsService } from '../historic-moments.service';
+import { HistoryEntry } from '../history-entry';
 
 @Component({
   selector: 'rima-history-picker',
@@ -24,60 +23,62 @@ import { HistoricMomentsService } from '../historic-moments.service';
 export class HistoryPickerComponent {
   protected readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
-  private readonly historicMomentsService = inject(HistoricMomentsService);
+
+  protected readonly panelExpanded = signal(false);
+  protected readonly customExpanded = signal(false);
+  protected readonly addFormVisible = signal(false);
+  protected readonly customDate = signal('');
+  protected readonly customTime = signal('');
+  protected readonly newName = signal('');
+  protected readonly newDate = signal('');
+  protected readonly newTime = signal('');
 
   protected async togglePanel(): Promise<void> {
-    const expanded = !this.historyStore.panelExpanded();
-    this.historyStore.setPanelExpanded(expanded);
+    const expanded = !this.panelExpanded();
+    this.panelExpanded.set(expanded);
     if (expanded) {
-      this.historyStore.setCustomExpanded(false);
+      this.customExpanded.set(false);
       if (this.historyStore.momentsState() === undefined) {
-        await this.loadMoments();
+        await this.historyService.loadMoments();
       }
     }
   }
 
-  protected selectMoment(entry: HistoricMomentEntry): void {
+  protected selectMoment(entry: HistoryEntry): void {
     this.historyStore.setSelectedMoment(entry);
   }
 
   protected applySelectedMoment(): void {
     const entry = this.historyStore.selectedMoment();
     if (!entry) return;
-    const date = new Date(entry.date);
-    this.historyStore.activate(date);
-    this.historyService.applyHistoricMoment(date);
-    this.historyStore.setPanelExpanded(false);
+    this.historyService.applyDate(new Date(entry.date));
+    this.panelExpanded.set(false);
   }
 
   protected applyCustomDate(): void {
-    const customDate = this.historyStore.customDate();
+    const customDate = this.customDate();
     if (!customDate) return;
-    const customTime = this.historyStore.customTime();
+    const customTime = this.customTime();
     const [hour, minute] = customTime ? customTime.split(':').map(Number) : [0, 0];
     const date = new Date(customDate);
     date.setHours(hour, minute, 0, 0);
-    this.historyStore.setSelectedMoment(null);
-    this.historyStore.activate(date);
-    this.historyService.applyHistoricMoment(date);
-    this.historyStore.setCustomExpanded(false);
+    this.historyService.applyDate(date);
+    this.customExpanded.set(false);
   }
 
   protected onCustomDateChange(event: Event): void {
-    this.historyStore.setCustomDate((event.target as HTMLCalciteInputDatePickerElement).value as string);
+    this.customDate.set((event.target as HTMLCalciteInputDatePickerElement).value as string);
   }
 
   protected onCustomTimeChange(event: Event): void {
-    this.historyStore.setCustomTime((event.target as HTMLCalciteInputTimePickerElement).value as string);
+    this.customTime.set((event.target as HTMLCalciteInputTimePickerElement).value as string);
   }
 
   protected returnToPresent(): void {
-    this.historyStore.setSelectedMoment(null);
     this.historyService.clearHistoricMoment();
-    this.historyStore.deactivate();
   }
 
-  protected confirmDelete(entry: HistoricMomentEntry): void {
+  protected confirmDelete(entry: HistoryEntry): void {
     this.historyStore.setConfirmingDelete(entry);
   }
 
@@ -88,57 +89,47 @@ export class HistoryPickerComponent {
   protected async executeDelete(): Promise<void> {
     const entry = this.historyStore.confirmingDelete();
     if (!entry) return;
-    const name = entry.name;
-    this.historyStore.setConfirmingDelete(null);
-    this.historyStore.setErrorMessage('');
-    const result = await this.historicMomentsService.deleteHistoricMoment(name);
-    if (result.success) {
-      await this.loadMoments();
-    } else {
-      this.historyStore.setErrorMessage(result.message ?? 'Failed to delete marker');
-    }
+    await this.historyService.executeDelete(entry);
   }
 
   protected showAddForm(): void {
-    this.historyStore.setAddFormVisible(true);
+    this.addFormVisible.set(true);
     this.historyStore.setErrorMessage('');
   }
 
   protected cancelAdd(): void {
-    this.historyStore.setAddFormVisible(false);
-    this.historyStore.setNewName('');
-    this.historyStore.setNewDate('');
-    this.historyStore.setNewTime('');
+    this.addFormVisible.set(false);
+    this.newName.set('');
+    this.newDate.set('');
+    this.newTime.set('');
   }
 
   protected onNewNameChange(event: Event): void {
-    this.historyStore.setNewName((event.target as HTMLCalciteInputTextElement).value);
+    this.newName.set((event.target as HTMLCalciteInputTextElement).value);
   }
 
   protected onNewDateChange(event: Event): void {
-    this.historyStore.setNewDate((event.target as HTMLCalciteInputDatePickerElement).value as string);
+    this.newDate.set((event.target as HTMLCalciteInputDatePickerElement).value as string);
   }
 
   protected onNewTimeChange(event: Event): void {
-    this.historyStore.setNewTime((event.target as HTMLCalciteInputTimePickerElement).value as string);
+    this.newTime.set((event.target as HTMLCalciteInputTimePickerElement).value as string);
   }
 
   protected async submitAdd(): Promise<void> {
-    const newName = this.historyStore.newName();
-    const newDate = this.historyStore.newDate();
-    const newTime = this.historyStore.newTime();
-    if (!newName || !newDate) return;
-    this.historyStore.setErrorMessage('');
-    const [hour, minute, second] = newTime ? newTime.split(':').map(Number) : [0, 0, 0];
-    const date = new Date(newDate);
+    const name = this.newName();
+    const dateStr = this.newDate();
+    const timeStr = this.newTime();
+    if (!name || !dateStr) return;
+    const [hour, minute, second] = timeStr ? timeStr.split(':').map(Number) : [0, 0, 0];
+    const date = new Date(dateStr);
     date.setHours(hour ?? 0, minute ?? 0, second ?? 0, 0);
-    const timestamp = `${date.toISOString().slice(0, -1)}Z`;
-    const result = await this.historicMomentsService.addHistoricMoment(newName, timestamp);
-    if (result.success) {
-      this.cancelAdd();
-      await this.loadMoments();
-    } else {
-      this.historyStore.setErrorMessage(result.message ?? 'Failed to add marker');
+    const success = await this.historyService.submitAdd(name, date);
+    if (success) {
+      this.addFormVisible.set(false);
+      this.newName.set('');
+      this.newDate.set('');
+      this.newTime.set('');
     }
   }
 
@@ -147,24 +138,18 @@ export class HistoryPickerComponent {
   }
 
   protected toggleCustomPanel(): void {
-    const expanded = !this.historyStore.customExpanded();
-    this.historyStore.setCustomExpanded(expanded);
+    const expanded = !this.customExpanded();
+    this.customExpanded.set(expanded);
     if (expanded) {
-      this.historyStore.setPanelExpanded(false);
+      this.panelExpanded.set(false);
     }
   }
 
   protected closeMomentsDialog(): void {
-    this.historyStore.setPanelExpanded(false);
+    this.panelExpanded.set(false);
   }
 
   protected closeCustomDialog(): void {
-    this.historyStore.setCustomExpanded(false);
-  }
-
-  private async loadMoments(): Promise<void> {
-    this.historyStore.setMomentsLoading();
-    const moments = await this.historicMomentsService.getHistoricMoments();
-    this.historyStore.setMoments(moments);
+    this.customExpanded.set(false);
   }
 }
