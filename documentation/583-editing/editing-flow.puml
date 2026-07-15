@@ -1,0 +1,206 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 10
+skinparam boxPadding 8
+skinparam sequenceGroupBorderThickness 2
+skinparam noteBorderColor #888888
+skinparam noteBackgroundColor #FFFFDD
+skinparam ParticipantBorderThickness 1.5
+skinparam ArrowColor #444444
+skinparam defaultFontSize 11
+skinparam SequenceMessageAlignment left
+
+title RIMA PoC - Feature Editing Flow\nTask 583 / July 2026
+
+actor "User" as user #LightBlue
+participant "PopupComponent" as popup #E8F5E9
+participant "EditFormComponent\n<rima-edit-form>" as editForm #E8F5E9
+participant "EditStore\n[SignalStore]" as editStore #F3E5F5
+participant "EditService" as editService #F3E5F5
+participant "EditEffects" as editEffects #F3E5F5
+participant "ReferencePointService" as refSvc #FFF3E0
+participant "PopupStore\n[SignalStore]" as popupStore #F3E5F5
+participant "PopupService" as popupSvc #F3E5F5
+participant "SketchViewModel" as sketchVM #FFEBEE
+participant "FeatureLayer" as featureLayer #FFEBEE
+participant "ArcGIS MapView" as mapView #FFEBEE
+
+== Capability Check ==
+
+note over popup
+  Popup header shows pencil icon if
+  isLayerEditable(graphic):
+    layer.editingEnabled == true
+    && capabilities.editing.supportsUpdateByOthers == true
+end note
+
+== Activation ==
+
+user -> popup : clicks pencil icon
+popup -> editService : activate(graphic)
+activate editService
+
+editService -> editStore : activate(graphic)\n(snapshot attrs, reset geo/sketch state)
+editService -> popupStore : close()
+editService -> mapView : showHighlight(geometry)\n(add highlight GraphicsLayer\nwith edit symbol — dashed blue)
+editService -> refSvc : loadForFeature(graphic)\n(query related "von"/"bis" child features)
+activate refSvc
+refSvc --> editService : reference points loaded
+deactivate refSvc
+
+deactivate editService
+
+note over editForm
+  EditFormComponent renders when
+  editStore.active() = true.
+  Sections:
+  • Geometry (if supportsGeometryUpdate)
+  • Attributes (dynamic form)
+  • Reference Points (if hasRelationships)
+  • Cancel / Save actions
+end note
+
+== User Edits Attributes ==
+
+user -> editForm : changes a field value
+editForm -> editStore : updateField(fieldName, typedValue)
+editStore -> editStore : patchState({ editedAttributes })
+
+note over editStore
+  isAttributesDirty() recomputes:
+  compares editedAttributes vs originalAttributes.
+  isDirty() = isAttributesDirty || isGeometryDirty
+end note
+
+== Geometry — Start Sketch ==
+
+user -> editForm : clicks "Edit Geometry"
+editForm -> editService : startGeometryEditing()
+activate editService
+
+editService -> mapView : removeHighlight()
+editService -> editService : clone originalGeometry for rollback
+editService -> mapView : add sketchLayer (GraphicsLayer hidden)
+editService -> sketchVM ** : new SketchViewModel({\n  updateOnGraphicClick: false,\n  snappingOptions: { enabled: true,\n    featureSources: [all FeatureLayers] }\n})
+editService -> sketchVM : update(sketchGraphic, {\n  tool: move (point) | reshape (line/polygon),\n  enableRotation: false,\n  enableScaling: false,\n  reshapeOptions: { edgeOperation: split }\n})
+editService -> editStore : setSketchActive(true)
+deactivate editService
+
+note over editForm
+  Geometry section shows:
+  "Editing geometry..." +
+  Undo / Redo / Confirm (✓) / Discard (↺)
+end note
+
+== Geometry — User Reshapes ==
+
+user -> sketchVM : drags vertex / moves point
+sketchVM -> editService : 'update' event (state: active/complete)
+editService -> editStore : updateGeometry(geometry)
+editService -> editStore : setUndoRedo(canUndo, canRedo)
+
+== Geometry — Undo / Redo ==
+
+user -> editForm : clicks Undo / Redo
+editForm -> editService : undo() / redo()
+editService -> sketchVM : undo() / redo()
+editService -> editStore : setUndoRedo(canUndo, canRedo)
+
+== Geometry — Confirm ==
+
+user -> editForm : clicks Confirm (✓)
+editForm -> editService : confirmGeometry()
+editService -> editService : deactivateSketch()\n(cancel & destroy SketchViewModel,\nremove sketchLayer)
+editService -> editStore : deactivateSketch()
+editService -> mapView : showHighlight(editedGeometry)
+
+note over editForm
+  Geometry section shows:
+  "Geometry modified" badge
+  + "Continue Editing" button
+end note
+
+== Geometry — Discard ==
+
+user -> editForm : clicks Discard (↺)
+editForm -> editService : discardGeometry()
+editService -> editService : deactivateSketch()
+editService -> editStore : clearGeometry()
+editService -> mapView : showHighlight(originalGeometry)
+
+== Save ==
+
+user -> editForm : clicks "Save"
+editForm -> editForm : confirmAction.set('save')
+editForm -> user : <rima-confirm-dialog>\n"Are you sure you want to save\nthe changes to this feature?"
+
+user -> editForm : confirms
+editForm -> editService : save()
+activate editService
+
+editService -> editStore : setSaving(true)
+editService -> editService : deactivateSketch() ; removeHighlight()
+editService -> editService : buildUpdatePayload:\n  objectId + mutable attributes\n  + editedGeometry (if staged)
+
+editService -> featureLayer : [ASYNC] layer.applyEdits({\n  updateFeatures: [updateGraphic]\n})
+activate featureLayer
+featureLayer --> editService : result
+deactivate featureLayer
+
+alt success
+  editService -> refSvc : saveAll(parentId)
+  editService -> featureLayer : layer.refresh()
+  editService -> editStore : reset()
+  editService -> featureLayer : [ASYNC] layer.queryFeatures(objectId)
+  featureLayer --> editService : refreshed graphic
+  editService -> popupStore : open([refreshedGraphic])
+  note over popup : Popup reopens with\nlatest server data
+else error
+  editService -> editStore : setSaving(false)
+  editService -> editService : throw EditSaveError
+end
+
+deactivate editService
+
+== Cancel ==
+
+user -> editForm : clicks "Cancel"
+
+alt editStore.isDirty()
+  editForm -> user : <rima-confirm-dialog>\n"You have unsaved changes.\nAre you sure you want to discard them?"
+  user -> editForm : confirms
+end
+
+editForm -> editService : cancel()
+editService -> editService : reset()\n(deactivateSketch, removeHighlight,\nreset refPoints, reset store)
+editService -> popupStore : open([originalGraphic])
+
+note over popup : Popup reopens with\noriginal feature data
+
+== Auto-Refresh Popup on Layer Edits ==
+
+note over editEffects
+  effect() watches popupStore.selectedGraphic().
+  Attaches listener on layer 'edits' event.
+end note
+
+featureLayer -> editEffects : 'edits' event\n(updatedFeatures includes objectId)
+editEffects -> popupSvc : refreshSelectedGraphic()
+popupSvc -> featureLayer : [ASYNC] layer.queryFeatures(objectId)
+featureLayer --> popupSvc : refreshed graphic
+popupSvc -> popupStore : update selected graphic
+
+== Click Suppression ==
+
+user -> mapView : clicks on map (during edit)
+mapView -> popupSvc : click event
+note over popupSvc
+  editEffects.editing() === true
+  → click is IGNORED.
+  Prevents accidental popup change
+  while editing.
+end note
+
+@enduml

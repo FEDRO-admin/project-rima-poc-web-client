@@ -12,7 +12,7 @@ skinparam ArrowColor #444444
 skinparam defaultFontSize 11
 skinparam SequenceMessageAlignment left
 
-title RIMA PoC - Complete Application Flow\nAngular 19 / NgRx Signals / ArcGIS Maps SDK / Transloco\nBranch: feature/579-table_of_contents / June 2026
+title RIMA PoC - Complete Application Flow\nAngular 19 / NgRx Signals / ArcGIS Maps SDK / Transloco\nBranch: feature/585-3D_view / July 2026
 
 actor "User / Browser" as User #LightBlue
 
@@ -38,12 +38,24 @@ end box
 box "Map Domain" #F3E5F5
   participant "MapComponent" as mapComp
   participant "TocComponent" as tocComp
+  participant "PopupComponent" as popupComp
+  participant "CreateFormComponent" as createComp
+  participant "EditFormComponent" as editComp
   participant "MapViewService\n[Signal]" as viewService
   participant "CatalogService" as catalogService
   participant "CatalogStore\n[SignalStore]" as catalogStore
   participant "WebmapService\n[Signal+Cache]" as webmapService
   participant "PortalService\n[Cache]" as portalService
   participant "LayerService" as layerService
+end box
+
+box "Domain Effects" #E3F2FD
+  participant "PopupEffects" as popupEffects
+  participant "EditEffects" as editEffects
+  participant "CreateEffects" as createEffects
+  participant "DeleteEffects" as deleteEffects
+  participant "HierarchyEffects" as hierarchyEffects
+  participant "HistoryEffects" as historyEffects
 end box
 
 box "ArcGIS Platform (external)" #FFEBEE
@@ -70,18 +82,19 @@ note over appConfig
      - '' -> MapComponent (lazy)
      - 'error' -> FatalErrorComponent (lazy)
   3. provideHttpClient()
-  4. provideTransloco({
+  4. provideAppInitializer(()=> inject(AppEffectsService))
+  5. provideTransloco({
        defaultLang: 'de',
        availableLangs: ['de','fr','it'],
        reRenderOnLangChange: true
      })
-  5. { provide: ErrorHandler, useClass: ErrorHandlerService }
-  6. provideAppInitializer(()=> inject(AppEffectsService))
+  6. { provide: ErrorHandler, useClass: ErrorHandlerService }
 end note
 
 appConfig -> appEffects : provideAppInitializer()\n-> inject(AppEffectsService) [constructor]
 activate appEffects
-appEffects -> langEffect : inject(LanguageEffect) [constructor]
+
+appEffects -> langEffect : inject(LanguageEffect)
 activate langEffect
 note over langEffect
   Registers Angular effect():
@@ -102,6 +115,66 @@ end note
 deactivate transLoader
 deactivate transloco
 deactivate langEffect
+
+appEffects -> popupEffects : inject(PopupEffects)
+activate popupEffects
+note over popupEffects
+  Registers effects (dormant until MapView signal set):
+  - attachClickHandler: watches mapView() -> attaches hit-test
+  - highlightSelected: watches selectedGraphic()
+  - highlightHovered: watches hoveredIndex()
+  - clearHighlight: watches popup close
+end note
+deactivate popupEffects
+
+appEffects -> editEffects : inject(EditEffects)
+activate editEffects
+note over editEffects
+  Registers effect:
+  - refreshPopupOnLayerEdits: watches selectedGraphic()
+    -> listens to FeatureLayer 'edits' event
+    -> refreshes popup when feature is updated
+end note
+deactivate editEffects
+
+appEffects -> createEffects : inject(CreateEffects)
+activate createEffects
+note over createEffects
+  Registers effects:
+  - closePopupOnCreate: active() -> popupStore.close()
+  - cancelEditsOnCreate: active() -> editService.reset()
+end note
+deactivate createEffects
+
+appEffects -> deleteEffects : inject(DeleteEffects)
+activate deleteEffects
+note over deleteEffects
+  Exposes computed signal: deleting()
+  (coordinates deletion state across the app)
+end note
+deactivate deleteEffects
+
+appEffects -> hierarchyEffects : inject(HierarchyEffects)
+activate hierarchyEffects
+note over hierarchyEffects
+  Registers effect:
+  - loadHierarchyOnGraphicChange: watches graphic()
+    -> calls hierarchyService.buildHierarchyTree()
+    -> updates HierarchyStore (loading/tree/error)
+end note
+deactivate hierarchyEffects
+
+appEffects -> historyEffects : inject(HistoryEffects)
+activate historyEffects
+note over historyEffects
+  Registers effects:
+  - closePopupOnActivate: active() -> popupStore.close()
+  - cancelEditsOnActivate: active() -> editService.reset()
+  - cancelCreateOnActivate: active() -> createStore.reset()
+  - clearHistoricMomentOnDeactivate: !active() -> clear
+end note
+deactivate historyEffects
+
 deactivate appEffects
 
 appConfig -> appComp : Angular renders AppComponent
@@ -127,7 +200,10 @@ note over mapComp
   - mapInitialised = false
   Template renders:
     <arcgis-map #arcgisMap [extent]="switzerlandExtent">
-    <rima-toc>
+    <rima-toc> (incl. <rima-history-picker>)
+    <rima-popup>
+    <rima-create-form>
+    <rima-edit-form>
 end note
 
 mapComp -> tocComp : renders <rima-toc>
@@ -136,7 +212,17 @@ note over tocComp
   TocComponent constructor (SYNC):
   registers Angular effect() watching viewService.mapView() signal.
   Will assign MapView to arcgis-layer-list when view is ready.
+  Actions: 'Zoom to' (feature/map-image layers), 'Create' (feature layers)
 end note
+
+mapComp -> popupComp : renders <rima-popup>
+activate popupComp
+
+mapComp -> createComp : renders <rima-create-form>
+activate createComp
+
+mapComp -> editComp : renders <rima-edit-form>
+activate editComp
 
 == Phase 3 - ArcGIS Element Available [REACTIVE + ASYNC] ==
 
@@ -154,11 +240,18 @@ viewService -> viewService : writableMapView.set(view)\n[signal update -> notifi
 viewService --> mapComp
 deactivate viewService
 
+note over popupEffects
+  viewService.mapView() signal changed!
+  PopupEffects.attachClickHandler() effect fires:
+  -> popupService.attach(view)
+  (registers hit-test click handler on the MapView)
+end note
+
 note over tocComp
   viewService.mapView() signal changed!
   TocComponent effect() fires:
 end note
-tocComp -> tocComp : layerList.view = mapView\nlayerList.listItemCreatedFunction =\n  fn adding 'Zoom to' for feature/wmts layers
+tocComp -> tocComp : layerList.view = mapView\nlayerList.listItemCreatedFunction =\n  fn adding 'Zoom to' + 'Create' actions
 
 mapComp -> viewService : [SYNC] addBasemap()
 activate viewService
@@ -232,7 +325,7 @@ group Parallel WebMap Loading [Promise.all - N concurrent requests]
   deactivate portal
 end group
 
-webmapService -> webmapService : transformWebMapLayers() per WebMap:\n- maps ArcGIS SDK types -> WebmapLayerType\n- recurse into GroupLayers\n- filter: only INCLUDED_LAYER_TYPES\n  ['ArcGISFeatureLayer', 'WebTiledLayer']\n- build WebmapData per item
+webmapService -> webmapService : transformWebMapLayers() per WebMap:\n- maps ArcGIS SDK types -> WebmapLayerType\n- recurse into GroupLayers\n- filter: only INCLUDED_LAYER_TYPES\n  ['ArcGISFeatureLayer', 'WebTiledLayer',\n   'ArcGISMapImageLayer']\n- build WebmapData per item
 webmapService -> webmapService : writableWebmapCollection.set(collection)\n[signal update]
 webmapService --> catalogService : WebmapCollection { webmaps: WebmapData[] }
 deactivate webmapService
@@ -248,17 +341,24 @@ deactivate catalogService
 mapComp -> layerService : [SYNC] addCatalogToMap(catalog)
 activate layerService
 layerService -> viewService : read mapView() signal\n-> MapView
-layerService -> layerService : buildLayersFromItems(catalog.items)\n- 'section'         -> GroupLayer (recursive)\n- 'feature-layer'   -> FeatureLayer(url)\n- 'map-image-layer' -> MapImageLayer(url)  [filtered out]\n- 'web-tiled-layer' -> WMTSLayer(url, layerId)\n- 'document'        -> undefined (skipped)\nlayers.reverse()  [ArcGIS z-order correction]
+layerService -> layerService : buildLayersFromItems(catalog.items)\n- 'section'         -> GroupLayer (recursive)\n- 'feature-layer'   -> FeatureLayer(url)\n- 'map-image-layer' -> MapImageLayer(url)\n- 'web-tiled-layer' -> WMTSLayer(url, layerId)\n- 'document'        -> undefined (skipped)\nlayers.reverse()  [ArcGIS z-order correction]
 layerService -> viewService : view.map.addMany(arcgisLayers)
 note over viewService, portal : ArcGIS SDK loads layer tile/feature data\nasynchronously from ArcGIS Portal
 deactivate layerService
 deactivate mapComp
+deactivate popupComp
+deactivate createComp
+deactivate editComp
+deactivate tocComp
 
 note over User
-  Map is now displayed with:
+  Map is now fully operational with:
   - Swisstopo Pixelkarte basemap
-  - Operational layers from ArcGIS Portal
-  - TOC (Table of Contents) panel
+  - Operational layers (Feature, MapImage, WMTS)
+  - TOC panel with zoom-to, create, history picker
+  - Popup ready for click interactions
+  - Create/Edit/Delete forms ready
+  - History mode available
 end note
 
 == Phase 6 - Language Switch [USER INTERACTION / REACTIVE] ==
@@ -281,18 +381,47 @@ end note
 
 == Phase 7 - Zoom to Layer [USER INTERACTION / ASYNC] ==
 
-User -> tocComp : clicks "Zoom to" in TOC\non a FeatureLayer or WMTSLayer
+User -> tocComp : clicks "Zoom to" in TOC\non a FeatureLayer or MapImageLayer
 tocComp -> tocComp : onTriggerAction(event)\n-> action.id === 'zoom-to-layer'
 tocComp -> viewService : read mapView() signal -> MapView
 tocComp -> portal : [ASYNC] layer.load()\n(ensures layer fully loaded)
 activate portal
 portal --> tocComp : layer loaded
 deactivate portal
-alt layer.fullExtent exists (FeatureLayer)
+alt layer.fullExtent exists (FeatureLayer / MapImageLayer)
   tocComp -> viewService : [ASYNC] view.goTo(layer.fullExtent)
 else WMTS layer - use activeLayer extent
   tocComp -> viewService : [ASYNC] view.goTo(layer.activeLayer.fullExtent)
 end
+
+== Phase 8 - Create Feature [USER INTERACTION / REACTIVE] ==
+
+User -> tocComp : clicks "Create" action\non a FeatureLayer in TOC
+tocComp -> tocComp : onTriggerAction(event)\n-> action.id === 'create-feature'
+tocComp -> createComp : createStore.startCreate(layer, subtypeCode)
+note over createEffects
+  CreateEffects reactive effects fire:
+  - closePopupOnCreate: popupStore.close()
+  - cancelEditsOnCreate: editService.reset()
+end note
+createComp -> User : Create form panel opens
+
+== Phase 9 - Feature Click / Popup [USER INTERACTION / REACTIVE] ==
+
+User -> mapComp : clicks on a feature in the map
+note over popupEffects
+  PopupEffects.attachClickHandler registered a
+  hit-test handler on the MapView.
+  Hit-test identifies clicked graphics.
+end note
+popupEffects -> popupComp : popupStore.open(graphics)
+popupComp -> User : Popup panel displays feature attributes
+
+note over hierarchyEffects
+  HierarchyEffects.loadHierarchyOnGraphicChange fires:
+  -> builds hierarchy tree for selected graphic
+  -> updates HierarchyStore
+end note
 
 == Error Handling Flow ==
 
@@ -303,10 +432,20 @@ end note
 
 alt error instanceof SilentError
   errorHandler -> errorHandler : [dev only] console.error(error)\nNo UI feedback
-  note right of errorHandler : e.g. MapViewAlreadyRegisteredError,\nPortalRestUrlMissingError
+  note right of errorHandler
+    e.g. MapViewAlreadyRegisteredError,
+    PopupInitialisationError,
+    PopupHighlightError,
+    EditRefreshError
+  end note
 else error instanceof RecoverableError
   errorHandler -> errorHandler : [dev only] console.error(error)\nNo UI feedback
-  note right of errorHandler : e.g. CatalogWebMapLoadError,\nCatalogUndefinedError
+  note right of errorHandler
+    e.g. CatalogWebMapLoadError,
+    CreateSaveError, CreateLayerLoadError,
+    DeleteFeatureError, EditSaveError,
+    HistoryError, ReferencePointSaveError
+  end note
 else any other error (incl. FatalError subclasses)
   errorHandler -> transloco : [ASYNC] firstValueFrom(langChanges$)\n   waits for language to be ready
   transloco --> errorHandler : language loaded
@@ -314,7 +453,7 @@ else any other error (incl. FatalError subclasses)
   errorHandler -> router : NgZone.run() -> navigate(['/error'],\n  { queryParams:{ error: translatedMsg },\n    skipLocationChange: true })
   router -> errorPage : lazy-load FatalErrorComponent
   activate errorPage
-  errorPage -> errorPage : ngOnInit():\nsubscribes queryParamMap\n-> this.errorMessage = params.get('error')
+  errorPage -> errorPage : reads queryParamMap\n-> this.errorMessage = params.get('error')
   User <-- errorPage : Error message + Refresh button
   errorPage -> User : forceRefresh()\n-> window.location.href = '/'
   deactivate errorPage
@@ -325,6 +464,7 @@ else any other error (incl. FatalError subclasses)
     - ViewInitialisationError
     - LayerAddError / LayerBuildError
     - MapViewInitialiseError
+    - CatalogSchemaLoadError
   end note
 end
 

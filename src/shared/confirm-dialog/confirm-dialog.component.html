@@ -1,0 +1,15 @@
+<div class="confirm-overlay" (click)="cancel()" (keydown.escape)="cancel()" role="dialog" aria-modal="true">
+  <div
+    class="confirm-dialog"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="$event.stopPropagation()"
+    role="document"
+  >
+    <h4 class="confirm-title">{{ title() }}</h4>
+    <p class="confirm-message">{{ message() }}</p>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-btn--cancel" (click)="cancel()">{{ cancelLabel() }}</button>
+      <button class="confirm-btn confirm-btn--confirm" (click)="confirm()">{{ confirmLabel() }}</button>
+    </div>
+  </div>
+</div>
