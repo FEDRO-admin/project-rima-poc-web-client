@@ -1,1 +1,145 @@
-<p class="documents-placeholder">Documents view coming soon.</p>
+@if (documentsStore.isLoading()) {
+  <div class="documents-loading">
+    <calcite-loader scale="m"></calcite-loader>
+  </div>
+}
+
+@if (documentsStore.hasError()) {
+  <p class="documents-error">{{ documentsStore.error() }}</p>
+}
+
+@if (documentsStore.isEmpty()) {
+  <p class="documents-empty">Keine Dokumente vorhanden.</p>
+}
+
+@if (!historyStore.active() && !showUploadForm()) {
+  <div class="documents-actions">
+    <button class="documents-add-btn" (click)="openUploadForm()">
+      <calcite-icon icon="plus" scale="s"></calcite-icon>
+      Dokument hinzufügen
+    </button>
+  </div>
+}
+
+@if (documentsStore.isUploading()) {
+  <div class="documents-uploading">
+    <calcite-loader scale="s"></calcite-loader>
+    <span>Dokument wird hochgeladen...</span>
+  </div>
+}
+
+@if (showUploadForm()) {
+  <div class="upload-form">
+    <h4 class="upload-form__title">Neues Dokument hochladen</h4>
+
+    <div class="upload-form__field">
+      <label for="doc-file">Datei</label>
+      <input id="doc-file" type="file" (change)="onFileSelected($event)" />
+      <span class="upload-form__hint">Max. {{ maxFileSizeMB }} MB</span>
+    </div>
+
+    <div class="upload-form__field">
+      <label for="doc-titel">Titel</label>
+      <input id="doc-titel" type="text" [value]="uploadTitel()" (input)="uploadTitel.set($any($event.target).value)" />
+    </div>
+
+    <div class="upload-form__field">
+      <label for="doc-beschreibung">Beschreibung</label>
+      <textarea
+        id="doc-beschreibung"
+        rows="3"
+        [value]="uploadBeschreibung()"
+        (input)="uploadBeschreibung.set($any($event.target).value)"
+      ></textarea>
+    </div>
+
+    <div class="upload-form__field">
+      <label for="doc-typ">Typ</label>
+      <input id="doc-typ" type="text" [value]="uploadTyp()" (input)="uploadTyp.set($any($event.target).value)" />
+    </div>
+
+    <div class="upload-form__field">
+      <label for="doc-version">Version</label>
+      <input
+        id="doc-version"
+        type="text"
+        [value]="uploadVersion()"
+        (input)="uploadVersion.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="upload-form__field">
+      <label for="doc-status">Status</label>
+      <input
+        id="doc-status"
+        type="text"
+        [value]="uploadStatus()"
+        (input)="uploadStatus.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="upload-form__actions">
+      <button class="upload-form__btn upload-form__btn--cancel" (click)="cancelUpload()">Abbrechen</button>
+      <button
+        class="upload-form__btn upload-form__btn--submit"
+        [disabled]="!selectedFile() || documentsStore.isUploading()"
+        (click)="submitUpload()"
+      >
+        Hochladen
+      </button>
+    </div>
+  </div>
+}
+
+@if (documentsStore.documents().length > 0) {
+  <div class="documents-list">
+    @for (doc of documentsStore.documents(); track doc.objectId) {
+      <div class="document-item">
+        <div class="document-item__info">
+          <span class="document-item__title">{{ doc.titel || doc.name }}</span>
+          <span class="document-item__meta">
+            {{ doc.typ }}
+            @if (doc.groesse) {
+              · {{ formatFileSize(doc.groesse) }}
+            }
+            @if (doc.version) {
+              · v{{ doc.version }}
+            }
+          </span>
+        </div>
+        <div class="document-item__actions">
+          @if (isViewable(doc)) {
+            <button class="document-item__btn" title="Anzeigen" (click)="openDocument(doc)">
+              <calcite-icon icon="view-visible" scale="s"></calcite-icon>
+            </button>
+          }
+          <button class="document-item__btn" title="Herunterladen" (click)="downloadDocument(doc)">
+            <calcite-icon icon="download" scale="s"></calcite-icon>
+          </button>
+          @if (!historyStore.active()) {
+            <button class="document-item__btn document-item__btn--delete" title="Löschen" (click)="requestDelete(doc)">
+              <calcite-icon icon="trash" scale="s"></calcite-icon>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (documentsStore.isDeleting()) {
+  <div class="documents-uploading">
+    <calcite-loader scale="s"></calcite-loader>
+    <span>Dokument wird gelöscht...</span>
+  </div>
+}
+
+@if (documentToDelete(); as docToDelete) {
+  <rima-confirm-dialog
+    [title]="'Dokument löschen'"
+    [message]="'Möchten Sie das Dokument ' + (docToDelete.titel || docToDelete.name) + ' wirklich löschen?'"
+    [confirmLabel]="'Löschen'"
+    [cancelLabel]="'Abbrechen'"
+    (confirmed)="handleDeleteConfirmation($event)"
+  />
+}

@@ -6,6 +6,7 @@ import { CreateEffects } from '../map/create/create-effects';
 import { DeleteEffects } from '../map/delete/delete-effects';
 import { HierarchyEffects } from '../map/popup/content/hierarchy-tab/hierarchy-effects';
 import { HistoryEffects } from '../map/history/history-effects';
+import { DocumentsEffects } from '../map/documents/documents-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -23,5 +24,6 @@ export class AppEffectsService {
     inject(DeleteEffects);
     inject(HierarchyEffects);
     inject(HistoryEffects);
+    inject(DocumentsEffects);
   }
 }
