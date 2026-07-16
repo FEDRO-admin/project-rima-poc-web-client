@@ -8,20 +8,17 @@ import {
   convertAttributeFieldType,
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
-import { getSubtypeFieldName } from '../layer/layer-sub-types';
 
 type AttributeValue = string | number | boolean | null;
 
-export function resolveCreatableFields(layer: FeatureLayer, subtypeValue?: string | number): AttributeEditField[] {
+export function resolveCreatableFields(layer: FeatureLayer): AttributeEditField[] {
   if (!layer.fields?.length) {
     return [];
   }
 
-  const subtypeDomains = resolveSubtypeDomains(layer, subtypeValue);
-
   return layer.fields
     .filter((field) => !isImmutableField(field.name, layer))
-    .map((field) => buildCreatableField(field, subtypeDomains));
+    .map((field) => buildCreatableField(field));
 }
 
 export function buildDefaultAttributes(
@@ -43,43 +40,9 @@ export function buildDefaultAttributes(
   return attributes;
 }
 
-function resolveSubtypeDomains(
-  layer: FeatureLayer,
-  subtypeValue?: string | number,
-): Record<string, Domain> | undefined {
-  const subtypeField = getSubtypeFieldName(layer);
-  if (!subtypeField || subtypeValue == null) {
-    return undefined;
-  }
-
-  if (layer.types?.length) {
-    const activeType = layer.types.find((t) => t.id === subtypeValue);
-    return activeType?.domains as Record<string, Domain> | undefined;
-  }
-
-  const sourceSubtypes = layer.sourceJSON?.['subtypes'] as
-    | { code: string | number; domains?: Record<string, Domain> }[]
-    | undefined;
-  if (sourceSubtypes?.length) {
-    const activeSubtype = sourceSubtypes.find((s) => s.code === subtypeValue);
-    if (activeSubtype?.domains) {
-      const resolved: Record<string, Domain> = {};
-      for (const [key, domain] of Object.entries(activeSubtype.domains)) {
-        if ((domain as { type?: string })?.type !== 'inherited') {
-          resolved[key] = domain;
-        }
-      }
-      return Object.keys(resolved).length > 0 ? resolved : undefined;
-    }
-  }
-
-  return undefined;
-}
-
-function buildCreatableField(field: Field, subtypeDomains: Record<string, Domain> | undefined): AttributeEditField {
-  const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
-  const fieldType = convertAttributeFieldType(field, effectiveDomain);
-  const codedValues = resolveCodedValues(effectiveDomain);
+function buildCreatableField(field: Field): AttributeEditField {
+  const fieldType = convertAttributeFieldType(field, field.domain);
+  const codedValues = resolveCodedValues(field.domain);
 
   return {
     name: field.name,
