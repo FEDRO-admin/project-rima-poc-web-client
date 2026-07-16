@@ -1,13 +1,14 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, output } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { AttributeEditField } from '../attribute-edit-field';
-import { AttributeValue, convertAttributeValue } from '../attribute-value-conversion';
+import { AttributeValue, convertAttributeValue, formatDateDisplay } from '../attribute-value-conversion';
 import { GuidPickerCandidate, GuidPickerService } from '../guid-picker.service';
+import { DateTimePickerComponent } from '../date-time-picker/date-time-picker.component';
 
 @Component({
   selector: 'rima-attribute-form',
-  imports: [FormsModule],
+  imports: [FormsModule, DateTimePickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './attribute-form.component.html',
   styleUrl: './attribute-form.component.scss',
@@ -22,6 +23,7 @@ export class AttributeFormComponent {
   readonly fieldChange = output<{ fieldName: string; value: AttributeValue }>();
 
   protected readonly guidPickerService = inject(GuidPickerService);
+  protected readonly activeDateField = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -34,6 +36,31 @@ export class AttributeFormComponent {
 
   protected getFieldValue(fieldName: string): AttributeValue {
     return this.values()[fieldName] ?? null;
+  }
+
+  protected getDateValue(fieldName: string): number | null {
+    const value = this.values()[fieldName] ?? null;
+    return typeof value === 'number' ? value : null;
+  }
+
+  protected getDateDisplayValue(fieldName: string): string {
+    const value = this.values()[fieldName] ?? null;
+    return formatDateDisplay(value);
+  }
+
+  protected openDatePicker(fieldName: string): void {
+    if (!this.disabled()) {
+      this.activeDateField.set(fieldName);
+    }
+  }
+
+  protected onDateConfirmed(fieldName: string, value: number | null): void {
+    this.fieldChange.emit({ fieldName, value });
+    this.activeDateField.set(null);
+  }
+
+  protected cancelDatePicker(): void {
+    this.activeDateField.set(null);
   }
 
   protected onFieldChange(fieldName: string, event: Event): void {
