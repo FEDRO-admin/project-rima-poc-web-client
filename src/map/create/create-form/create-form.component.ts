@@ -62,9 +62,8 @@ export class CreateFormComponent implements OnDestroy {
 
   protected readonly fields = computed<AttributeEditField[]>(() => {
     const layer = this.createStore.layer();
-    const subtype = this.createStore.subtypeValue();
     if (!layer) return [];
-    return resolveCreatableFields(layer, subtype);
+    return resolveCreatableFields(layer);
   });
 
   protected readonly drawingTools = computed<DrawingToolOption[]>(() => {

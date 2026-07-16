@@ -82,13 +82,26 @@
             />
           }
           @case ('date') {
-            <input
-              class="attribute-field-input"
-              type="datetime-local"
-              [id]="idPrefix() + '-' + field.name"
-              [value]="getFieldValue(field.name)"
-              (change)="onFieldChange(field.name, $event)"
-            />
+            <div class="date-field-row">
+              <span class="date-field-display" (click)="openDatePicker(field.name)">
+                {{ getDateDisplayValue(field.name) || '— Select date —' }}
+              </span>
+              <button
+                class="date-edit-btn"
+                (click)="openDatePicker(field.name)"
+                [disabled]="disabled()"
+                title="Edit date"
+              >
+                <calcite-icon icon="calendar" scale="s"></calcite-icon>
+              </button>
+            </div>
+            @if (activeDateField() === field.name) {
+              <rima-date-time-picker
+                [initialValue]="getDateValue(field.name)"
+                (confirmed)="onDateConfirmed(field.name, $event)"
+                (cancelled)="cancelDatePicker()"
+              />
+            }
           }
           @case ('guid') {
             <div class="guid-field-row">

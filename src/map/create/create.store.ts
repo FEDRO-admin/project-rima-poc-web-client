@@ -9,8 +9,6 @@ type AttributeValue = string | number | boolean | null;
 interface CreateState {
   active: boolean;
   layer: FeatureLayer | undefined;
-  subtypeField: string | undefined;
-  subtypeValue: number | string | undefined;
   attributes: Record<string, AttributeValue>;
   geometry: Geometry | undefined;
   sketchActive: boolean;
@@ -23,8 +21,6 @@ interface CreateState {
 const initialState: CreateState = {
   active: false,
   layer: undefined,
-  subtypeField: undefined,
-  subtypeValue: undefined,
   attributes: {},
   geometry: undefined,
   sketchActive: false,
@@ -45,14 +41,12 @@ export const CreateStore = signalStore(
     }),
   })),
   withMethods((store) => ({
-    activate(layer: FeatureLayer, subtypeField?: string, subtypeValue?: number | string): void {
-      const fields = resolveCreatableFields(layer, subtypeValue);
+    activate(layer: FeatureLayer): void {
+      const fields = resolveCreatableFields(layer);
       const attributes = buildDefaultAttributes(layer, fields);
       patchState(store, {
         active: true,
         layer,
-        subtypeField,
-        subtypeValue,
         attributes,
         geometry: undefined,
         sketchActive: false,
@@ -67,8 +61,6 @@ export const CreateStore = signalStore(
     setLayer(layer: FeatureLayer): void {
       patchState(store, {
         layer,
-        subtypeField: undefined,
-        subtypeValue: undefined,
         attributes: {},
         geometry: undefined,
         sketchActive: false,
@@ -76,9 +68,6 @@ export const CreateStore = signalStore(
         canUndo: false,
         canRedo: false,
       });
-    },
-    setSubtype(subtypeField: string, subtypeValue: number | string): void {
-      patchState(store, { subtypeField, subtypeValue });
     },
     updateField(fieldName: string, value: AttributeValue): void {
       const attributes = { ...store.attributes(), [fieldName]: value };

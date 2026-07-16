@@ -9,7 +9,6 @@ import {
   convertAttributeFieldType,
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
-import { getSubtypeFieldName, getSubtypes } from './layer-sub-types';
 
 export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
   const layer = graphic.layer;
@@ -17,11 +16,9 @@ export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditF
     return [];
   }
 
-  const subtypeDomains = resolveSubtypeDomains(graphic, layer);
-
   return layer.fields
     .filter((field) => !isImmutableField(field.name, layer))
-    .map((field) => buildEditAttributeField(field, subtypeDomains));
+    .map((field) => buildEditAttributeField(field));
 }
 
 export function resolveFieldDisplayValue(
@@ -38,60 +35,21 @@ export function resolveFieldDisplayValue(
     return value;
   }
 
-  const subtypeField = getSubtypeFieldName(layer);
-  if (subtypeField && field.name === subtypeField) {
-    const subtypes = getSubtypes(layer);
-    const match = subtypes.find((s) => s.code === value);
+  if (isCodedValueDomain(field.domain)) {
+    const match = field.domain.codedValues?.find((cv) => cv.code === value);
     return match?.name ?? value;
   }
 
-  const subtypeDomains = resolveSubtypeDomains(graphic, layer);
-  const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
-
-  if (isCodedValueDomain(effectiveDomain)) {
-    const match = effectiveDomain.codedValues?.find((cv) => cv.code === value);
-    return match?.name ?? value;
+  if (isDateField(field) && typeof value === 'number') {
+    return formatDateDisplay(value);
   }
 
   return value;
 }
 
-function resolveSubtypeDomains(graphic: Graphic, layer: FeatureLayer): Record<string, Domain> | undefined {
-  const subtypeField = getSubtypeFieldName(layer);
-  if (!subtypeField) {
-    return undefined;
-  }
-
-  const subtypeValue = graphic.attributes?.[subtypeField];
-
-  if (layer.types?.length) {
-    const activeType = layer.types.find((t) => t.id === subtypeValue);
-    return activeType?.domains as Record<string, Domain> | undefined;
-  }
-
-  const sourceSubtypes = layer.sourceJSON?.['subtypes'] as
-    | { code: string | number; domains?: Record<string, Domain> }[]
-    | undefined;
-  if (sourceSubtypes?.length) {
-    const activeSubtype = sourceSubtypes.find((s) => s.code === subtypeValue);
-    if (activeSubtype?.domains) {
-      const resolved: Record<string, Domain> = {};
-      for (const [key, domain] of Object.entries(activeSubtype.domains)) {
-        if ((domain as { type?: string })?.type !== 'inherited') {
-          resolved[key] = domain;
-        }
-      }
-      return Object.keys(resolved).length > 0 ? resolved : undefined;
-    }
-  }
-
-  return undefined;
-}
-
-function buildEditAttributeField(field: Field, subtypeDomains: Record<string, Domain> | undefined): AttributeEditField {
-  const effectiveDomain = subtypeDomains?.[field.name] ?? field.domain;
-  const fieldType = convertAttributeFieldType(field, effectiveDomain);
-  const codedValues = resolveCodedValues(effectiveDomain);
+function buildEditAttributeField(field: Field): AttributeEditField {
+  const fieldType = convertAttributeFieldType(field, field.domain);
+  const codedValues = resolveCodedValues(field.domain);
 
   return {
     name: field.name,
@@ -114,4 +72,19 @@ function resolveCodedValues(domain: Domain | Field['domain'] | undefined): Attri
 
 function isCodedValueDomain(domain: Domain | null | undefined): domain is CodedValueDomain {
   return domain != null && domain.type === 'coded-value';
+}
+
+function isDateField(field: Field): boolean {
+  return (
+    field.type === 'date' ||
+    field.type === 'date-only' ||
+    field.type === 'time-only' ||
+    field.type === 'timestamp-offset'
+  );
+}
+
+function formatDateDisplay(epoch: number): string {
+  const date = new Date(epoch);
+  if (Number.isNaN(date.getTime())) return String(epoch);
+  return date.toLocaleString();
 }

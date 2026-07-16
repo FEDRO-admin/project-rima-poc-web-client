@@ -8,7 +8,6 @@ import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import { getDefaultSubtypeCode, getSubtypeCodeFromLayerName, getSubtypeFieldName } from '../layer/layer-sub-types';
 import { HistoryStore } from '../history/history.store';
 
 @Component({
@@ -87,20 +86,6 @@ export class TocComponent {
     if (!(layer instanceof FeatureLayer)) return;
 
     await layer.load();
-    const subtypeField = getSubtypeFieldName(layer);
-
-    let subtypeValue: number | string | undefined;
-    if (subtypeField) {
-      const query = layer.createQuery();
-      query.num = 1;
-      query.outFields = [subtypeField];
-      const result = await layer.queryFeatures(query);
-      subtypeValue = result.features[0]?.attributes?.[subtypeField] as number | string | undefined;
-
-      if (subtypeValue == null) {
-        subtypeValue = getSubtypeCodeFromLayerName(layer) ?? getDefaultSubtypeCode(layer);
-      }
-    }
-    this.createStore.activate(layer, subtypeField, subtypeValue);
+    this.createStore.activate(layer);
   }
 }
