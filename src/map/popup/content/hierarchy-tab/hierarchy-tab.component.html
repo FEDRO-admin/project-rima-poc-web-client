@@ -33,7 +33,9 @@
         tabindex="0"
       >
         <span class="node-display-label">{{ node.displayLabel }}</span>
-        <span class="node-layer-title">[{{ node.layerTitle }}]</span>
+        @if (node.layerTitle) {
+          <span class="node-layer-title">[{{ node.layerTitle }}]</span>
+        }
       </span>
     }
     @if (node.children?.length) {

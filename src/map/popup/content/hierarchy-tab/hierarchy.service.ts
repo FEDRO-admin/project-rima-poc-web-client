@@ -6,6 +6,7 @@ import type Relationship from '@arcgis/core/layers/support/Relationship';
 import { MapViewService } from '../../../view/view.service';
 import { HistoryStore } from '../../../history/history.store';
 import { HierarchyNode } from './hierarchy-node';
+import { HIERARCHY_DISPLAY_FIELD, HIERARCHY_BRACKET_FIELD, LAYER_NAME_WILDCARD } from './hierarchy-config';
 
 @Injectable({
   providedIn: 'root',
@@ -102,7 +103,7 @@ export class HierarchyService {
     const layer = graphic.layer as FeatureLayer;
     return {
       graphic,
-      layerTitle: layer?.title ?? 'Unknown',
+      layerTitle: this.resolveBracketValue(graphic, layer),
       displayLabel: this.buildDisplayLabel(graphic, layer),
       children: undefined,
       expanded: false,
@@ -211,6 +212,14 @@ export class HierarchyService {
   private buildDisplayLabel(graphic: Graphic, layer: FeatureLayer): string {
     if (!layer?.fields || !graphic.attributes) return 'Feature';
 
+    if (HIERARCHY_DISPLAY_FIELD === LAYER_NAME_WILDCARD) {
+      return layer.title || 'Feature';
+    }
+
+    if (HIERARCHY_DISPLAY_FIELD && graphic.attributes[HIERARCHY_DISPLAY_FIELD] != null) {
+      return String(graphic.attributes[HIERARCHY_DISPLAY_FIELD]);
+    }
+
     const displayField = layer.displayField;
     if (displayField && graphic.attributes[displayField] != null) {
       return String(graphic.attributes[displayField]);
@@ -228,5 +237,16 @@ export class HierarchyService {
     }
 
     return `OID: ${graphic.attributes[layer.objectIdField] ?? 'unknown'}`;
+  }
+
+  private resolveBracketValue(graphic: Graphic, layer: FeatureLayer): string {
+    if (!HIERARCHY_BRACKET_FIELD) return '';
+
+    if (HIERARCHY_BRACKET_FIELD === LAYER_NAME_WILDCARD) {
+      return layer?.title ?? '';
+    }
+
+    const value = graphic.attributes?.[HIERARCHY_BRACKET_FIELD];
+    return value != null ? String(value) : '';
   }
 }
