@@ -2,6 +2,7 @@ import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import type Graphic from '@arcgis/core/Graphic';
 import { DocumentRecord } from './document-types';
+import type { UploadProgress } from './document-upload.service';
 
 export type DocumentLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -10,7 +11,7 @@ interface DocumentsState {
   documents: DocumentRecord[];
   loadState: DocumentLoadState;
   error: string | undefined;
-  uploading: boolean;
+  uploadProgress: UploadProgress;
   deleting: boolean;
 }
 
@@ -19,7 +20,7 @@ const initialState: DocumentsState = {
   documents: [],
   loadState: 'idle',
   error: undefined,
-  uploading: false,
+  uploadProgress: { state: 'idle', percent: 0 },
   deleting: false,
 };
 
@@ -30,7 +31,9 @@ export const DocumentsStore = signalStore(
     isLoading: computed(() => store.loadState() === 'loading'),
     hasError: computed(() => store.loadState() === 'error'),
     isEmpty: computed(() => store.loadState() === 'loaded' && store.documents().length === 0),
-    isUploading: computed(() => store.uploading()),
+    isUploading: computed(
+      () => store.uploadProgress().state === 'uploading' || store.uploadProgress().state === 'sharing',
+    ),
     isDeleting: computed(() => store.deleting()),
   })),
   withMethods((store) => ({
@@ -46,8 +49,8 @@ export const DocumentsStore = signalStore(
     setError(error: string): void {
       patchState(store, { loadState: 'error', error });
     },
-    setUploading(uploading: boolean): void {
-      patchState(store, { uploading });
+    setUploadProgress(uploadProgress: UploadProgress): void {
+      patchState(store, { uploadProgress });
     },
     setDeleting(deleting: boolean): void {
       patchState(store, { deleting });

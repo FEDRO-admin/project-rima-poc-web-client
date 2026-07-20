@@ -48,6 +48,7 @@ export class MapComponent {
     this.viewService.addBasemap();
     await view.when();
     const catalog = await this.catalogService.buildMapCatalog();
-    this.layerService.addCatalogToMap(catalog);
+    this.layerService.addCatalogToMap(catalog.catalog);
+    this.layerService.addHiddenLayers(catalog.hiddenLayers);
   }
 }

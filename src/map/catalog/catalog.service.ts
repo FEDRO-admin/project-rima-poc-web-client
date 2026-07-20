@@ -17,7 +17,12 @@ import { CatalogStore } from './catalog.store';
 import { WebmapService } from '../webmap/webmap.service';
 import { WebmapCollection } from '../webmap/webmap-collection';
 import { WebmapLayer } from '../webmap/webmap-layer';
-import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION } from '../map-constants';
+import { RIMA_CATALOG_WEBMAP_NAME_AS_SECTION, RIMA_HIDDEN_CATEGORY_NAME } from '../map-constants';
+
+export interface CatalogBuildResult {
+  catalog: Catalog;
+  hiddenLayers: CatalogLayer[];
+}
 
 @Injectable({
   providedIn: 'root',
@@ -26,13 +31,13 @@ export class CatalogService {
   private readonly webmapService = inject(WebmapService);
   private readonly catalogStore = inject(CatalogStore);
 
-  async buildMapCatalog(): Promise<Catalog> {
+  async buildMapCatalog(): Promise<CatalogBuildResult> {
     this.catalogStore.setLoadState('loading');
     try {
       const webmapCollection = await this.webmapService.getWebmapCollection();
-      const catalog = this.buildMapCatalogFromCollection(webmapCollection);
-      this.catalogStore.setCatalog(catalog);
-      return catalog;
+      const result = this.buildMapCatalogFromCollection(webmapCollection);
+      this.catalogStore.setCatalog(result.catalog);
+      return result;
     } catch (error) {
       this.catalogStore.setLoadState('error');
       if (isOfTypeRimaError(error)) {
@@ -42,23 +47,31 @@ export class CatalogService {
     }
   }
 
-  private buildMapCatalogFromCollection(webmapCollection: WebmapCollection): Catalog {
+  private buildMapCatalogFromCollection(webmapCollection: WebmapCollection): CatalogBuildResult {
     const catalog: Catalog = {
       loadState: 'loaded',
       items: [],
     };
 
     if (!webmapCollection.webmaps) {
-      return catalog;
+      return { catalog, hiddenLayers: [] };
     }
 
     const entries = this.collectLeafEntries(webmapCollection);
+    const hiddenLayers: CatalogLayer[] = [];
 
     entries.forEach((entry) => {
-      this.depositAtPath(catalog.items, entry.path, entry.leaf);
+      const isHidden = entry.path.some(
+        (segment) => segment.origin === 'category' && segment.title.toUpperCase() === RIMA_HIDDEN_CATEGORY_NAME,
+      );
+      if (isHidden) {
+        hiddenLayers.push(entry.leaf);
+      } else {
+        this.depositAtPath(catalog.items, entry.path, entry.leaf);
+      }
     });
 
-    return catalog;
+    return { catalog, hiddenLayers };
   }
 
   private collectLeafEntries(webmapCollection: WebmapCollection): CatalogLeafEntry[] {

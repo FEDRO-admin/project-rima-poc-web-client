@@ -5,23 +5,16 @@ import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import Polyline from '@arcgis/core/geometry/Polyline';
 import type Geometry from '@arcgis/core/geometry/Geometry';
-import type Portal from '@arcgis/core/portal/Portal';
+import * as centroidOperator from '@arcgis/core/geometry/operators/centroidOperator.js';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
-import PortalItem from '@arcgis/core/portal/PortalItem';
-import PortalFolder from '@arcgis/core/portal/PortalFolder';
-import esriRequest from '@arcgis/core/request';
 import { MapViewService } from '../view/view.service';
 import { HistoryStore } from '../history/history.store';
 import { PortalService } from '../portal/portal.service';
 import { DocumentsStore } from './documents.store';
+import { DocumentUploadService } from './document-upload.service';
 import { DOCUMENT_FIELDS, DocumentRecord, DocumentUploadPayload, mapGraphicToDocumentRecord } from './document-types';
-import {
-  DOCUMENTS_MAX_FILE_SIZE_MB,
-  DOCUMENTS_PORTAL_FOLDER,
-  DOCUMENTS_TABLE_NAME,
-  DOCUMENTS_VIEWABLE_TYPES,
-} from './documents-config';
+import { DOCUMENTS_LAYER_ID, DOCUMENTS_MAX_FILE_SIZE_MB, DOCUMENTS_VIEWABLE_TYPES } from './documents-config';
 import {
   DocumentDeleteError,
   DocumentFileTooLargeError,
@@ -38,6 +31,7 @@ export class DocumentsService {
   private readonly historyStore = inject(HistoryStore);
   private readonly portalService = inject(PortalService);
   private readonly documentsStore = inject(DocumentsStore);
+  private readonly uploadService = inject(DocumentUploadService);
 
   async loadDocuments(graphic: Graphic): Promise<void> {
     const layer = graphic.layer as FeatureLayer;
@@ -72,7 +66,7 @@ export class DocumentsService {
         return;
       }
 
-      const documentLayer = this.findDocumentLayer(relationship);
+      const documentLayer = this.findDocumentLayer();
       const objectIdField = documentLayer?.objectIdField ?? 'objectid';
 
       const documents: DocumentRecord[] = featureSet.features.map((f: Graphic) =>
@@ -98,43 +92,23 @@ export class DocumentsService {
       throw new DocumentRelationshipNotFoundError();
     }
 
-    const documentLayer = this.findDocumentLayer(relationship);
+    const documentLayer = this.findDocumentLayer();
     if (!documentLayer) {
       throw new DocumentRelationshipNotFoundError();
     }
 
-    this.documentsStore.setUploading(true);
-
     try {
+      const downloadUrl = await this.uploadService.uploadFile(payload.file, payload.titel, payload.sharing);
+
       const portal = await this.portalService.getPortal();
-      const folder = await this.ensurePortalFolder(portal);
-
-      const portalItem = new PortalItem({
-        portal,
-        title: payload.titel || payload.file.name,
-        type: this.mapFileTypeToPortalType(payload.file),
-        name: payload.file.name,
-      });
-
       const user = portal.user!;
-      const addResult = await user.addItem({
-        item: portalItem,
-        data: payload.file,
-        folder: folder?.id,
-      });
-
-      if (!addResult?.id) {
-        throw new DocumentUploadError();
-      }
-
-      const downloadUrl = `${portal.restUrl}/content/items/${addResult.id}/data`;
-      const parentGlobalId = this.getGlobalId(graphic, layer);
+      const parentKeyValue = this.getParentKeyValue(graphic, relationship);
       const geometry = this.getGeometryForDocument(graphic);
 
       const attributes: Record<string, unknown> = {
         [DOCUMENT_FIELDS.id]: this.generateGuid(),
         [DOCUMENT_FIELDS.name]: payload.file.name,
-        [DOCUMENT_FIELDS.fkParent]: parentGlobalId,
+        [DOCUMENT_FIELDS.fkParent]: parentKeyValue,
         [DOCUMENT_FIELDS.parentClassName]: layer.title ?? '',
         [DOCUMENT_FIELDS.titel]: payload.titel,
         [DOCUMENT_FIELDS.beschreibung]: payload.beschreibung,
@@ -160,7 +134,7 @@ export class DocumentsService {
         objectId: newObjectId,
         id: attributes['id'] as string,
         name: attributes['name'] as string,
-        fkParent: parentGlobalId,
+        fkParent: parentKeyValue,
         parentClassName: attributes['parent_class_name'] as string,
         titel: payload.titel,
         beschreibung: payload.beschreibung,
@@ -179,9 +153,10 @@ export class DocumentsService {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
         throw error;
       }
+      console.error('[Documents] Root cause:', error);
       throw new DocumentUploadError(error);
     } finally {
-      this.documentsStore.setUploading(false);
+      this.uploadService.resetProgress();
     }
   }
 
@@ -192,7 +167,7 @@ export class DocumentsService {
       throw new DocumentRelationshipNotFoundError();
     }
 
-    const documentLayer = this.findDocumentLayer(relationship);
+    const documentLayer = this.findDocumentLayer();
     if (!documentLayer) {
       throw new DocumentRelationshipNotFoundError();
     }
@@ -200,7 +175,7 @@ export class DocumentsService {
     this.documentsStore.setDeleting(true);
 
     try {
-      await this.deletePortalItem(record.pfad);
+      await this.uploadService.deleteFile(record.pfad);
 
       const deleteGraphic = new Graphic({
         attributes: { [documentLayer.objectIdField]: record.objectId },
@@ -224,7 +199,7 @@ export class DocumentsService {
   }
 
   getDownloadUrl(record: DocumentRecord): string {
-    return record.pfad;
+    return this.uploadService.getAuthenticatedUrl(record.pfad);
   }
 
   isViewable(record: DocumentRecord): boolean {
@@ -239,20 +214,26 @@ export class DocumentsService {
     return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
   }
 
+  async getFieldDomainValues(fieldName: string): Promise<string[]> {
+    const layer = this.findDocumentLayer();
+    if (!layer) return [];
+
+    await layer.load();
+
+    const field = layer.fields.find((f) => f.name === fieldName);
+    if (!field?.domain || field.domain.type !== 'coded-value') return [];
+
+    return field.domain.codedValues.map((cv) => cv.code as string);
+  }
+
   private findDocumentRelationship(layer: FeatureLayer): Relationship | undefined {
     if (!layer.relationships) return undefined;
 
-    return layer.relationships.find((rel) => {
-      const relatedLayer = this.findLayerById(rel.relatedTableId);
-      if (!relatedLayer) return false;
-      const layerTitle = relatedLayer.title?.toLowerCase() ?? '';
-      const layerUrl = relatedLayer.url?.toLowerCase() ?? '';
-      return layerTitle.includes(DOCUMENTS_TABLE_NAME) || layerUrl.includes(DOCUMENTS_TABLE_NAME);
-    });
+    return layer.relationships.find((rel) => rel.relatedTableId === DOCUMENTS_LAYER_ID);
   }
 
-  private findDocumentLayer(relationship: Relationship): FeatureLayer | undefined {
-    return this.findLayerById(relationship.relatedTableId);
+  private findDocumentLayer(): FeatureLayer | undefined {
+    return this.findLayerById(DOCUMENTS_LAYER_ID);
   }
 
   private findLayerById(relatedTableId: number): FeatureLayer | undefined {
@@ -272,50 +253,9 @@ export class DocumentsService {
     return fromTables;
   }
 
-  private async ensurePortalFolder(portal: Portal): Promise<PortalFolder | undefined> {
-    if (!portal.user) return undefined;
-    const folders: PortalFolder[] = await portal.user.fetchFolders();
-    const existing = folders.find((f) => f.title === DOCUMENTS_PORTAL_FOLDER);
-    if (existing) return existing;
-
-    const restUrl = portal.restUrl;
-    const username = portal.user.username;
-    const response = await esriRequest(`${restUrl}/content/users/${username}/createFolder`, {
-      method: 'post',
-      query: {
-        title: DOCUMENTS_PORTAL_FOLDER,
-        f: 'json',
-      },
-    });
-    if (response.data?.folder) {
-      return response.data.folder as PortalFolder;
-    }
-    return undefined;
-  }
-
-  private async deletePortalItem(pfad: string): Promise<void> {
-    const itemId = this.extractPortalItemId(pfad);
-    if (!itemId) return;
-
-    try {
-      const portal = await this.portalService.getPortal();
-      if (!portal.user) return;
-      const item = new PortalItem({ portal, id: itemId });
-      await item.load();
-      await portal.user.deleteItems([item]);
-    } catch {
-      // Portal item may already be deleted or inaccessible — proceed with record deletion
-    }
-  }
-
-  private extractPortalItemId(pfad: string): string | undefined {
-    const match = pfad.match(/content\/items\/([a-f0-9]+)/i);
-    return match?.[1];
-  }
-
-  private getGlobalId(graphic: Graphic, layer: FeatureLayer): string {
-    const globalIdField = layer.globalIdField || 'globalid';
-    return graphic.attributes[globalIdField] ?? '';
+  private getParentKeyValue(graphic: Graphic, relationship: Relationship): string {
+    const keyField = relationship.keyField || 'id';
+    return graphic.attributes[keyField] ?? '';
   }
 
   private getGeometryForDocument(graphic: Graphic): Geometry | undefined {
@@ -325,8 +265,8 @@ export class DocumentsService {
       case 'point':
         return graphic.geometry;
       case 'polygon': {
-        const centroid = (graphic.geometry as Polygon).centroid;
-        return centroid ?? undefined;
+        const center = centroidOperator.execute(graphic.geometry as Polygon);
+        return center ?? undefined;
       }
       case 'polyline': {
         const polyline = graphic.geometry as Polyline;
@@ -351,28 +291,5 @@ export class DocumentsService {
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  }
-
-  private mapFileTypeToPortalType(file: File): string {
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-    const typeMap: Record<string, string> = {
-      pdf: 'PDF',
-      doc: 'Microsoft Word',
-      docx: 'Microsoft Word',
-      xls: 'Microsoft Excel',
-      xlsx: 'Microsoft Excel',
-      ppt: 'Microsoft Powerpoint',
-      pptx: 'Microsoft Powerpoint',
-      png: 'Image',
-      jpg: 'Image',
-      jpeg: 'Image',
-      gif: 'Image',
-      tif: 'Image',
-      tiff: 'Image',
-      zip: 'File',
-      csv: 'CSV',
-      txt: 'Document Link',
-    };
-    return typeMap[extension] ?? 'File';
   }
 }

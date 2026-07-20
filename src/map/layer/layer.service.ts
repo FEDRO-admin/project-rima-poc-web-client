@@ -9,6 +9,7 @@ import {
   CatalogItem,
   CatalogSection,
   CatalogFeatureLayer,
+  CatalogLayer,
   CatalogMapImageLayer,
   CatalogWebTiledLayer,
 } from '../catalog/catalog-types';
@@ -29,6 +30,20 @@ export class LayerService {
 
     const layers = this.buildLayersFromItems(catalog.items);
     view.map.addMany(layers);
+  }
+
+  addHiddenLayers(catalogLayers: CatalogLayer[]): void {
+    const view = this.viewService.mapView();
+    if (!view?.map) return;
+
+    for (const catalogLayer of catalogLayers) {
+      const layer = this.buildLayer(catalogLayer);
+      if (layer) {
+        layer.visible = false;
+        layer.listMode = 'hide';
+        view.map.add(layer);
+      }
+    }
   }
 
   removeAllOperationalLayers(): void {

@@ -11,6 +11,9 @@ export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
 ];
 export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = true;
 
+/** Category segment name that marks layers as hidden from the ToC but added to the map. */
+export const RIMA_HIDDEN_CATEGORY_NAME = 'HIDDEN';
+
 // BASEMAP
 export const RIMA_SWISSTOPO_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';
 export const RIMA_SWISSTOPO_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';

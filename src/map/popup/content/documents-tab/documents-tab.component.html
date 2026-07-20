@@ -21,10 +21,21 @@
   </div>
 }
 
-@if (documentsStore.isUploading()) {
+@if (uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing') {
   <div class="documents-uploading">
-    <calcite-loader scale="s"></calcite-loader>
-    <span>Dokument wird hochgeladen...</span>
+    <div class="documents-uploading__info">
+      <calcite-loader scale="s"></calcite-loader>
+      <span>
+        @if (uploadProgress().state === 'uploading') {
+          Dokument wird hochgeladen... {{ uploadProgress().percent }}%
+        } @else {
+          Freigabe wird gesetzt...
+        }
+      </span>
+    </div>
+    <div class="documents-uploading__bar">
+      <div class="documents-uploading__bar-fill" [style.width.%]="uploadProgress().percent"></div>
+    </div>
   </div>
 }
 
@@ -40,7 +51,12 @@
 
     <div class="upload-form__field">
       <label for="doc-titel">Titel</label>
-      <input id="doc-titel" type="text" [value]="uploadTitel()" (input)="uploadTitel.set($any($event.target).value)" />
+      <input
+        id="doc-titel"
+        type="text"
+        [value]="uploadForm().titel"
+        (input)="updateForm('titel', $any($event.target).value)"
+      />
     </div>
 
     <div class="upload-form__field">
@@ -48,14 +64,19 @@
       <textarea
         id="doc-beschreibung"
         rows="3"
-        [value]="uploadBeschreibung()"
-        (input)="uploadBeschreibung.set($any($event.target).value)"
+        [value]="uploadForm().beschreibung"
+        (input)="updateForm('beschreibung', $any($event.target).value)"
       ></textarea>
     </div>
 
     <div class="upload-form__field">
       <label for="doc-typ">Typ</label>
-      <input id="doc-typ" type="text" [value]="uploadTyp()" (input)="uploadTyp.set($any($event.target).value)" />
+      <select id="doc-typ" [value]="uploadForm().typ" (change)="updateForm('typ', $any($event.target).value)">
+        <option value="" disabled>— Bitte wählen —</option>
+        @for (typ of typDomain(); track typ) {
+          <option [value]="typ">{{ typ }}</option>
+        }
+      </select>
     </div>
 
     <div class="upload-form__field">
@@ -63,26 +84,72 @@
       <input
         id="doc-version"
         type="text"
-        [value]="uploadVersion()"
-        (input)="uploadVersion.set($any($event.target).value)"
+        [value]="uploadForm().version"
+        (input)="updateForm('version', $any($event.target).value)"
       />
     </div>
 
     <div class="upload-form__field">
       <label for="doc-status">Status</label>
-      <input
-        id="doc-status"
-        type="text"
-        [value]="uploadStatus()"
-        (input)="uploadStatus.set($any($event.target).value)"
-      />
+      <select id="doc-status" [value]="uploadForm().status" (change)="updateForm('status', $any($event.target).value)">
+        <option value="" disabled>— Bitte wählen —</option>
+        @for (status of statusDomain(); track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
     </div>
+
+    <div class="upload-form__sharing">
+      <label class="upload-form__sharing-label">Freigabe</label>
+
+      <div class="upload-form__sharing-options">
+        <label class="upload-form__radio">
+          <input
+            type="radio"
+            name="sharing-access"
+            value="private"
+            [checked]="uploadForm().access === 'private'"
+            (change)="updateForm('access', 'private')"
+          />
+          Besitzer
+        </label>
+        <label class="upload-form__radio">
+          <input
+            type="radio"
+            name="sharing-access"
+            value="org"
+            [checked]="uploadForm().access === 'org'"
+            (change)="updateForm('access', 'org')"
+          />
+          Organisation
+        </label>
+        <label class="upload-form__radio">
+          <input
+            type="radio"
+            name="sharing-access"
+            value="public"
+            [checked]="uploadForm().access === 'public'"
+            (change)="updateForm('access', 'public')"
+          />
+          Öffentlich
+        </label>
+      </div>
+    </div>
+
+    @if (uploadError()) {
+      <p class="upload-form__error">{{ uploadError() }}</p>
+    }
 
     <div class="upload-form__actions">
       <button class="upload-form__btn upload-form__btn--cancel" (click)="cancelUpload()">Abbrechen</button>
       <button
         class="upload-form__btn upload-form__btn--submit"
-        [disabled]="!selectedFile() || documentsStore.isUploading()"
+        [disabled]="
+          !uploadForm().file ||
+          !uploadForm().titel ||
+          uploadProgress().state === 'uploading' ||
+          uploadProgress().state === 'sharing'
+        "
         (click)="submitUpload()"
       >
         Hochladen
@@ -95,33 +162,77 @@
   <div class="documents-list">
     @for (doc of documentsStore.documents(); track doc.objectId) {
       <div class="document-item">
-        <div class="document-item__info">
-          <span class="document-item__title">{{ doc.titel || doc.name }}</span>
-          <span class="document-item__meta">
-            {{ doc.typ }}
-            @if (doc.groesse) {
-              · {{ formatFileSize(doc.groesse) }}
+        <div class="document-item__header">
+          <div class="document-item__info">
+            <span class="document-item__title">{{ doc.titel || doc.name }}</span>
+            <span class="document-item__meta">
+              {{ doc.typ }}
+              @if (doc.groesse) {
+                · {{ formatFileSize(doc.groesse) }}
+              }
+              @if (doc.letzteAenderung) {
+                · {{ doc.letzteAenderung | date: 'dd.MM.yyyy' }}
+              }
+            </span>
+          </div>
+          <div class="document-item__actions">
+            <button class="document-item__btn" title="Details" (click)="toggleDetails(doc.objectId)">
+              <calcite-icon
+                [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
+                scale="s"
+              ></calcite-icon>
+            </button>
+            @if (isViewable(doc)) {
+              <button class="document-item__btn" title="Anzeigen" (click)="openDocument(doc)">
+                <calcite-icon icon="view-visible" scale="s"></calcite-icon>
+              </button>
+            }
+            <button class="document-item__btn" title="Herunterladen" (click)="downloadDocument(doc)">
+              <calcite-icon icon="download" scale="s"></calcite-icon>
+            </button>
+            @if (!historyStore.active()) {
+              <button
+                class="document-item__btn document-item__btn--delete"
+                title="Löschen"
+                (click)="requestDelete(doc)"
+              >
+                <calcite-icon icon="trash" scale="s"></calcite-icon>
+              </button>
+            }
+          </div>
+        </div>
+        @if (expandedDocId() === doc.objectId) {
+          <div class="document-item__details">
+            @if (doc.beschreibung) {
+              <div class="document-item__detail">
+                <span class="document-item__detail-label">Beschreibung</span>
+                <span class="document-item__detail-value">{{ doc.beschreibung }}</span>
+              </div>
+            }
+            @if (doc.autor) {
+              <div class="document-item__detail">
+                <span class="document-item__detail-label">Autor</span>
+                <span class="document-item__detail-value">{{ doc.autor }}</span>
+              </div>
             }
             @if (doc.version) {
-              · v{{ doc.version }}
+              <div class="document-item__detail">
+                <span class="document-item__detail-label">Version</span>
+                <span class="document-item__detail-value">{{ doc.version }}</span>
+              </div>
             }
-          </span>
-        </div>
-        <div class="document-item__actions">
-          @if (isViewable(doc)) {
-            <button class="document-item__btn" title="Anzeigen" (click)="openDocument(doc)">
-              <calcite-icon icon="view-visible" scale="s"></calcite-icon>
-            </button>
-          }
-          <button class="document-item__btn" title="Herunterladen" (click)="downloadDocument(doc)">
-            <calcite-icon icon="download" scale="s"></calcite-icon>
-          </button>
-          @if (!historyStore.active()) {
-            <button class="document-item__btn document-item__btn--delete" title="Löschen" (click)="requestDelete(doc)">
-              <calcite-icon icon="trash" scale="s"></calcite-icon>
-            </button>
-          }
-        </div>
+            @if (doc.status) {
+              <div class="document-item__detail">
+                <span class="document-item__detail-label">Status</span>
+                <span class="document-item__detail-value">{{ doc.status }}</span>
+              </div>
+            }
+            <div class="document-item__detail">
+              <span class="document-item__detail-label">Dateiname</span>
+              <span class="document-item__detail-value">{{ doc.name }}</span>
+            </div>
+          </div>
+        }
       </div>
     }
   </div>

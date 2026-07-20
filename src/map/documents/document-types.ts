@@ -35,6 +35,12 @@ export interface DocumentRecord {
   anzahlSeiten: number | null;
 }
 
+export type DocumentAccessLevel = 'private' | 'org' | 'public';
+
+export interface DocumentSharingOptions {
+  access: DocumentAccessLevel;
+}
+
 export interface DocumentUploadPayload {
   file: File;
   titel: string;
@@ -42,6 +48,7 @@ export interface DocumentUploadPayload {
   typ: string;
   version: string;
   status: string;
+  sharing: DocumentSharingOptions;
 }
 
 export function mapGraphicToDocumentRecord(graphic: Graphic, objectIdField: string): DocumentRecord {

@@ -5,7 +5,14 @@ export class DocumentQueryError extends RecoverableError {
 }
 
 export class DocumentUploadError extends RecoverableError {
-  override readonly message = 'documents.error.upload';
+  override readonly message: string;
+  readonly detail?: string;
+
+  constructor(cause?: unknown) {
+    super();
+    this.detail = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : undefined;
+    this.message = this.detail ? `documents.error.upload: ${this.detail}` : 'documents.error.upload';
+  }
 }
 
 export class DocumentDeleteError extends RecoverableError {
@@ -18,4 +25,13 @@ export class DocumentFileTooLargeError extends RecoverableError {
 
 export class DocumentRelationshipNotFoundError extends RecoverableError {
   override readonly message = 'documents.error.relationshipNotFound';
+}
+
+export class DocumentUnsupportedFileTypeError extends RecoverableError {
+  override readonly message: string;
+
+  constructor(extension: string) {
+    super();
+    this.message = `documents.error.unsupportedFileType: .${extension}`;
+  }
 }
