@@ -61,13 +61,14 @@ export class MapComponent {
   }
 
   private async initScene(sceneEl: HTMLArcgisSceneElement): Promise<void> {
-    await sceneEl.viewOnReady();
-
     const sceneView = sceneEl.view;
     if (!sceneView) {
       throw new SceneViewInitialisationError('SceneView is not available on the arcgis-scene element');
     }
 
     this.viewService.registerSceneView(sceneView);
+    this.viewService.configureSceneView();
+
+    await sceneEl.viewOnReady();
   }
 }
