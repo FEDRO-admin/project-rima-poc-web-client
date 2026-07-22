@@ -4,7 +4,7 @@ import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import type Point from '@arcgis/core/geometry/Point';
-import { MapViewService } from '../../view/view.service';
+import { ViewService } from '../../view/view.service';
 import { AttributeEditField, convertAttributeFieldType } from '../attribute-edit-field';
 import { ReferencePoint, ReferencePointRelationshipInfo, classifyRelationshipName } from './reference-point-types';
 import { isImmutableField } from '../../layer/layer-attributes';
@@ -13,7 +13,7 @@ import { isImmutableField } from '../../layer/layer-attributes';
   providedIn: 'root',
 })
 export class ReferencePointResolutionService {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
 
   resolveRelationships(layer: FeatureLayer): ReferencePointRelationshipInfo[] {
     if (!layer.relationships?.length) return [];
@@ -99,7 +99,7 @@ export class ReferencePointResolutionService {
   }
 
   private findLayerByRelationship(relationship: Relationship): FeatureLayer | undefined {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return undefined;
 
     const allLayers = view.map.allLayers;

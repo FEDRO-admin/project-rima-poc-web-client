@@ -1,6 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracked, viewChild } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { CreateStore } from '../create/create.store';
 import { HistoryPickerComponent } from '../history/history-picker/history-picker.component';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -18,14 +18,14 @@ import { HistoryStore } from '../history/history.store';
   styleUrl: './toc.component.scss',
 })
 export class TocComponent {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly createStore = inject(CreateStore);
   private readonly historyStore = inject(HistoryStore);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
     effect(() => {
-      const view = this.viewService.mapView();
+      const view = this.viewService.activeView();
       untracked(() => {
         const layerList = this.layerListElement()?.nativeElement;
         if (view && layerList) {
@@ -70,7 +70,7 @@ export class TocComponent {
   }
 
   private async zoomToLayer(layer: Layer): Promise<void> {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view) return;
 
     await layer.load();

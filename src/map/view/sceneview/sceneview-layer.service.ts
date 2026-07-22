@@ -2,17 +2,17 @@ import { inject, Injectable } from '@angular/core';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import Layer from '@arcgis/core/layers/Layer';
-import { PortalService } from '../portal/portal.service';
-import { LanguageStore } from '../../i18n/language.store';
-import { languageInfos } from '../../i18n/language-info-config';
-import { RIMA_3D_CATEGORY } from '../map-constants';
-import { isOfTypeRimaError } from '../../error-handling/base-error';
-import { SceneCatalogLoadError } from './scene-errors';
+import { PortalService } from '../../portal/portal.service';
+import { LanguageStore } from '../../../i18n/language.store';
+import { languageInfos } from '../../../i18n/language-info-config';
+import { RIMA_SCENEVIEW_3D_CATEGORY } from './sceneview-config';
+import { isOfTypeRimaError } from '../../../error-handling/base-error';
+import { SceneViewCatalogLoadError } from './sceneview-errors';
 
 @Injectable({
   providedIn: 'root',
 })
-export class SceneLayerService {
+export class SceneViewLayerService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
 
@@ -29,7 +29,7 @@ export class SceneLayerService {
     }
 
     if (!languageCategory) {
-      throw new SceneCatalogLoadError();
+      throw new SceneViewCatalogLoadError();
     }
 
     try {
@@ -42,7 +42,7 @@ export class SceneLayerService {
       if (isOfTypeRimaError(error)) {
         throw error;
       }
-      throw new SceneCatalogLoadError(error);
+      throw new SceneViewCatalogLoadError(error);
     }
   }
 
@@ -57,7 +57,7 @@ export class SceneLayerService {
 
   private async querySceneItems(languageCategory: string): Promise<PortalItem[]> {
     const query = new PortalQueryParams({
-      categories: [`/Categories/${languageCategory}/${RIMA_3D_CATEGORY}`],
+      categories: [`/Categories/${languageCategory}/${RIMA_SCENEVIEW_3D_CATEGORY}`],
       query: 'type:"Scene Service" OR type:"Scene Layer"',
       num: 100,
       sortField: 'title',

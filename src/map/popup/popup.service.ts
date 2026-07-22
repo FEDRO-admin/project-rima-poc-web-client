@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { PopupHighlightError, PopupRefreshError } from './popup-errors';
@@ -18,7 +18,7 @@ interface Handle {
   providedIn: 'root',
 })
 export class PopupService implements OnDestroy {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly popupStore = inject(PopupStore);
   private readonly editStore = inject(EditStore);
   private readonly createStore = inject(CreateStore);
@@ -34,7 +34,7 @@ export class PopupService implements OnDestroy {
   }
 
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view || !(graphic.layer instanceof FeatureLayer)) return;
 
     try {

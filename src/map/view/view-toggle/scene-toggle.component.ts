@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ViewStore } from '../view.store';
-import { MapViewService } from '../view.service';
+import { ViewService } from '../view.service';
 
 @Component({
   selector: 'rima-scene-toggle',
@@ -10,15 +10,15 @@ import { MapViewService } from '../view.service';
 })
 export class SceneToggleComponent {
   private readonly viewStore = inject(ViewStore);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
 
-  protected readonly is3D = (): boolean => this.viewStore.mode() === '3d';
+  protected readonly isScene = (): boolean => this.viewStore.mode() === 'scene';
 
   toggle(): Promise<void> {
-    if (this.viewStore.mode() === '2d') {
-      return this.viewService.switchTo3D();
+    if (this.viewStore.mode() === 'map') {
+      return this.viewService.switchToScene();
     } else {
-      return this.viewService.switchTo2D();
+      return this.viewService.switchToMap();
     }
   }
 }

@@ -13,7 +13,7 @@ export interface SceneConfig {
   elevation: SceneElevationConfig;
 }
 
-export const RIMA_SCENE_CONFIG: SceneConfig = {
+export const RIMA_SCENEVIEW_CONFIG: SceneConfig = {
   basemap: {
     wmsUrl: 'https://wms.geo.admin.ch/',
     sublayer: 'ch.swisstopo.pixelkarte-farbe',
@@ -23,3 +23,5 @@ export const RIMA_SCENE_CONFIG: SceneConfig = {
     url: 'https://tiles.arcgis.com/tiles/oPre3pOfRfefL8y0/arcgis/rest/services/elevation_suisse/ImageServer',
   },
 };
+
+export const RIMA_SCENEVIEW_3D_CATEGORY = '3D';

@@ -4,7 +4,7 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { CreateStore } from './create.store';
 import { getDefaultCreateTool } from './create-config';
 import { EDIT_POINT_SYMBOL, EDIT_LINE_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit/edit-config';
@@ -14,7 +14,7 @@ import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } fro
   providedIn: 'root',
 })
 export class CreateGeometryService implements OnDestroy {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly store = inject(CreateStore);
 
   private sketchViewModel: SketchViewModel | undefined;
@@ -28,7 +28,7 @@ export class CreateGeometryService implements OnDestroy {
   }
 
   startDrawing(layer: FeatureLayer, tool?: CreateTool): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanup();
@@ -68,7 +68,7 @@ export class CreateGeometryService implements OnDestroy {
   }
 
   redraw(layer: FeatureLayer, tool?: CreateTool): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanup();
@@ -140,7 +140,7 @@ export class CreateGeometryService implements OnDestroy {
     this.updateEventHandle = undefined;
     this.sketchGraphic = undefined;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;

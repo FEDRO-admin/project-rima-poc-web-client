@@ -3,7 +3,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
-import { MapViewService } from '../../../view/view.service';
+import { ViewService } from '../../../view/view.service';
 import { HistoryStore } from '../../../history/history.store';
 import { HierarchyNode } from './hierarchy-node';
 import { HIERARCHY_DISPLAY_FIELD, HIERARCHY_BRACKET_FIELD, LAYER_NAME_WILDCARD } from './hierarchy-config';
@@ -12,7 +12,7 @@ import { HIERARCHY_DISPLAY_FIELD, HIERARCHY_BRACKET_FIELD, LAYER_NAME_WILDCARD }
   providedIn: 'root',
 })
 export class HierarchyService {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
 
   async buildHierarchyTree(graphic: Graphic): Promise<HierarchyNode | undefined> {
@@ -199,7 +199,7 @@ export class HierarchyService {
   }
 
   private findLayerByRelationship(relationship: Relationship): FeatureLayer | undefined {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return undefined;
 
     const allLayers = view.map.allLayers;

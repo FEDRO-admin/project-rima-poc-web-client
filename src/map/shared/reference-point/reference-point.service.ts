@@ -5,7 +5,7 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import { MapViewService } from '../../view/view.service';
+import { ViewService } from '../../view/view.service';
 import { ReferencePointStore } from './reference-point.store';
 import { ReferencePointResolutionService } from './reference-point-resolution.service';
 import { ReferencePointSaveError, ReferencePointLoadError } from './reference-point-errors';
@@ -43,7 +43,7 @@ const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
   providedIn: 'root',
 })
 export class ReferencePointService implements OnDestroy {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly store = inject(ReferencePointStore);
   private readonly resolutionService = inject(ReferencePointResolutionService);
 
@@ -101,7 +101,7 @@ export class ReferencePointService implements OnDestroy {
   }
 
   startPlacingOnMap(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -182,7 +182,7 @@ export class ReferencePointService implements OnDestroy {
     const point = points[index];
     if (!point?.geometry) return;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -280,7 +280,7 @@ export class ReferencePointService implements OnDestroy {
   }
 
   refreshDisplayLayer(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.removeDisplayLayer();
@@ -364,14 +364,14 @@ export class ReferencePointService implements OnDestroy {
     this.eventHandle?.remove();
     this.eventHandle = undefined;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
   }
 
   private removeDisplayLayer(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (this.displayLayer && view?.map) {
       view.map.remove(this.displayLayer);
       this.displayLayer.destroy();

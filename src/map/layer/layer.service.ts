@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import Layer from '@arcgis/core/layers/Layer';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
@@ -11,30 +11,14 @@ import {
   CatalogFeatureLayer,
   CatalogMapImageLayer,
   CatalogWebTiledLayer,
-} from '../catalog/catalog-types';
-import { MapViewService } from '../view/view.service';
-import { LayerAddError } from './layer-errors';
+} from '../view/mapview/mapview-types';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LayerService {
-  private readonly viewService = inject(MapViewService);
-
-  addCatalogToMap(catalog: Catalog): void {
-    const view = this.viewService.mapView();
-    if (!view?.map) {
-      throw new LayerAddError();
-    }
-
-    const layers = this.buildLayersFromItems(catalog.items);
-    view.map.addMany(layers);
-  }
-
-  removeAllOperationalLayers(): void {
-    const view = this.viewService.mapView();
-    if (!view?.map) return;
-    view.map.layers.removeAll();
+  buildLayersFromCatalog(catalog: Catalog): Layer[] {
+    return this.buildLayersFromItems(catalog.items);
   }
 
   private buildLayersFromItems(items: CatalogItem[]): Layer[] {

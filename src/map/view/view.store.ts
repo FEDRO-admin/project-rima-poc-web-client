@@ -1,13 +1,13 @@
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 
-export type ViewMode = '2d' | '3d';
+export type ViewMode = 'map' | 'scene';
 
 interface ViewState {
   mode: ViewMode;
 }
 
 const initialState: ViewState = {
-  mode: '2d',
+  mode: 'map',
 };
 
 export const ViewStore = signalStore(

@@ -7,7 +7,7 @@ import type Geometry from '@arcgis/core/geometry/Geometry';
 import type { RimaView } from '../view/view.service';
 import { EditStore } from './edit.store';
 import { PopupStore } from '../popup/popup.store';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { EditSaveError } from './edit-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
@@ -23,7 +23,7 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly popupStore = inject(PopupStore);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly referencePointService = inject(ReferencePointService);
 
   private sketchViewModel: SketchViewModel | undefined;
@@ -50,7 +50,7 @@ export class EditService implements OnDestroy {
 
   startGeometryEditing(): void {
     const graphic = this.store.graphic();
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map || !graphic?.geometry) return;
 
     this._originalGeometry = graphic.geometry.clone();
@@ -77,7 +77,7 @@ export class EditService implements OnDestroy {
 
   reenterSketch(): void {
     const graphic = this.store.graphic();
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map || !graphic) return;
 
     const geometry = this.store.editedGeometry() ?? graphic.geometry;
@@ -230,7 +230,7 @@ export class EditService implements OnDestroy {
     this.eventHandle = undefined;
     this.sketchGraphic = undefined;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
@@ -253,7 +253,7 @@ export class EditService implements OnDestroy {
   }
 
   private showHighlight(geometry: Geometry): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.removeHighlight();
@@ -268,7 +268,7 @@ export class EditService implements OnDestroy {
   }
 
   private removeHighlight(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (this.highlightLayer && view?.map) {
       view.map.remove(this.highlightLayer);
     }
