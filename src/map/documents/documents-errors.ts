@@ -19,6 +19,10 @@ export class DocumentDeleteError extends RecoverableError {
   override readonly message = 'documents.error.delete';
 }
 
+export class DocumentEditError extends RecoverableError {
+  override readonly message = 'documents.error.edit';
+}
+
 export class DocumentFileTooLargeError extends RecoverableError {
   override readonly message = 'documents.error.fileTooLarge';
 }

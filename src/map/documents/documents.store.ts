@@ -61,6 +61,11 @@ export const DocumentsStore = signalStore(
     removeDocument(objectId: number): void {
       patchState(store, { documents: store.documents().filter((d) => d.objectId !== objectId) });
     },
+    updateDocument(updated: DocumentRecord): void {
+      patchState(store, {
+        documents: store.documents().map((d) => (d.objectId === updated.objectId ? updated : d)),
+      });
+    },
     reset(): void {
       patchState(store, initialState);
     },

@@ -78,6 +78,11 @@ export class DocumentUploadService {
     }
   }
 
+  async replaceFile(oldPfad: string, newFile: File, title: string, sharing: DocumentSharingOptions): Promise<string> {
+    await this.deleteFile(oldPfad);
+    return this.uploadFile(newFile, title, sharing);
+  }
+
   async fetchUserGroups(): Promise<{ id: string; title: string }[]> {
     return [];
   }

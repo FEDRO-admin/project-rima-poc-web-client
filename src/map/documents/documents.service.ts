@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import Graphic from '@arcgis/core/Graphic';
 import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
@@ -8,15 +9,22 @@ import type Geometry from '@arcgis/core/geometry/Geometry';
 import * as centroidOperator from '@arcgis/core/geometry/operators/centroidOperator.js';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { HistoryStore } from '../history/history.store';
 import { PortalService } from '../portal/portal.service';
 import { DocumentsStore } from './documents.store';
 import { DocumentUploadService } from './document-upload.service';
-import { DOCUMENT_FIELDS, DocumentRecord, DocumentUploadPayload, mapGraphicToDocumentRecord } from './document-types';
+import {
+  DOCUMENT_FIELDS,
+  DocumentEditPayload,
+  DocumentRecord,
+  DocumentUploadPayload,
+  mapGraphicToDocumentRecord,
+} from './document-types';
 import { DOCUMENTS_LAYER_ID, DOCUMENTS_MAX_FILE_SIZE_MB, DOCUMENTS_VIEWABLE_TYPES } from './documents-config';
 import {
   DocumentDeleteError,
+  DocumentEditError,
   DocumentFileTooLargeError,
   DocumentQueryError,
   DocumentRelationshipNotFoundError,
@@ -27,7 +35,7 @@ import {
   providedIn: 'root',
 })
 export class DocumentsService {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
   private readonly portalService = inject(PortalService);
   private readonly documentsStore = inject(DocumentsStore);
@@ -198,6 +206,74 @@ export class DocumentsService {
     }
   }
 
+  async editDocument(record: DocumentRecord, payload: DocumentEditPayload): Promise<void> {
+    if (payload.file) {
+      const fileSizeMB = payload.file.size / (1024 * 1024);
+      if (fileSizeMB > DOCUMENTS_MAX_FILE_SIZE_MB) {
+        throw new DocumentFileTooLargeError();
+      }
+    }
+
+    const documentLayer = this.findDocumentLayer();
+    if (!documentLayer) {
+      throw new DocumentRelationshipNotFoundError();
+    }
+
+    try {
+      let newPfad = record.pfad;
+      let newGroesse = record.groesse;
+      let newName = record.name;
+
+      if (payload.file && payload.sharing) {
+        newPfad = await this.uploadService.replaceFile(record.pfad, payload.file, payload.titel, payload.sharing);
+        newGroesse = payload.file.size;
+        newName = payload.file.name;
+      }
+
+      const attributes: Record<string, unknown> = {
+        [documentLayer.objectIdField]: record.objectId,
+        [DOCUMENT_FIELDS.titel]: payload.titel,
+        [DOCUMENT_FIELDS.beschreibung]: payload.beschreibung,
+        [DOCUMENT_FIELDS.typ]: payload.typ,
+        [DOCUMENT_FIELDS.status]: payload.status,
+        [DOCUMENT_FIELDS.version]: payload.version,
+        [DOCUMENT_FIELDS.letzteAenderung]: Date.now(),
+        [DOCUMENT_FIELDS.pfad]: newPfad,
+        [DOCUMENT_FIELDS.groesse]: newGroesse,
+        [DOCUMENT_FIELDS.name]: newName,
+      };
+
+      const updateGraphic = new Graphic({ attributes });
+      const editResult = await documentLayer.applyEdits({ updateFeatures: [updateGraphic] });
+
+      if (editResult.updateFeatureResults[0]?.error) {
+        throw new DocumentEditError();
+      }
+
+      const updatedRecord: DocumentRecord = {
+        ...record,
+        titel: payload.titel,
+        beschreibung: payload.beschreibung,
+        typ: payload.typ,
+        status: payload.status,
+        version: payload.version,
+        pfad: newPfad,
+        groesse: newGroesse,
+        name: newName,
+        letzteAenderung: new Date(),
+      };
+
+      this.documentsStore.updateDocument(updatedRecord);
+    } catch (error) {
+      if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
+        throw error;
+      }
+      throw new DocumentEditError();
+    } finally {
+      this.uploadService.resetProgress();
+    }
+  }
+
   getDownloadUrl(record: DocumentRecord): string {
     return this.uploadService.getAuthenticatedUrl(record.pfad);
   }
@@ -237,17 +313,17 @@ export class DocumentsService {
   }
 
   private findLayerById(relatedTableId: number): FeatureLayer | undefined {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return undefined;
 
     const fromLayers = view.map.allLayers.find(
-      (l) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === relatedTableId,
+      (l: Layer) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === relatedTableId,
     ) as FeatureLayer | undefined;
 
     if (fromLayers) return fromLayers;
 
     const fromTables = view.map.allTables?.find(
-      (l) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === relatedTableId,
+      (l: Layer) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === relatedTableId,
     ) as FeatureLayer | undefined;
 
     return fromTables;

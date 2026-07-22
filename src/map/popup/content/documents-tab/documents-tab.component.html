@@ -176,12 +176,6 @@
             </span>
           </div>
           <div class="document-item__actions">
-            <button class="document-item__btn" title="Details" (click)="toggleDetails(doc.objectId)">
-              <calcite-icon
-                [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
-                scale="s"
-              ></calcite-icon>
-            </button>
             @if (isViewable(doc)) {
               <button class="document-item__btn" title="Anzeigen" (click)="openDocument(doc)">
                 <calcite-icon icon="view-visible" scale="s"></calcite-icon>
@@ -190,7 +184,20 @@
             <button class="document-item__btn" title="Herunterladen" (click)="downloadDocument(doc)">
               <calcite-icon icon="download" scale="s"></calcite-icon>
             </button>
+            <button class="document-item__btn" title="Details" (click)="toggleDetails(doc.objectId)">
+              <calcite-icon
+                [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
+                scale="s"
+              ></calcite-icon>
+            </button>
             @if (!historyStore.active()) {
+              <button
+                class="document-item__btn document-item__btn--edit"
+                title="Bearbeiten"
+                (click)="openEditForm(doc)"
+              >
+                <calcite-icon icon="pencil" scale="s"></calcite-icon>
+              </button>
               <button
                 class="document-item__btn document-item__btn--delete"
                 title="Löschen"
@@ -253,4 +260,124 @@
     [cancelLabel]="'Abbrechen'"
     (confirmed)="handleDeleteConfirmation($event)"
   />
+}
+
+@if (editingDocument(); as editDoc) {
+  <div class="upload-form">
+    <h4 class="upload-form__title">Dokument bearbeiten</h4>
+
+    <div class="upload-form__field">
+      <label for="edit-file">Datei ersetzen (optional)</label>
+      <input id="edit-file" type="file" (change)="onEditFileSelected($event)" />
+      <span class="upload-form__hint">Aktuelle Datei: {{ editDoc.name }} · Max. {{ maxFileSizeMB }} MB</span>
+    </div>
+
+    <div class="upload-form__field">
+      <label for="edit-titel">Titel</label>
+      <input
+        id="edit-titel"
+        type="text"
+        [value]="editForm().titel"
+        (input)="updateEditForm('titel', $any($event.target).value)"
+      />
+    </div>
+
+    <div class="upload-form__field">
+      <label for="edit-beschreibung">Beschreibung</label>
+      <textarea
+        id="edit-beschreibung"
+        rows="3"
+        [value]="editForm().beschreibung"
+        (input)="updateEditForm('beschreibung', $any($event.target).value)"
+      ></textarea>
+    </div>
+
+    <div class="upload-form__field">
+      <label for="edit-typ">Typ</label>
+      <select id="edit-typ" [value]="editForm().typ" (change)="updateEditForm('typ', $any($event.target).value)">
+        <option value="" disabled>— Bitte wählen —</option>
+        @for (typ of typDomain(); track typ) {
+          <option [value]="typ">{{ typ }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="upload-form__field">
+      <label for="edit-version">Version</label>
+      <input
+        id="edit-version"
+        type="text"
+        [value]="editForm().version"
+        (input)="updateEditForm('version', $any($event.target).value)"
+      />
+    </div>
+
+    <div class="upload-form__field">
+      <label for="edit-status">Status</label>
+      <select
+        id="edit-status"
+        [value]="editForm().status"
+        (change)="updateEditForm('status', $any($event.target).value)"
+      >
+        <option value="" disabled>— Bitte wählen —</option>
+        @for (status of statusDomain(); track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </div>
+
+    @if (editForm().file) {
+      <div class="upload-form__sharing">
+        <label class="upload-form__sharing-label">Freigabe (neue Datei)</label>
+
+        <div class="upload-form__sharing-options">
+          <label class="upload-form__radio">
+            <input
+              type="radio"
+              name="edit-sharing-access"
+              value="private"
+              [checked]="editForm().access === 'private'"
+              (change)="updateEditForm('access', 'private')"
+            />
+            Besitzer
+          </label>
+          <label class="upload-form__radio">
+            <input
+              type="radio"
+              name="edit-sharing-access"
+              value="org"
+              [checked]="editForm().access === 'org'"
+              (change)="updateEditForm('access', 'org')"
+            />
+            Organisation
+          </label>
+          <label class="upload-form__radio">
+            <input
+              type="radio"
+              name="edit-sharing-access"
+              value="public"
+              [checked]="editForm().access === 'public'"
+              (change)="updateEditForm('access', 'public')"
+            />
+            Öffentlich
+          </label>
+        </div>
+      </div>
+    }
+
+    @if (editError()) {
+      <p class="upload-form__error">{{ editError() }}</p>
+    }
+
+    <div class="upload-form__actions">
+      <button class="upload-form__btn upload-form__btn--cancel" (click)="cancelEdit()">Abbrechen</button>
+      <button
+        class="upload-form__btn upload-form__btn--submit"
+        [disabled]="!editForm().titel || uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing'"
+        (click)="submitEdit()"
+      >
+        Speichern
+      </button>
+    </div>
+  </div>
 }

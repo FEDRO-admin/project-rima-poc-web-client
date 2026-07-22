@@ -15,6 +15,7 @@ import { MapViewAlreadyRegisteredError } from '../../map-errors';
 import {
   RIMA_MAPVIEW_BASEMAP_WMTS_URL,
   RIMA_MAPVIEW_BASEMAP_LAYER_ID,
+  RIMA_MAPVIEW_HIDDEN_CATEGORY,
   RIMA_MAPVIEW_INCLUDED_LAYER_TYPES,
   RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP,
 } from './mapview-config';
@@ -106,11 +107,31 @@ export class MapViewInitService {
 
     if (layers.length === 0) return [];
 
+    const isHidden = this.isHiddenCategory(item);
+
     if (RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP) {
-      return [new GroupLayer({ title: item.title ?? '', layers })];
+      return [
+        new GroupLayer({
+          title: item.title ?? '',
+          layers,
+          visible: !isHidden,
+          listMode: isHidden ? 'hide' : 'show',
+        }),
+      ];
+    }
+
+    if (isHidden) {
+      layers.forEach((layer) => {
+        layer.visible = false;
+        layer.listMode = 'hide';
+      });
     }
 
     return layers;
+  }
+
+  private isHiddenCategory(item: PortalItem): boolean {
+    return (item.categories ?? []).some((cat) => cat.split('/').includes(RIMA_MAPVIEW_HIDDEN_CATEGORY));
   }
 
   private unpackWebmap(webMap: WebMap): Layer[] {

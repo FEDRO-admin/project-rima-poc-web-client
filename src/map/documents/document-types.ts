@@ -51,6 +51,16 @@ export interface DocumentUploadPayload {
   sharing: DocumentSharingOptions;
 }
 
+export interface DocumentEditPayload {
+  titel: string;
+  beschreibung: string;
+  typ: string;
+  version: string;
+  status: string;
+  file?: File;
+  sharing?: DocumentSharingOptions;
+}
+
 export function mapGraphicToDocumentRecord(graphic: Graphic, objectIdField: string): DocumentRecord {
   const attrs = graphic.attributes;
   return {

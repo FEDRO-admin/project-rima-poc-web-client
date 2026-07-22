@@ -6,9 +6,15 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { DocumentsStore } from '../../../documents/documents.store';
 import { DocumentsService } from '../../../documents/documents.service';
 import { DocumentUploadService } from '../../../documents/document-upload.service';
-import { DocumentAccessLevel, DocumentRecord, DocumentUploadPayload } from '../../../documents/document-types';
+import {
+  DocumentAccessLevel,
+  DocumentEditPayload,
+  DocumentRecord,
+  DocumentUploadPayload,
+} from '../../../documents/document-types';
 import { DOCUMENTS_MAX_FILE_SIZE_MB } from '../../../documents/documents-config';
 import {
+  DocumentEditError,
   DocumentFileTooLargeError,
   DocumentRelationshipNotFoundError,
   DocumentUnsupportedFileTypeError,
@@ -38,6 +44,16 @@ const INITIAL_UPLOAD_FORM: UploadFormModel = {
   access: 'private',
 };
 
+interface EditFormModel {
+  titel: string;
+  beschreibung: string;
+  typ: string;
+  version: string;
+  status: string;
+  file?: File;
+  access: DocumentAccessLevel;
+}
+
 @Component({
   selector: 'rima-documents-tab',
   imports: [ConfirmDialogComponent, DatePipe],
@@ -64,6 +80,17 @@ export class DocumentsTabComponent {
   protected readonly maxFileSizeMB = DOCUMENTS_MAX_FILE_SIZE_MB;
   protected readonly typDomain = signal<string[]>([]);
   protected readonly statusDomain = signal<string[]>([]);
+
+  protected readonly editingDocument = signal<DocumentRecord | undefined>(undefined);
+  protected readonly editForm = signal<EditFormModel>({
+    titel: '',
+    beschreibung: '',
+    typ: '',
+    version: '',
+    status: '',
+    access: 'private',
+  });
+  protected readonly editError = signal<string | undefined>(undefined);
 
   constructor() {
     effect(() => {
@@ -191,6 +218,70 @@ export class DocumentsTabComponent {
 
   protected updateForm<K extends keyof UploadFormModel>(field: K, value: UploadFormModel[K]): void {
     this.uploadForm.update((f) => ({ ...f, [field]: value }));
+  }
+
+  protected openEditForm(record: DocumentRecord): void {
+    this.editingDocument.set(record);
+    this.editForm.set({
+      titel: record.titel,
+      beschreibung: record.beschreibung,
+      typ: record.typ,
+      version: record.version,
+      status: record.status,
+      file: undefined,
+      access: 'private',
+    });
+    this.editError.set(undefined);
+    this.loadDomainValues();
+  }
+
+  protected cancelEdit(): void {
+    this.editingDocument.set(undefined);
+    this.editError.set(undefined);
+  }
+
+  protected onEditFileSelected(event: Event): void {
+    const fileInput = event.target as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    this.editForm.update((f) => ({ ...f, file }));
+  }
+
+  protected updateEditForm<K extends keyof EditFormModel>(field: K, value: EditFormModel[K]): void {
+    this.editForm.update((f) => ({ ...f, [field]: value }));
+  }
+
+  protected async submitEdit(): Promise<void> {
+    const record = this.editingDocument();
+    if (!record) return;
+
+    const form = this.editForm();
+    this.editError.set(undefined);
+
+    const payload: DocumentEditPayload = {
+      titel: form.titel,
+      beschreibung: form.beschreibung,
+      typ: form.typ,
+      version: form.version,
+      status: form.status,
+      file: form.file,
+      sharing: form.file ? { access: form.access } : undefined,
+    };
+
+    try {
+      await this.documentsService.editDocument(record, payload);
+      this.editingDocument.set(undefined);
+    } catch (error) {
+      if (error instanceof DocumentFileTooLargeError) {
+        this.editError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
+      } else if (error instanceof DocumentUnsupportedFileTypeError) {
+        const ext = form.file?.name.split('.').pop()?.toLowerCase() ?? '';
+        this.editError.set(`Dateityp .${ext} wird nicht unterstützt.`);
+      } else if (error instanceof DocumentEditError) {
+        this.editError.set('Fehler beim Speichern der Änderungen.');
+      } else {
+        this.editError.set('Fehler beim Bearbeiten des Dokuments.');
+      }
+    }
   }
 
   private async loadDomainValues(): Promise<void> {
