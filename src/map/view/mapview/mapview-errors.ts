@@ -5,16 +5,12 @@ export class MapViewInitialisationError extends FatalError {
   public override message = 'Error initializing map view';
 }
 
+export class MapViewLoadLayersError extends RecoverableError {
+  public override message = 'Map view layers could not be loaded';
+}
+
 export class MapViewLayerAddError extends FatalError {
   public override message = 'Failed to add layers to the map';
-}
-
-export class MapViewCatalogLoadError extends RecoverableError {
-  public override message = 'Catalog web map could not be loaded';
-}
-
-export class MapViewCatalogUndefinedError extends RecoverableError {
-  public override message = 'Cannot set the catalog to undefined';
 }
 
 export class MapViewLanguageCategoryMissingError extends FatalError {
