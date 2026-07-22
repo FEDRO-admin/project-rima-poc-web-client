@@ -2,7 +2,7 @@ import { inject, Injectable, OnDestroy, signal } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Graphic from '@arcgis/core/Graphic';
 import type { GraphicHit } from '@arcgis/core/views/types';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 
 export interface GuidPickerCandidate {
   graphic: Graphic;
@@ -20,7 +20,7 @@ export interface GuidPickerResult {
   providedIn: 'root',
 })
 export class GuidPickerService implements OnDestroy {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
 
   readonly active = signal(false);
   readonly candidates = signal<GuidPickerCandidate[]>([]);
@@ -40,7 +40,7 @@ export class GuidPickerService implements OnDestroy {
     this.candidates.set([]);
     this.lastSelection.set(undefined);
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view) {
       this.active.set(false);
       return;

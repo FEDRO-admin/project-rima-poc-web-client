@@ -1,7 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { EditService } from '../edit/edit.service';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
@@ -25,7 +25,7 @@ export class PopupComponent {
   private readonly historyStore = inject(HistoryStore);
   private readonly editService = inject(EditService);
   private readonly deleteService = inject(DeleteService);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
 
   protected isEditable(): boolean {
     if (this.historyStore.active()) return false;
@@ -71,7 +71,7 @@ export class PopupComponent {
 
   zoomTo(): void {
     const graphic = this.store.selectedGraphic();
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!graphic?.geometry || !view) return;
     view.goTo({ target: graphic.geometry, zoom: 15 });
   }
