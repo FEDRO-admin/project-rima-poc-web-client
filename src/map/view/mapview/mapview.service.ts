@@ -20,10 +20,10 @@ import {
 } from './mapview-config';
 import {
   MapViewInitialisationError,
-  MapViewLoadLayersError,
   MapViewLanguageCategoryMissingError,
   MapViewLayerAddError,
 } from './mapview-errors';
+import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 
 @Injectable({
   providedIn: 'root',
@@ -132,7 +132,20 @@ export class MapViewInitService {
 
       if (!RIMA_MAPVIEW_INCLUDED_LAYER_TYPES.includes(layer.type)) continue;
 
-      if (layer instanceof FeatureLayer) layer.outFields = ['*'];
+      if (layer instanceof FeatureLayer) {
+        const url = layer.layerId != null ? `${layer.url}/${layer.layerId}` : layer.url;
+        result.push(
+          new FeatureLayer({
+            url,
+            title: layer.title,
+            visible: layer.visible,
+            fullExtent: layer.fullExtent ?? RIMA_SWITZERLAND_EXTENT,
+            outFields: ['*'],
+          }),
+        );
+        continue;
+      }
+
       result.push(layer);
     }
 

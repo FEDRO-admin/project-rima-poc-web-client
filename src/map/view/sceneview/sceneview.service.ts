@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import type ArcGISMap from '@arcgis/core/Map';
 import SceneView from '@arcgis/core/views/SceneView';
+import Layer from '@arcgis/core/layers/Layer';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import Ground from '@arcgis/core/Ground';
 import ElevationLayer from '@arcgis/core/layers/ElevationLayer';
@@ -44,9 +45,8 @@ export class SceneViewInitService {
     }
   }
 
-  remove3DLayers(map: ArcGISMap): void {
-    const layersToRemove = map.layers.filter((layer) => this.sceneViewLayerService.isSceneLayer(layer));
-    map.layers.removeMany(layersToRemove.toArray());
+  isSceneLayer(layer: Layer): boolean {
+    return this.sceneViewLayerService.isSceneLayer(layer);
   }
 
   private registerSceneView(sceneView: SceneView): void {

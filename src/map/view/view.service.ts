@@ -20,6 +20,8 @@ export class ViewService {
   private readonly mapViewInitService = inject(MapViewInitService);
   private readonly sceneViewInitService = inject(SceneViewInitService);
 
+  private sceneLayers3DLoaded = false;
+
   constructor() {
     this.activeView = this.writableActiveView.asReadonly();
   }
@@ -43,7 +45,10 @@ export class ViewService {
       await sceneView.goTo(mapView.extent, { animate: false });
     }
 
-    await this.sceneViewInitService.add3DLayers(sceneView.map);
+    if (!this.sceneLayers3DLoaded) {
+      await this.sceneViewInitService.add3DLayers(sceneView.map);
+      this.sceneLayers3DLoaded = true;
+    }
   }
 
   async switchToMap(): Promise<void> {
@@ -51,8 +56,7 @@ export class ViewService {
     const sceneView = this.sceneViewInitService.getSceneView();
     if (!mapView?.map || !sceneView?.map) return;
 
-    this.sceneViewInitService.remove3DLayers(sceneView.map);
-    this.transferLayers(sceneView.map, mapView.map);
+    this.transferSharedLayers(sceneView.map, mapView.map);
     this.viewStore.setMode('map');
     this.writableActiveView.set(mapView);
 
@@ -77,5 +81,11 @@ export class ViewService {
     const layers = source.layers.toArray();
     source.layers.removeAll();
     target.layers.addMany(layers);
+  }
+
+  private transferSharedLayers(source: ArcGISMap, target: ArcGISMap): void {
+    const sharedLayers = source.layers.toArray().filter((layer) => !this.sceneViewInitService.isSceneLayer(layer));
+    source.layers.removeMany(sharedLayers);
+    target.layers.addMany(sharedLayers);
   }
 }

@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, untracked } from '@angular/core';
+import { effect, inject, Injectable, untracked } from '@angular/core';
 import { HistoryStore } from './history.store';
 import { HistoryService } from './history.service';
 import { PopupStore } from '../popup/popup.store';
