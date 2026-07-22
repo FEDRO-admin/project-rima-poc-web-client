@@ -159,11 +159,15 @@ export class EditService implements OnDestroy {
     }
   }
 
-  reset(): void {
+  cleanup(): void {
     this.deactivateSketch();
     this.removeHighlight();
     this._originalGeometry = undefined;
     this.referencePointService.reset();
+  }
+
+  reset(): void {
+    this.cleanup();
     this.store.reset();
   }
 

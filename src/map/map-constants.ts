@@ -12,7 +12,7 @@ export const RIMA_CATALOG_INCLUDED_LAYER_TYPES: readonly WebmapLayerType[] = [
 export const RIMA_CATALOG_WEBMAP_NAME_AS_SECTION = true;
 
 // 3D SCENE
-export const RIMA_3D_CATEGORY_SUFFIX = '3D';
+export const RIMA_3D_CATEGORY = '3D';
 
 // BASEMAP
 export const RIMA_SWISSTOPO_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';

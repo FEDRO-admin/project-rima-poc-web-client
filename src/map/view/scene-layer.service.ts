@@ -5,11 +5,9 @@ import Layer from '@arcgis/core/layers/Layer';
 import { PortalService } from '../portal/portal.service';
 import { LanguageStore } from '../../i18n/language.store';
 import { languageInfos } from '../../i18n/language-info-config';
-import { RIMA_3D_CATEGORY_SUFFIX } from '../map-constants';
+import { RIMA_3D_CATEGORY } from '../map-constants';
 import { isOfTypeRimaError } from '../../error-handling/base-error';
 import { SceneCatalogLoadError } from './scene-errors';
-
-const SCENE_LAYER_TAG = '__rima_3d_scene_layer__';
 
 @Injectable({
   providedIn: 'root',
@@ -18,6 +16,7 @@ export class SceneLayerService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
 
+  private readonly sceneLayers = new WeakSet<Layer>();
   private cachedLayers: Layer[] | undefined;
   private cachedForLanguage: string | undefined;
 
@@ -48,7 +47,7 @@ export class SceneLayerService {
   }
 
   isSceneLayer(layer: Layer): boolean {
-    return (layer as unknown as Record<string, unknown>)[SCENE_LAYER_TAG] === true;
+    return this.sceneLayers.has(layer);
   }
 
   invalidateCache(): void {
@@ -58,7 +57,7 @@ export class SceneLayerService {
 
   private async querySceneItems(languageCategory: string): Promise<PortalItem[]> {
     const query = new PortalQueryParams({
-      categories: [`/Categories/${languageCategory}/${RIMA_3D_CATEGORY_SUFFIX}`],
+      categories: [`/Categories/${languageCategory}/${RIMA_3D_CATEGORY}`],
       query: 'type:"Scene Service" OR type:"Scene Layer"',
       num: 100,
       sortField: 'title',
@@ -70,7 +69,7 @@ export class SceneLayerService {
 
   private async createLayers(items: PortalItem[]): Promise<Layer[]> {
     const results = await Promise.all(items.map((item) => this.createLayerFromItem(item)));
-    return results.filter((l): l is Layer => l !== undefined);
+    return results.filter((result): result is Layer => result !== undefined);
   }
 
   private async createLayerFromItem(item: PortalItem): Promise<Layer | undefined> {
@@ -78,7 +77,7 @@ export class SceneLayerService {
       const layer = await Layer.fromPortalItem({ portalItem: item });
       await layer.load();
       layer.title = item.title ?? '';
-      (layer as unknown as Record<string, unknown>)[SCENE_LAYER_TAG] = true;
+      this.sceneLayers.add(layer);
       return layer;
     } catch {
       return undefined;

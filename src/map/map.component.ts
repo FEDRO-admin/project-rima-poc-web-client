@@ -7,12 +7,12 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { LayerService } from './layer/layer.service';
 import { TocComponent } from './toc/toc.component';
 import { ViewInitialisationError } from './view/view-errors';
-import { SceneViewInitialisationError } from './scene/scene-errors';
+import { SceneViewInitialisationError } from './view/scene-errors';
 import { PopupComponent } from './popup/popup.component';
 import { CreateFormComponent } from './create/create-form/create-form.component';
 import { EditFormComponent } from './edit/edit-form/edit-form.component';
-import { SceneToggleComponent } from './scene/scene-toggle/scene-toggle.component';
-import { SceneStore } from './scene/scene.store';
+import { SceneToggleComponent } from './view/scene-toggle/scene-toggle.component';
+import { ViewStore } from './view/view.store';
 
 @Component({
   selector: 'rima-map',
@@ -25,7 +25,7 @@ export class MapComponent {
   private readonly viewService = inject(MapViewService);
   private readonly catalogService = inject(CatalogService);
   private readonly layerService = inject(LayerService);
-  protected readonly sceneStore = inject(SceneStore);
+  protected readonly viewStore = inject(ViewStore);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
 

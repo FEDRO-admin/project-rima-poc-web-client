@@ -1,4 +1,5 @@
-import { Injectable, signal, Signal } from '@angular/core';
+import { inject, Injectable, signal, Signal } from '@angular/core';
+import type ArcGISMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
@@ -12,9 +13,11 @@ import {
   RIMA_SPATIAL_REFERENCE_LV95_EPSG,
   RIMA_SWITZERLAND_EXTENT,
 } from '../map-constants';
-import { RIMA_SCENE_CONFIG } from '../scene/scene-config';
+import { RIMA_SCENE_CONFIG } from './scene-config';
 import Basemap from '@arcgis/core/Basemap';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
+import { ViewStore } from './view.store';
+import { SceneLayerService } from './scene-layer.service';
 
 export type RimaView = MapView | SceneView;
 
@@ -24,6 +27,9 @@ export type RimaView = MapView | SceneView;
 export class MapViewService {
   public readonly mapView: Signal<RimaView | undefined>;
   private readonly writableMapView = signal<RimaView | undefined>(undefined);
+
+  private readonly viewStore = inject(ViewStore);
+  private readonly sceneLayerService = inject(SceneLayerService);
 
   private _mapView: MapView | undefined;
   private _sceneView: SceneView | undefined;
@@ -42,22 +48,45 @@ export class MapViewService {
     this._sceneView = sceneView;
   }
 
-  public switchToScene(): void {
-    if (!this._sceneView) throw new Error('Scene view not registered');
-    this.writableMapView.set(this._sceneView);
-  }
-
-  public switchToMap(): void {
-    if (!this._mapView) throw new Error('Map view not registered');
-    this.writableMapView.set(this._mapView);
-  }
-
   public getMapView(): MapView | undefined {
     return this._mapView;
   }
 
   public getSceneView(): SceneView | undefined {
     return this._sceneView;
+  }
+
+  async switchTo3D(): Promise<void> {
+    const mapView = this._mapView;
+    const sceneView = this._sceneView;
+    if (!mapView?.map || !sceneView?.map) return;
+
+    this.transferLayers(mapView.map, sceneView.map);
+    this.viewStore.setMode('3d');
+    this.writableMapView.set(sceneView);
+
+    await sceneView.when();
+
+    if (mapView.extent) {
+      await sceneView.goTo(mapView.extent, { animate: false });
+    }
+
+    await this.add3DLayers(sceneView.map);
+  }
+
+  async switchTo2D(): Promise<void> {
+    const mapView = this._mapView;
+    const sceneView = this._sceneView;
+    if (!mapView?.map || !sceneView?.map) return;
+
+    this.remove3DLayers(sceneView.map);
+    this.transferLayers(sceneView.map, mapView.map);
+    this.viewStore.setMode('2d');
+    this.writableMapView.set(mapView);
+
+    if (sceneView.extent) {
+      await mapView.goTo(sceneView.extent, { animate: false });
+    }
   }
 
   public addBasemap(): void {
@@ -106,5 +135,25 @@ export class MapViewService {
         ],
       });
     }
+  }
+
+  private async add3DLayers(map: ArcGISMap): Promise<void> {
+    try {
+      const layers = await this.sceneLayerService.load3DLayers();
+      map.layers.addMany(layers);
+    } catch {
+      // Scene layer load failure is non-fatal — 3D view still usable without extra layers
+    }
+  }
+
+  private remove3DLayers(map: ArcGISMap): void {
+    const layersToRemove = map.layers.filter((layer) => this.sceneLayerService.isSceneLayer(layer));
+    map.layers.removeMany(layersToRemove.toArray());
+  }
+
+  private transferLayers(source: ArcGISMap, target: ArcGISMap): void {
+    const layers = source.layers.toArray();
+    source.layers.removeAll();
+    target.layers.addMany(layers);
   }
 }
