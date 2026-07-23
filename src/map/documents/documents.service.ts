@@ -2,11 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import Graphic from '@arcgis/core/Graphic';
-import Point from '@arcgis/core/geometry/Point';
-import Polygon from '@arcgis/core/geometry/Polygon';
-import Polyline from '@arcgis/core/geometry/Polyline';
-import type Geometry from '@arcgis/core/geometry/Geometry';
-import * as centroidOperator from '@arcgis/core/geometry/operators/centroidOperator.js';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import { ViewService } from '../view/view.service';
@@ -15,10 +10,10 @@ import { PortalService } from '../portal/portal.service';
 import { DocumentsStore } from './documents.store';
 import { DocumentUploadService } from './document-upload.service';
 import {
-  DOCUMENT_FIELDS,
   DocumentEditPayload,
   DocumentRecord,
   DocumentUploadPayload,
+  mapDocumentRecordToAttributes,
   mapGraphicToDocumentRecord,
 } from './document-types';
 import { DOCUMENTS_LAYER_ID, DOCUMENTS_MAX_FILE_SIZE_MB, DOCUMENTS_VIEWABLE_TYPES } from './documents-config';
@@ -111,42 +106,17 @@ export class DocumentsService {
       const portal = await this.portalService.getPortal();
       const user = portal.user!;
       const parentKeyValue = this.getParentKeyValue(graphic, relationship);
-      const geometry = this.getGeometryForDocument(graphic);
+      const geometry = undefined; // for now, clarify in thursday meeting if geom is needed.
 
-      const attributes: Record<string, unknown> = {
-        [DOCUMENT_FIELDS.id]: this.generateGuid(),
-        [DOCUMENT_FIELDS.name]: payload.file.name,
-        [DOCUMENT_FIELDS.fkParent]: parentKeyValue,
-        [DOCUMENT_FIELDS.parentClassName]: layer.title ?? '',
-        [DOCUMENT_FIELDS.titel]: payload.titel,
-        [DOCUMENT_FIELDS.beschreibung]: payload.beschreibung,
-        [DOCUMENT_FIELDS.autor]: user.fullName ?? user.username ?? '',
-        [DOCUMENT_FIELDS.typ]: payload.typ,
-        [DOCUMENT_FIELDS.pfad]: downloadUrl,
-        [DOCUMENT_FIELDS.status]: payload.status,
-        [DOCUMENT_FIELDS.letzteAenderung]: Date.now(),
-        [DOCUMENT_FIELDS.version]: payload.version,
-        [DOCUMENT_FIELDS.groesse]: payload.file.size,
-        [DOCUMENT_FIELDS.anzahlSeiten]: null,
-      };
-
-      const newGraphic = new Graphic({ attributes, geometry });
-      const editResult = await documentLayer.applyEdits({ addFeatures: [newGraphic] });
-
-      if (editResult.addFeatureResults[0]?.error) {
-        throw new DocumentUploadError(editResult.addFeatureResults[0].error);
-      }
-
-      const newObjectId = editResult.addFeatureResults[0]?.objectId ?? 0;
       const documentRecord: DocumentRecord = {
-        objectId: newObjectId,
-        id: attributes['id'] as string,
-        name: attributes['name'] as string,
+        objectId: 0,
+        id: crypto.randomUUID(),
+        name: payload.file.name,
         fkParent: parentKeyValue,
-        parentClassName: attributes['parent_class_name'] as string,
+        parentClassName: layer.title ?? '',
         titel: payload.titel,
         beschreibung: payload.beschreibung,
-        autor: attributes['autor'] as string,
+        autor: user.fullName ?? user.username ?? '',
         typ: payload.typ,
         pfad: downloadUrl,
         status: payload.status,
@@ -156,7 +126,16 @@ export class DocumentsService {
         anzahlSeiten: null,
       };
 
-      this.documentsStore.addDocument(documentRecord);
+      const attributes = mapDocumentRecordToAttributes(documentRecord, documentLayer.objectIdField);
+      const newGraphic = new Graphic({ attributes, geometry });
+      const editResult = await documentLayer.applyEdits({ addFeatures: [newGraphic] });
+
+      if (editResult.addFeatureResults[0]?.error) {
+        throw new DocumentUploadError(editResult.addFeatureResults[0].error);
+      }
+
+      const newObjectId = editResult.addFeatureResults[0]?.objectId ?? 0;
+      this.documentsStore.addDocument({ ...documentRecord, objectId: newObjectId });
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
         throw error;
@@ -230,26 +209,6 @@ export class DocumentsService {
         newName = payload.file.name;
       }
 
-      const attributes: Record<string, unknown> = {
-        [documentLayer.objectIdField]: record.objectId,
-        [DOCUMENT_FIELDS.titel]: payload.titel,
-        [DOCUMENT_FIELDS.beschreibung]: payload.beschreibung,
-        [DOCUMENT_FIELDS.typ]: payload.typ,
-        [DOCUMENT_FIELDS.status]: payload.status,
-        [DOCUMENT_FIELDS.version]: payload.version,
-        [DOCUMENT_FIELDS.letzteAenderung]: Date.now(),
-        [DOCUMENT_FIELDS.pfad]: newPfad,
-        [DOCUMENT_FIELDS.groesse]: newGroesse,
-        [DOCUMENT_FIELDS.name]: newName,
-      };
-
-      const updateGraphic = new Graphic({ attributes });
-      const editResult = await documentLayer.applyEdits({ updateFeatures: [updateGraphic] });
-
-      if (editResult.updateFeatureResults[0]?.error) {
-        throw new DocumentEditError();
-      }
-
       const updatedRecord: DocumentRecord = {
         ...record,
         titel: payload.titel,
@@ -262,6 +221,14 @@ export class DocumentsService {
         name: newName,
         letzteAenderung: new Date(),
       };
+
+      const attributes = mapDocumentRecordToAttributes(updatedRecord, documentLayer.objectIdField);
+      const updateGraphic = new Graphic({ attributes });
+      const editResult = await documentLayer.applyEdits({ updateFeatures: [updateGraphic] });
+
+      if (editResult.updateFeatureResults[0]?.error) {
+        throw new DocumentEditError();
+      }
 
       this.documentsStore.updateDocument(updatedRecord);
     } catch (error) {
@@ -332,40 +299,5 @@ export class DocumentsService {
   private getParentKeyValue(graphic: Graphic, relationship: Relationship): string {
     const keyField = relationship.keyField || 'id';
     return graphic.attributes[keyField] ?? '';
-  }
-
-  private getGeometryForDocument(graphic: Graphic): Geometry | undefined {
-    if (!graphic.geometry) return undefined;
-
-    switch (graphic.geometry.type) {
-      case 'point':
-        return graphic.geometry;
-      case 'polygon': {
-        const center = centroidOperator.execute(graphic.geometry as Polygon);
-        return center ?? undefined;
-      }
-      case 'polyline': {
-        const polyline = graphic.geometry as Polyline;
-        const midPath = polyline.paths[0];
-        if (midPath && midPath.length > 0) {
-          const midIndex = Math.floor(midPath.length / 2);
-          const [x, y] = midPath[midIndex];
-          return new Point({ x, y, spatialReference: polyline.spatialReference });
-        }
-        return undefined;
-      }
-      case 'multipoint':
-      case 'extent':
-      case 'mesh':
-        return undefined;
-    }
-  }
-
-  private generateGuid(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
   }
 }
