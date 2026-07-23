@@ -83,6 +83,54 @@
   }
 }
 
+// Date field picker
+
+.date-field-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.date-field-display {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  min-height: 24px;
+  font-size: inherit;
+  color: #333;
+
+  &:hover {
+    border-color: #1a73e8;
+    background: #f8fbff;
+  }
+}
+
+.date-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #1a73e8;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
 // GUID Picker (replaces form content when active)
 
 .guid-picker {
