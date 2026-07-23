@@ -6,7 +6,7 @@ import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
-import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -96,7 +96,7 @@ export class CreateService {
         // Save reference points with the new feature's id
         const parentId = graphic.attributes.id;
         if (parentId) {
-          await this.referencePointService.saveAll(parentId);
+          await this.referencePointService.saveAll(parentId, layer.layerId);
         }
         this.referencePointService.reset();
         this.popupStore.open([graphic]);

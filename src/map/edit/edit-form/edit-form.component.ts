@@ -8,8 +8,8 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { ReferencePointListComponent } from '../../shared/reference-point/reference-point-list/reference-point-list.component';
-import { ReferencePointStore } from '../../shared/reference-point/reference-point.store';
+import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
+import { ReferencePointStore } from '../../reference/reference-point.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 

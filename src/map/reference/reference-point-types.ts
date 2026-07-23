@@ -1,6 +1,6 @@
 import type Point from '@arcgis/core/geometry/Point';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import type { AttributeEditField } from '../attribute-edit-field';
+import type { AttributeEditField } from '../shared/attribute-edit-field';
 
 export type ReferencePointType = 'von' | 'bis';
 
@@ -21,6 +21,18 @@ export interface ReferencePointRelationshipInfo {
   relatedLayer: FeatureLayer;
   fields: AttributeEditField[];
 }
+
+export interface PointTypeState {
+  points: ReferencePoint[];
+  deletedObjectIds: number[];
+  relationship: ReferencePointRelationshipInfo | undefined;
+}
+
+export const INITIAL_POINT_TYPE_STATE: PointTypeState = {
+  points: [],
+  deletedObjectIds: [],
+  relationship: undefined,
+};
 
 /**
  * Matches layer titles containing "punkt" combined with "von" or "bis"

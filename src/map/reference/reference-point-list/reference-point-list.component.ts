@@ -5,9 +5,9 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { ReferencePointStore } from '../reference-point.store';
 import { ReferencePointService } from '../reference-point.service';
 import { ReferencePointType, AttributeValue } from '../reference-point-types';
-import { AttributeEditField } from '../../attribute-edit-field';
-import { AttributeFormComponent } from '../../attribute-form/attribute-form.component';
-import { RIMA_SWITZERLAND_EXTENT } from '../../../map-constants';
+import { AttributeEditField } from '../../shared/attribute-edit-field';
+import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
+import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 
 @Component({
   selector: 'rima-reference-point-list',
@@ -24,11 +24,11 @@ export class ReferencePointListComponent {
   private readonly service = inject(ReferencePointService);
 
   protected readonly points = computed(() => {
-    return this.type() === 'von' ? this.store.vonPoints() : this.store.bisPoints();
+    return this.store[this.type()]().points;
   });
 
   protected readonly relationship = computed(() => {
-    return this.type() === 'von' ? this.store.vonRelationship() : this.store.bisRelationship();
+    return this.store[this.type()]().relationship;
   });
 
   protected readonly fields = computed<AttributeEditField[]>(() => {

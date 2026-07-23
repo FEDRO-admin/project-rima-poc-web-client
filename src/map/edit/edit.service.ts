@@ -12,7 +12,7 @@ import { EditSaveError } from './edit-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
-import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -122,7 +122,7 @@ export class EditService implements OnDestroy {
       // Save reference points
       const parentId = graphic.attributes.id;
       if (parentId) {
-        await this.referencePointService.saveAll(parentId);
+        await this.referencePointService.saveAll(parentId, layer.layerId);
       }
 
       layer.refresh();

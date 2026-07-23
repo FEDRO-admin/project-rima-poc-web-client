@@ -4,10 +4,11 @@ import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import type Point from '@arcgis/core/geometry/Point';
-import { MapViewService } from '../../view/view.service';
-import { AttributeEditField, convertAttributeFieldType } from '../attribute-edit-field';
+import { MapViewService } from '../view/view.service';
+import { AttributeEditField, convertAttributeFieldType } from '../shared/attribute-edit-field';
 import { ReferencePoint, ReferencePointRelationshipInfo, classifyRelationshipName } from './reference-point-types';
-import { isImmutableField } from '../../layer/layer-attributes';
+import { isImmutableField } from '../layer/layer-attributes';
+import { REF_POINT_AUTO_POPULATED_FIELDS } from './reference-point-config';
 
 @Injectable({
   providedIn: 'root',
@@ -77,7 +78,7 @@ export class ReferencePointResolutionService {
 
     return layer.fields
       .filter((field) => !isImmutableField(field.name, layer))
-      .filter((field) => field.name.toLowerCase() !== 'parent_id')
+      .filter((field) => !REF_POINT_AUTO_POPULATED_FIELDS.includes(field.name.toLowerCase()))
       .map((field) => ({
         name: field.name,
         alias: field.alias || field.name,

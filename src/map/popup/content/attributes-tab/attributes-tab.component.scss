@@ -75,3 +75,110 @@
     }
   }
 }
+
+.attributes-refpoints {
+  margin-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+}
+
+.attributes-refpoints-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  padding: 4px 0;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+.attributes-refpoints-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.attributes-refpoints-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  align-self: flex-start;
+
+  &:hover {
+    border-color: #0079c1;
+    color: #0079c1;
+  }
+}
+
+.attributes-refpoints-loading {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+}
+
+.attributes-refpoints-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attributes-refpoints-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+}
+
+.attributes-refpoints-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attributes-refpoints-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #444;
+  padding: 2px 4px;
+  border-radius: 3px;
+
+  &:nth-child(even) {
+    background: #f8f9fa;
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+  }
+}
+
+.attributes-refpoints-chevron {
+  margin-left: auto;
+  color: #999;
+
+  .attributes-refpoints-item--clickable:hover & {
+    color: #1a73e8;
+  }
+}

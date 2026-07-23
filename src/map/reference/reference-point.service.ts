@@ -5,7 +5,7 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import { MapViewService } from '../../view/view.service';
+import { MapViewService } from '../view/view.service';
 import { ReferencePointStore } from './reference-point.store';
 import { ReferencePointResolutionService } from './reference-point-resolution.service';
 import { ReferencePointSaveError, ReferencePointLoadError } from './reference-point-errors';
@@ -15,22 +15,14 @@ import {
   ReferencePointType,
   AttributeValue,
 } from './reference-point-types';
-import { buildSnappingSources, cleanupSketchResources } from '../sketch-utils';
-import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
-
-const VON_POINT_SYMBOL = new SimpleMarkerSymbol({
-  style: 'circle',
-  color: [0, 121, 193, 0.8],
-  size: 10,
-  outline: { color: [255, 255, 255], width: 2 },
-});
-
-const BIS_POINT_SYMBOL = new SimpleMarkerSymbol({
-  style: 'circle',
-  color: [193, 64, 0, 0.8],
-  size: 10,
-  outline: { color: [255, 255, 255], width: 2 },
-});
+import { buildSnappingSources, cleanupSketchResources } from '../shared/sketch-utils';
+import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
+import {
+  REF_POINT_FK_PARENT_FIELD,
+  REF_POINT_PARENT_CLASS_NAME_FIELD,
+  REF_POINT_VON_SYMBOL,
+  REF_POINT_BIS_SYMBOL,
+} from './reference-point-config';
 
 const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
   style: 'diamond',
@@ -174,12 +166,11 @@ export class ReferencePointService implements OnDestroy {
   }
 
   startEditingPoint(type: ReferencePointType, index: number): void {
-    this.store.setActiveEdit(type, index);
+    this.store.setActiveEdit({ type, index });
   }
 
   startEditingPointGeometry(type: ReferencePointType, index: number): void {
-    const points = type === 'von' ? this.store.vonPoints() : this.store.bisPoints();
-    const point = points[index];
+    const point = this.store[type]().points[index];
     if (!point?.geometry) return;
 
     const view = this.viewService.mapView();
@@ -230,8 +221,7 @@ export class ReferencePointService implements OnDestroy {
   }
 
   updatePointAttribute(type: ReferencePointType, index: number, fieldName: string, value: AttributeValue): void {
-    const points = type === 'von' ? this.store.vonPoints() : this.store.bisPoints();
-    const point = points[index];
+    const point = this.store[type]().points[index];
     if (!point) return;
 
     const updatedPoint: ReferencePoint = {
@@ -244,7 +234,7 @@ export class ReferencePointService implements OnDestroy {
 
   confirmEditPoint(): void {
     this.cleanupSketch();
-    this.store.clearActiveEdit();
+    this.store.setActiveEdit(undefined);
     this.refreshDisplayLayer();
   }
 
@@ -253,18 +243,15 @@ export class ReferencePointService implements OnDestroy {
     this.refreshDisplayLayer();
   }
 
-  async saveAll(parentId: string): Promise<void> {
-    const vonRel = this.store.vonRelationship();
-    const bisRel = this.store.bisRelationship();
-
+  async saveAll(parentId: string, parentLayerId: number): Promise<void> {
     this.store.setSaving(true);
 
     try {
-      if (vonRel) {
-        await this.savePointsForType('von', vonRel, parentId);
-      }
-      if (bisRel) {
-        await this.savePointsForType('bis', bisRel, parentId);
+      for (const type of ['von', 'bis'] as const) {
+        const { relationship } = this.store[type]();
+        if (relationship) {
+          await this.savePointsForType(type, relationship, parentId, parentLayerId);
+        }
       }
       this.store.setSaving(false);
     } catch (error) {
@@ -285,24 +272,21 @@ export class ReferencePointService implements OnDestroy {
 
     this.removeDisplayLayer();
 
-    const vonPoints = this.store.vonPoints();
-    const bisPoints = this.store.bisPoints();
-    if (vonPoints.length === 0 && bisPoints.length === 0) return;
+    const typeSymbols = [
+      { type: 'von' as const, symbol: REF_POINT_VON_SYMBOL },
+      { type: 'bis' as const, symbol: REF_POINT_BIS_SYMBOL },
+    ];
+
+    const allPoints = typeSymbols.flatMap(({ type, symbol }) =>
+      this.store[type]()
+        .points.filter((p) => p.geometry)
+        .map((p) => new Graphic({ geometry: p.geometry, symbol })),
+    );
+
+    if (allPoints.length === 0) return;
 
     this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Reference Points' });
-
-    for (const point of vonPoints) {
-      if (point.geometry) {
-        this.displayLayer.add(new Graphic({ geometry: point.geometry, symbol: VON_POINT_SYMBOL }));
-      }
-    }
-
-    for (const point of bisPoints) {
-      if (point.geometry) {
-        this.displayLayer.add(new Graphic({ geometry: point.geometry, symbol: BIS_POINT_SYMBOL }));
-      }
-    }
-
+    this.displayLayer.addMany(allPoints);
     view.map.add(this.displayLayer);
   }
 
@@ -310,14 +294,14 @@ export class ReferencePointService implements OnDestroy {
     type: ReferencePointType,
     relInfo: ReferencePointRelationshipInfo,
     parentId: string,
+    parentLayerId: number,
   ): Promise<void> {
     const layer = relInfo.relatedLayer;
-    const points = type === 'von' ? this.store.vonPoints() : this.store.bisPoints();
-    const deletedIds = type === 'von' ? this.store.deletedVonObjectIds() : this.store.deletedBisObjectIds();
+    const { points, deletedObjectIds } = this.store[type]();
 
     // Delete removed points
-    if (deletedIds.length > 0) {
-      const deleteGraphics = deletedIds.map((oid) => new Graphic({ attributes: { [layer.objectIdField]: oid } }));
+    if (deletedObjectIds.length > 0) {
+      const deleteGraphics = deletedObjectIds.map((oid) => new Graphic({ attributes: { [layer.objectIdField]: oid } }));
       const deleteResult = await layer.applyEdits({ deleteFeatures: deleteGraphics });
       const failedDelete = deleteResult.deleteFeatureResults.find((r: { error?: unknown }) => r.error);
       if (failedDelete?.error) {
@@ -329,8 +313,11 @@ export class ReferencePointService implements OnDestroy {
     const newPoints = points.filter((p) => p.isNew);
     if (newPoints.length > 0) {
       const addGraphics = newPoints.map((p) => {
-        // eslint-disable-next-line @typescript-eslint/naming-convention -- parent_id matches the ArcGIS field name
-        const attributes: Record<string, AttributeValue> = { ...p.attributes, parent_id: parentId };
+        const attributes: Record<string, AttributeValue> = {
+          ...p.attributes,
+          [REF_POINT_FK_PARENT_FIELD]: parentId,
+          [REF_POINT_PARENT_CLASS_NAME_FIELD]: parentLayerId,
+        };
         return new Graphic({ attributes, geometry: p.geometry });
       });
       const addResult = await layer.applyEdits({ addFeatures: addGraphics });
