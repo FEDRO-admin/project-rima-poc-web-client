@@ -83,14 +83,7 @@
           }
           @case ('date') {
             <div class="date-field-row">
-              <span
-                class="date-field-display"
-                role="button"
-                tabindex="0"
-                (click)="openDatePicker(field.name)"
-                (keydown.enter)="openDatePicker(field.name)"
-                (keydown.space)="openDatePicker(field.name)"
-              >
+              <span class="date-field-display">
                 {{ getDateDisplayValue(field.name) || '— Select date —' }}
               </span>
               <button
