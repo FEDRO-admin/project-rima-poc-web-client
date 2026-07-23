@@ -1,6 +1,5 @@
 import { inject, Injectable, signal, Signal } from '@angular/core';
 import type Portal from '@arcgis/core/portal/Portal';
-// import PortalItem from '@arcgis/core/portal/PortalItem';
 import PortalFolder from '@arcgis/core/portal/PortalFolder';
 import esriRequest from '@arcgis/core/request';
 import esriId from '@arcgis/core/identity/IdentityManager';
@@ -63,26 +62,6 @@ export class DocumentUploadService {
     }
   }
 
-  async deleteFile(pfad: string): Promise<void> {
-    // To allow for versioning we do not delete the portal item but,
-    // instead, we just remove the reference to it by only deleting
-    // the d_object_document feature.
-    /*
-    const itemId = this.extractPortalItemId(pfad);
-    if (!itemId) return;
-
-    try {
-      const portal = await this.portalService.getPortal();
-      if (!portal.user) return;
-      const item = new PortalItem({ portal, id: itemId });
-      await item.load();
-      await portal.user.deleteItems([item]);
-    } catch {
-      // Portal item may already be deleted or inaccessible — proceed
-    }
-    */
-  }
-
   async replaceFile(
     oldPfad: string,
     newFile: File,
@@ -90,7 +69,6 @@ export class DocumentUploadService {
     sharing: DocumentSharingOptions,
     parentId: string,
   ): Promise<string> {
-    await this.deleteFile(oldPfad);
     return this.uploadFile(newFile, title, sharing, parentId);
   }
 
