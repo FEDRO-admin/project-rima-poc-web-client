@@ -1,8 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import MapView from '@arcgis/core/views/MapView';
-import WebMap from '@arcgis/core/WebMap';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
@@ -16,7 +14,6 @@ import {
   RIMA_MAPVIEW_BASEMAP_WMTS_URL,
   RIMA_MAPVIEW_BASEMAP_LAYER_ID,
   RIMA_MAPVIEW_HIDDEN_CATEGORY,
-  RIMA_MAPVIEW_INCLUDED_LAYER_TYPES,
   RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP,
 } from './mapview-config';
 import {
@@ -24,7 +21,8 @@ import {
   MapViewLanguageCategoryMissingError,
   MapViewLayerAddError,
 } from './mapview-errors';
-import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
+import { LayerService } from '../../layer/layer.service';
+import type { WebmapDataJson } from '../../layer/layer-types';
 
 @Injectable({
   providedIn: 'root',
@@ -32,6 +30,7 @@ import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 export class MapViewInitService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
+  private readonly layerService = inject(LayerService);
 
   private _mapView: MapView | undefined;
 
@@ -102,8 +101,8 @@ export class MapViewInitService {
   private async loadWebMapItem(item: PortalItem): Promise<Layer[]> {
     if (!item.id) return [];
 
-    const webMap = await new WebMap({ portalItem: item }).load();
-    const layers = this.unpackWebmap(webMap);
+    const data: WebmapDataJson = await item.fetchData('json');
+    const layers = this.layerService.parseWebmapJsonToLayers(data);
 
     if (layers.length === 0) return [];
 
@@ -132,45 +131,6 @@ export class MapViewInitService {
 
   private isHiddenCategory(item: PortalItem): boolean {
     return (item.categories ?? []).some((cat) => cat.split('/').includes(RIMA_MAPVIEW_HIDDEN_CATEGORY));
-  }
-
-  private unpackWebmap(webMap: WebMap): Layer[] {
-    return this.parseLayers(webMap.layers.toArray());
-  }
-
-  private parseLayers(layers: Layer[]): Layer[] {
-    const result: Layer[] = [];
-
-    for (const layer of layers) {
-      if (layer instanceof GroupLayer) {
-        const children = this.parseLayers(layer.layers.toArray());
-        if (children.length === 0) continue;
-        layer.layers.removeAll();
-        layer.layers.addMany(children);
-        result.push(layer);
-        continue;
-      }
-
-      if (!RIMA_MAPVIEW_INCLUDED_LAYER_TYPES.includes(layer.type)) continue;
-
-      if (layer instanceof FeatureLayer) {
-        const url = layer.layerId != null ? `${layer.url}/${layer.layerId}` : layer.url;
-        result.push(
-          new FeatureLayer({
-            url,
-            title: layer.title,
-            visible: layer.visible,
-            fullExtent: layer.fullExtent ?? RIMA_SWITZERLAND_EXTENT,
-            outFields: ['*'],
-          }),
-        );
-        continue;
-      }
-
-      result.push(layer);
-    }
-
-    return result;
   }
 
   private resolveLanguageCategory(): string {

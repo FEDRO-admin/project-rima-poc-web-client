@@ -3,6 +3,5 @@ export const RIMA_MAPVIEW_BASEMAP_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/205
 export const RIMA_MAPVIEW_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
 
 // LAYER FILTERING
-export const RIMA_MAPVIEW_INCLUDED_LAYER_TYPES: readonly string[] = ['feature', 'wmts', 'wms'];
 export const RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP = true;
 export const RIMA_MAPVIEW_HIDDEN_CATEGORY = 'HIDDEN';
