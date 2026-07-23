@@ -64,6 +64,10 @@ export class DocumentUploadService {
   }
 
   async deleteFile(pfad: string): Promise<void> {
+    // To allow for versioning we do not delete the portal item but,
+    // instead, we just remove the reference to it by only deleting
+    // the d_object_document feature.
+    /*
     const itemId = this.extractPortalItemId(pfad);
     if (!itemId) return;
 
@@ -76,6 +80,7 @@ export class DocumentUploadService {
     } catch {
       // Portal item may already be deleted or inaccessible — proceed
     }
+    */
   }
 
   async replaceFile(oldPfad: string, newFile: File, title: string, sharing: DocumentSharingOptions): Promise<string> {
