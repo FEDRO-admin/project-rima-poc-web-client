@@ -1,6 +1,6 @@
 import { inject, Injectable, signal, Signal } from '@angular/core';
 import type Portal from '@arcgis/core/portal/Portal';
-import PortalItem from '@arcgis/core/portal/PortalItem';
+// import PortalItem from '@arcgis/core/portal/PortalItem';
 import PortalFolder from '@arcgis/core/portal/PortalFolder';
 import esriRequest from '@arcgis/core/request';
 import esriId from '@arcgis/core/identity/IdentityManager';
@@ -23,7 +23,7 @@ export class DocumentUploadService {
   private readonly writableProgress = signal<UploadProgress>({ state: 'idle', percent: 0 });
   public readonly progress: Signal<UploadProgress> = this.writableProgress.asReadonly();
 
-  async uploadFile(file: File, title: string, sharing: DocumentSharingOptions): Promise<string> {
+  async uploadFile(file: File, title: string, sharing: DocumentSharingOptions, parentId: string): Promise<string> {
     const portalType = this.mapFileTypeToPortalType(file);
     if (!portalType) {
       const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
@@ -47,7 +47,7 @@ export class DocumentUploadService {
         : `${portal.restUrl}/content/users/${username}/addItem`;
 
       const token = esriId.findCredential(portal.restUrl)?.token;
-      const itemId = await this.uploadWithProgress(addUrl, file, token);
+      const itemId = await this.uploadWithProgress(addUrl, file, token, parentId);
 
       this.writableProgress.set({ state: 'sharing', percent: 100 });
       await this.shareItem(portal.restUrl, username, itemId, sharing, folderId);
@@ -83,9 +83,15 @@ export class DocumentUploadService {
     */
   }
 
-  async replaceFile(oldPfad: string, newFile: File, title: string, sharing: DocumentSharingOptions): Promise<string> {
+  async replaceFile(
+    oldPfad: string,
+    newFile: File,
+    title: string,
+    sharing: DocumentSharingOptions,
+    parentId: string,
+  ): Promise<string> {
     await this.deleteFile(oldPfad);
-    return this.uploadFile(newFile, title, sharing);
+    return this.uploadFile(newFile, title, sharing, parentId);
   }
 
   async fetchUserGroups(): Promise<{ id: string; title: string }[]> {
@@ -105,9 +111,10 @@ export class DocumentUploadService {
     this.writableProgress.set({ state: 'idle', percent: 0 });
   }
 
-  private uploadWithProgress(url: string, file: File, token?: string): Promise<string> {
+  private uploadWithProgress(url: string, file: File, token: string | undefined, parentId: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const uniqueId = crypto.randomUUID();
+      const cleanParentId = parentId.replace(/[{}]/g, '');
+      const uniqueId = `${cleanParentId}-${Date.now()}`;
       const extension = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
       const portalFilename = `${uniqueId}${extension}`;
       const formData = new FormData();

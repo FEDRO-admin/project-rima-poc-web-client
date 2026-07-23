@@ -41,7 +41,7 @@ const INITIAL_UPLOAD_FORM: UploadFormModel = {
   version: '',
   status: '',
   file: undefined,
-  access: 'private',
+  access: 'org',
 };
 
 interface EditFormModel {
@@ -88,7 +88,7 @@ export class DocumentsTabComponent {
     typ: '',
     version: '',
     status: '',
-    access: 'private',
+    access: 'org',
   });
   protected readonly editError = signal<string | undefined>(undefined);
 
@@ -229,7 +229,7 @@ export class DocumentsTabComponent {
       version: record.version,
       status: record.status,
       file: undefined,
-      access: 'private',
+      access: 'org',
     });
     this.editError.set(undefined);
     this.loadDomainValues();

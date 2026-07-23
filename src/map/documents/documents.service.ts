@@ -101,11 +101,16 @@ export class DocumentsService {
     }
 
     try {
-      const downloadUrl = await this.uploadService.uploadFile(payload.file, payload.titel, payload.sharing);
-
       const portal = await this.portalService.getPortal();
       const user = portal.user!;
       const parentKeyValue = this.getParentKeyValue(graphic, relationship);
+
+      const downloadUrl = await this.uploadService.uploadFile(
+        payload.file,
+        payload.titel,
+        payload.sharing,
+        parentKeyValue,
+      );
       const geometry = undefined; // for now, clarify in thursday meeting if geom is needed.
 
       const documentRecord: DocumentRecord = {
@@ -204,7 +209,13 @@ export class DocumentsService {
       let newName = record.name;
 
       if (payload.file && payload.sharing) {
-        newPfad = await this.uploadService.replaceFile(record.pfad, payload.file, payload.titel, payload.sharing);
+        newPfad = await this.uploadService.replaceFile(
+          record.pfad,
+          payload.file,
+          payload.titel,
+          payload.sharing,
+          record.fkParent,
+        );
         newGroesse = payload.file.size;
         newName = payload.file.name;
       }
