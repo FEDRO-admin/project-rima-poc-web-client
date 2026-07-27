@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { PopupHighlightError, PopupRefreshError } from './popup-errors';
@@ -8,7 +8,7 @@ import { EditStore } from '../edit/edit.store';
 import { CreateStore } from '../create/create.store';
 import { DeleteStore } from '../delete/delete.store';
 import { GraphicHit } from '@arcgis/core/views/types';
-import MapView from '@arcgis/core/views/MapView';
+import { type RimaView } from '../view/view.service';
 
 interface Handle {
   remove(): void;
@@ -18,7 +18,7 @@ interface Handle {
   providedIn: 'root',
 })
 export class PopupService implements OnDestroy {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly popupStore = inject(PopupStore);
   private readonly editStore = inject(EditStore);
   private readonly createStore = inject(CreateStore);
@@ -34,7 +34,7 @@ export class PopupService implements OnDestroy {
   }
 
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view || !(graphic.layer instanceof FeatureLayer)) return;
 
     try {
@@ -92,7 +92,7 @@ export class PopupService implements OnDestroy {
     }
   }
 
-  public attach(view: MapView): void {
+  public attach(view: RimaView): void {
     this.detach();
 
     view.popupEnabled = false;
@@ -107,7 +107,7 @@ export class PopupService implements OnDestroy {
     this.clickHandle = undefined;
   }
 
-  private async handleClick(view: MapView, event: { x: number; y: number }): Promise<void> {
+  private async handleClick(view: RimaView, event: { x: number; y: number }): Promise<void> {
     if (!view.map) return;
 
     // Ignore all map clicks while in edit or create mode

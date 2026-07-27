@@ -8,7 +8,7 @@ import '@esri/calcite-components/dist/components/calcite-loader';
 import { HierarchyStore } from './hierarchy.store';
 import { HierarchyNode } from './hierarchy-node';
 import type FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
-import { MapViewService } from '../../../view/view.service';
+import { ViewService } from '../../../view/view.service';
 
 interface HighlightHandle {
   remove(): void;
@@ -25,7 +25,7 @@ export class HierarchyTabComponent implements OnDestroy {
   readonly graphic = input.required<Graphic>();
 
   protected readonly hierarchyStore = inject(HierarchyStore);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private highlightHandle: HighlightHandle | undefined;
   private flashCounter = 0;
 
@@ -49,7 +49,7 @@ export class HierarchyTabComponent implements OnDestroy {
     this.clearHighlight();
     const graphic = node.graphic;
     const layer = graphic.layer;
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
 
     if (!view || !graphic.geometry) return;
 

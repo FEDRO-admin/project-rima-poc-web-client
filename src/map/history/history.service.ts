@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import esriRequest from '@arcgis/core/request';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { HistoryStore } from './history.store';
 import { HistoryEntry } from './history-entry';
 import { HISTORIC_MOMENTS_URL, HISTORIC_MOMENTS_ADD_URL, HISTORIC_MOMENTS_DELETE_URL } from './history-config';
@@ -15,7 +15,7 @@ interface HistoricMomentResult {
   providedIn: 'root',
 })
 export class HistoryService {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
 
   applyDate(date: Date): void {
@@ -75,7 +75,7 @@ export class HistoryService {
   }
 
   private getFeatureLayers(): FeatureLayer[] {
-    const view = this.viewService.mapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return [];
 
     const layers: FeatureLayer[] = [];

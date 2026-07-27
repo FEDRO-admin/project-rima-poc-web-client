@@ -1,40 +1,91 @@
-import { Injectable, signal, Signal } from '@angular/core';
+import { inject, Injectable, signal, Signal } from '@angular/core';
+import type ArcGISMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
-import { MapViewAlreadyRegisteredError } from '../map-errors';
-import { RIMA_SWISSTOPO_WMTS_URL, RIMA_SWISSTOPO_BASEMAP_LAYER_ID } from '../map-constants';
-import Basemap from '@arcgis/core/Basemap';
-import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
+import SceneView from '@arcgis/core/views/SceneView';
+import Layer from '@arcgis/core/layers/Layer';
+import { ViewStore } from './view.store';
+import { MapViewInitService } from './mapview/mapview.service';
+import { SceneViewInitService } from './sceneview/sceneview.service';
+
+export type RimaView = MapView | SceneView;
 
 @Injectable({
   providedIn: 'root',
 })
-export class MapViewService {
-  public readonly mapView: Signal<MapView | undefined>;
-  private readonly writableMapView = signal<MapView | undefined>(undefined);
+export class ViewService {
+  public readonly activeView: Signal<RimaView | undefined>;
+  private readonly writableActiveView = signal<RimaView | undefined>(undefined);
+
+  private readonly viewStore = inject(ViewStore);
+  private readonly mapViewInitService = inject(MapViewInitService);
+  private readonly sceneViewInitService = inject(SceneViewInitService);
+
+  private sceneLayers3DLoaded = false;
 
   constructor() {
-    this.mapView = this.writableMapView.asReadonly();
+    this.activeView = this.writableActiveView.asReadonly();
   }
 
-  public async registerMapView(mapView: MapView): Promise<void> {
-    if (this.mapView()) throw new MapViewAlreadyRegisteredError();
-    this.writableMapView.set(mapView);
+  setInitialView(mapView: MapView): void {
+    this.writableActiveView.set(mapView);
   }
 
-  public addBasemap(): void {
-    const view = this.mapView();
-    if (!view) throw new Error('Map view not registered');
-    if (!view.map) throw new Error('Map view has no map');
+  async switchToScene(): Promise<void> {
+    const mapView = this.mapViewInitService.getMapView();
+    const sceneView = this.sceneViewInitService.getSceneView();
+    if (!mapView?.map || !sceneView?.map) return;
 
-    const swisstopoLayer = new WMTSLayer({
-      url: RIMA_SWISSTOPO_WMTS_URL,
-      activeLayer: { id: RIMA_SWISSTOPO_BASEMAP_LAYER_ID },
-    });
+    this.transferLayers(mapView.map, sceneView.map);
+    this.viewStore.setMode('scene');
+    this.writableActiveView.set(sceneView);
 
-    view.map.basemap = new Basemap({
-      baseLayers: [swisstopoLayer],
-      title: 'Swisstopo Pixelkarte',
-      id: 'swisstopo',
-    });
+    await sceneView.when();
+
+    if (mapView.extent) {
+      await sceneView.goTo(mapView.extent, { animate: false });
+    }
+
+    if (!this.sceneLayers3DLoaded) {
+      await this.sceneViewInitService.add3DLayers(sceneView.map);
+      this.sceneLayers3DLoaded = true;
+    }
+  }
+
+  async switchToMap(): Promise<void> {
+    const mapView = this.mapViewInitService.getMapView();
+    const sceneView = this.sceneViewInitService.getSceneView();
+    if (!mapView?.map || !sceneView?.map) return;
+
+    this.transferSharedLayers(sceneView.map, mapView.map);
+    this.viewStore.setMode('map');
+    this.writableActiveView.set(mapView);
+
+    if (sceneView.extent) {
+      await mapView.goTo(sceneView.extent, { animate: false });
+    }
+  }
+
+  addLayers(layers: Layer[]): void {
+    const view = this.writableActiveView();
+    if (!view?.map) return;
+    view.map.addMany(layers);
+  }
+
+  removeAllOperationalLayers(): void {
+    const view = this.writableActiveView();
+    if (!view?.map) return;
+    view.map.layers.removeAll();
+  }
+
+  private transferLayers(source: ArcGISMap, target: ArcGISMap): void {
+    const layers = source.layers.toArray();
+    source.layers.removeAll();
+    target.layers.addMany(layers);
+  }
+
+  private transferSharedLayers(source: ArcGISMap, target: ArcGISMap): void {
+    const sharedLayers = source.layers.toArray().filter((layer) => !this.sceneViewInitService.isSceneLayer(layer));
+    source.layers.removeMany(sharedLayers);
+    target.layers.addMany(sharedLayers);
   }
 }
