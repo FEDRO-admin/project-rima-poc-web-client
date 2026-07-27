@@ -167,8 +167,6 @@ export class DocumentsService {
     this.documentsStore.setDeleting(true);
 
     try {
-      await this.uploadService.deleteFile(record.pfad);
-
       const deleteGraphic = new Graphic({
         attributes: { [documentLayer.objectIdField]: record.objectId },
       });
