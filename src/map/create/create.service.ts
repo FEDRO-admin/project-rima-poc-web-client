@@ -32,11 +32,6 @@ export class CreateService {
       this.createGeometryService.cleanup();
 
       const attributes = this.buildCreatePayload(layer, this.createStore.attributes());
-      const subtypeField = this.createStore.subtypeField();
-      const subtypeValue = this.createStore.subtypeValue();
-      if (subtypeField && subtypeValue != null) {
-        attributes[subtypeField] = subtypeValue;
-      }
       const graphic = new Graphic({ attributes, geometry });
 
       const result = await layer.applyEdits({ addFeatures: [graphic] });

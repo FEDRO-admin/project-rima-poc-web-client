@@ -7,7 +7,7 @@ export interface LanguageInfo {
 
 export const languageInfos: LanguageInfo[] = [
   // { code: 'de', catalogId: 'DE (German)' },
-  { code: 'de', catalogId: 'DE' },
+  { code: 'de', catalogId: 'FC' },
   { code: 'fr', catalogId: 'FR' },
   { code: 'it', catalogId: 'IT' },
 ];
