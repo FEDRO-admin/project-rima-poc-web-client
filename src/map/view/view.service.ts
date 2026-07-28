@@ -4,8 +4,8 @@ import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
 import Layer from '@arcgis/core/layers/Layer';
 import { ViewStore } from './view.store';
-import { MapViewInitService } from './mapview/mapview.service';
-import { SceneViewInitService } from './sceneview/sceneview.service';
+import { MapViewService } from './mapview/mapview.service';
+import { SceneViewService } from './sceneview/sceneview.service';
 
 export type RimaView = MapView | SceneView;
 
@@ -17,8 +17,8 @@ export class ViewService {
   private readonly writableActiveView = signal<RimaView | undefined>(undefined);
 
   private readonly viewStore = inject(ViewStore);
-  private readonly mapViewInitService = inject(MapViewInitService);
-  private readonly sceneViewInitService = inject(SceneViewInitService);
+  private readonly mapViewInitService = inject(MapViewService);
+  private readonly sceneViewInitService = inject(SceneViewService);
 
   private sceneLayers3DLoaded = false;
 

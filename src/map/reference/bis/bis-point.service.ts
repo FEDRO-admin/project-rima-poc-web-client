@@ -5,7 +5,7 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import { MapViewService } from '../../view/view.service';
+
 import { ReferencePointSaveError, ReferencePointLoadError } from '../reference-point-errors';
 import { ReferencePoint, AttributeValue } from '../reference-point-types';
 import { REF_POINT_BIS_SYMBOL } from '../reference-point-config';
@@ -14,6 +14,8 @@ import { applyPointEdits } from '../reference-point-helpers';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { BisPointStore } from './bis-point.store';
+import { ViewService } from '../../view/view.service';
+import { MapViewService } from '../../view/mapview/mapview.service';
 
 const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
   style: 'diamond',
@@ -35,7 +37,7 @@ export class BisPointService {
   // --- Lifecycle ---
 
   initializeForLayer(layer: FeatureLayer): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     const relationships = resolveAllRelationships(layer, view);
     const relationship = relationships.find((r) => r.type === 'bis');
     this.store.initialize(relationship);
@@ -45,7 +47,7 @@ export class BisPointService {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     const relationships = resolveAllRelationships(layer, view);
     const relationship = relationships.find((r) => r.type === 'bis');
     this.store.initialize(relationship);
@@ -71,7 +73,7 @@ export class BisPointService {
   }
 
   startPlacingOnMap(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -151,7 +153,7 @@ export class BisPointService {
     const point = this.store.points()[index];
     if (!point?.geometry) return;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -258,7 +260,7 @@ export class BisPointService {
   // --- Display ---
 
   refreshDisplayLayer(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     if (!view?.map) return;
 
     this.removeDisplayLayer();
@@ -281,14 +283,14 @@ export class BisPointService {
     this.eventHandle?.remove();
     this.eventHandle = undefined;
 
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
   }
 
   private removeDisplayLayer(): void {
-    const view = this.viewService.mapView();
+    const view = this.viewService.getMapView();
     if (this.displayLayer && view?.map) {
       view.map.remove(this.displayLayer);
       this.displayLayer.destroy();

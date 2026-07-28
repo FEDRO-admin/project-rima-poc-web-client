@@ -15,7 +15,7 @@ import { SceneViewLayerService } from './sceneview-layer.service';
 @Injectable({
   providedIn: 'root',
 })
-export class SceneViewInitService {
+export class SceneViewService {
   private readonly sceneViewLayerService = inject(SceneViewLayerService);
 
   private _sceneView: SceneView | undefined;
