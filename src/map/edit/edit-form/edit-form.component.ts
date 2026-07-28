@@ -9,7 +9,8 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
-import { ReferencePointStore } from '../../reference/reference-point.store';
+import { VonPointStore } from '../../reference/von/von-point.store';
+import { BisPointStore } from '../../reference/bis/bis-point.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -23,7 +24,12 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
   private readonly editService = inject(EditService);
-  protected readonly refPointStore = inject(ReferencePointStore);
+  private readonly vonPointStore = inject(VonPointStore);
+  private readonly bisPointStore = inject(BisPointStore);
+
+  protected readonly hasReferencePoints = computed(() => {
+    return this.vonPointStore.hasRelationship() || this.bisPointStore.hasRelationship();
+  });
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -50,10 +56,13 @@ export class EditFormComponent implements OnDestroy {
     return graphic?.geometry != null;
   });
 
-  protected readonly refPointSketchActive = computed(() => this.refPointStore.sketchActive());
+  protected readonly refPointSketchActive = computed(() => {
+    return this.vonPointStore.sketchActive() || this.bisPointStore.sketchActive();
+  });
 
   protected readonly canSave = computed(() => {
-    const dirty = this.store.isDirty() || this.refPointStore.hasPendingChanges();
+    const dirty =
+      this.store.isDirty() || this.vonPointStore.hasPendingChanges() || this.bisPointStore.hasPendingChanges();
     return dirty && !this.store.saving();
   });
 

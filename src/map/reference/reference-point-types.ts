@@ -22,18 +22,6 @@ export interface ReferencePointRelationshipInfo {
   fields: AttributeEditField[];
 }
 
-export interface PointTypeState {
-  points: ReferencePoint[];
-  deletedObjectIds: number[];
-  relationship: ReferencePointRelationshipInfo | undefined;
-}
-
-export const INITIAL_POINT_TYPE_STATE: PointTypeState = {
-  points: [],
-  deletedObjectIds: [],
-  relationship: undefined,
-};
-
 /**
  * Matches layer titles containing "punkt" combined with "von" or "bis"
  * in any order (e.g. "Von Punkte", "Bis Punkte", "Punkte_von", etc.)

@@ -2,8 +2,10 @@ import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@ang
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { ReferencePointStore } from '../reference-point.store';
-import { ReferencePointService } from '../reference-point.service';
+import { VonPointStore } from '../von/von-point.store';
+import { VonPointService } from '../von/von-point.service';
+import { BisPointStore } from '../bis/bis-point.store';
+import { BisPointService } from '../bis/bis-point.service';
 import { ReferencePointType, AttributeValue } from '../reference-point-types';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
@@ -20,15 +22,25 @@ export class ReferencePointListComponent {
   readonly type = input.required<ReferencePointType>();
   readonly disabled = input<boolean>(false);
 
-  protected readonly store = inject(ReferencePointStore);
-  private readonly service = inject(ReferencePointService);
+  private readonly vonStore = inject(VonPointStore);
+  private readonly bisStore = inject(BisPointStore);
+  private readonly vonService = inject(VonPointService);
+  private readonly bisService = inject(BisPointService);
+
+  protected readonly store = computed(() => {
+    return this.type() === 'von' ? this.vonStore : this.bisStore;
+  });
+
+  private readonly service = computed(() => {
+    return this.type() === 'von' ? this.vonService : this.bisService;
+  });
 
   protected readonly points = computed(() => {
-    return this.store[this.type()]().points;
+    return this.store().points();
   });
 
   protected readonly relationship = computed(() => {
-    return this.store[this.type()]().relationship;
+    return this.store().relationship();
   });
 
   protected readonly fields = computed<AttributeEditField[]>(() => {
@@ -41,13 +53,23 @@ export class ReferencePointListComponent {
   });
 
   protected readonly isAddingThisType = computed(() => {
-    return this.store.addingType() === this.type();
+    return this.store().addingActive();
   });
 
-  protected readonly activeEditForThisType = computed(() => {
-    const edit = this.store.activeEdit();
-    if (!edit || edit.type !== this.type()) return undefined;
-    return edit;
+  protected readonly activeEditIndex = computed(() => {
+    return this.store().activeEditIndex();
+  });
+
+  protected readonly addingGeometry = computed(() => {
+    return this.store().addingGeometry();
+  });
+
+  protected readonly addingAttributes = computed(() => {
+    return this.store().addingAttributes();
+  });
+
+  protected readonly sketchActive = computed(() => {
+    return this.store().sketchActive();
   });
 
   protected coordinateX = '';
@@ -66,7 +88,7 @@ export class ReferencePointListComponent {
     this.coordinateY = '';
     this.coordinateError = '';
     this.useCoordinateInput = false;
-    this.service.startAdding(this.type());
+    this.service().startAdding();
   }
 
   protected toggleCoordinateInput(): void {
@@ -77,7 +99,7 @@ export class ReferencePointListComponent {
   }
 
   protected placeOnMap(): void {
-    this.service.startPlacingOnMap();
+    this.service().startPlacingOnMap();
   }
 
   protected applyCoordinates(): void {
@@ -95,38 +117,38 @@ export class ReferencePointListComponent {
     }
 
     this.coordinateError = '';
-    this.service.setAddingGeometryFromCoordinates(x, y);
+    this.service().setAddingGeometryFromCoordinates(x, y);
   }
 
   protected onAddingFieldChange(event: { fieldName: string; value: AttributeValue }): void {
-    this.store.updateAddingAttribute(event.fieldName, event.value);
+    this.store().updateAddingAttribute(event.fieldName, event.value);
   }
 
   protected confirmAdd(): void {
-    this.service.confirmAdd();
+    this.service().confirmAdd();
   }
 
   protected cancelAdd(): void {
-    this.service.cancelAdd();
+    this.service().cancelAdd();
   }
 
   protected startEditing(index: number): void {
-    this.service.startEditingPoint(this.type(), index);
+    this.service().startEditingPoint(index);
   }
 
   protected startEditingGeometry(index: number): void {
-    this.service.startEditingPointGeometry(this.type(), index);
+    this.service().startEditingPointGeometry(index);
   }
 
   protected onEditFieldChange(index: number, event: { fieldName: string; value: AttributeValue }): void {
-    this.service.updatePointAttribute(this.type(), index, event.fieldName, event.value);
+    this.service().updatePointAttribute(index, event.fieldName, event.value);
   }
 
   protected confirmEdit(): void {
-    this.service.confirmEditPoint();
+    this.service().confirmEditPoint();
   }
 
   protected deletePoint(index: number): void {
-    this.service.deletePoint(this.type(), index);
+    this.service().deletePoint(index);
   }
 }

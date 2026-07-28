@@ -4,7 +4,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import { PopupReferencePointStore } from './popup-reference-point.store';
-import { ReferencePointResolutionService } from '../../reference/reference-point-resolution.service';
+import { resolveAllRelationships, queryRelatedPoints } from '../../reference/reference-point-resolution';
 import { ReferencePointLoadError } from '../../reference/reference-point-errors';
 import {
   REF_POINT_FK_PARENT_FIELD,
@@ -29,7 +29,6 @@ interface SavedLayerState {
 })
 export class PopupReferencePointService {
   private readonly store = inject(PopupReferencePointStore);
-  private readonly resolutionService = inject(ReferencePointResolutionService);
   private readonly viewService = inject(MapViewService);
 
   private savedLayerStates: SavedLayerState[] = [];
@@ -42,7 +41,8 @@ export class PopupReferencePointService {
       return;
     }
 
-    const relationships = this.resolutionService.resolveRelationships(layer);
+    const view = this.viewService.mapView();
+    const relationships = resolveAllRelationships(layer, view);
     if (relationships.length === 0) {
       this.store.reset();
       return;
@@ -69,10 +69,10 @@ export class PopupReferencePointService {
       let bisPoints = this.store.bis().points;
 
       if (vonRel) {
-        vonPoints = await this.resolutionService.queryExistingPoints(layer, graphic, vonRel.relationshipId);
+        vonPoints = await queryRelatedPoints(layer, graphic, vonRel.relationshipId);
       }
       if (bisRel) {
-        bisPoints = await this.resolutionService.queryExistingPoints(layer, graphic, bisRel.relationshipId);
+        bisPoints = await queryRelatedPoints(layer, graphic, bisRel.relationshipId);
       }
       this.store.setPoints(vonPoints, bisPoints);
     } catch (error) {
