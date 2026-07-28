@@ -112,14 +112,18 @@
           </div>
 
           <!-- Reference Points -->
-          <rima-reference-point-list
-            type="von"
-            [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-          />
-          <rima-reference-point-list
-            type="bis"
-            [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-          />
+          <div class="create-section">
+            <rima-reference-point-list
+              type="von"
+              [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+            />
+          </div>
+          <div class="create-section">
+            <rima-reference-point-list
+              type="bis"
+              [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+            />
+          </div>
 
           <!-- Actions -->
           <div class="create-form-actions">

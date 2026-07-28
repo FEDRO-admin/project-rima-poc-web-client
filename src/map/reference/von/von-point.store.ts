@@ -6,12 +6,14 @@ import { ReferencePoint, ReferencePointRelationshipInfo, AttributeValue } from '
 interface VonPointState {
   points: ReferencePoint[];
   deletedObjectIds: number[];
+  hiddenPointIndices: number[];
   relationship: ReferencePointRelationshipInfo | undefined;
   activeEditIndex: number | undefined;
   addingActive: boolean;
   addingGeometry: Point | undefined;
   addingAttributes: Record<string, AttributeValue>;
   sketchActive: boolean;
+  displayVisible: boolean;
   loading: boolean;
   saving: boolean;
 }
@@ -19,12 +21,14 @@ interface VonPointState {
 const initialState: VonPointState = {
   points: [],
   deletedObjectIds: [],
+  hiddenPointIndices: [],
   relationship: undefined,
   activeEditIndex: undefined,
   addingActive: false,
   addingGeometry: undefined,
   addingAttributes: {},
   sketchActive: false,
+  displayVisible: true,
   loading: false,
   saving: false,
 };
@@ -86,6 +90,14 @@ export const VonPointStore = signalStore(
     },
     setSketchActive(sketchActive: boolean): void {
       patchState(store, { sketchActive });
+    },
+    setDisplayVisible(displayVisible: boolean): void {
+      patchState(store, { displayVisible });
+    },
+    togglePointHidden(index: number): void {
+      const hidden = store.hiddenPointIndices();
+      const updated = hidden.includes(index) ? hidden.filter((i) => i !== index) : [...hidden, index];
+      patchState(store, { hiddenPointIndices: updated });
     },
     reset(): void {
       patchState(store, initialState);

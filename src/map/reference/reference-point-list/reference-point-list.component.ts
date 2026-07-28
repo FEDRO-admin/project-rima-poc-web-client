@@ -52,6 +52,14 @@ export class ReferencePointListComponent {
     return this.type() === 'von' ? 'Von Punkte' : 'Bis Punkte';
   });
 
+  protected readonly displayVisible = computed(() => {
+    return this.store().displayVisible();
+  });
+
+  protected readonly hiddenPointIndices = computed(() => {
+    return this.store().hiddenPointIndices();
+  });
+
   protected readonly isAddingThisType = computed(() => {
     return this.store().addingActive();
   });
@@ -150,5 +158,17 @@ export class ReferencePointListComponent {
 
   protected deletePoint(index: number): void {
     this.service().deletePoint(index);
+  }
+
+  protected toggleDisplay(): void {
+    this.service().toggleDisplay();
+  }
+
+  protected isPointHidden(index: number): boolean {
+    return this.hiddenPointIndices().includes(index);
+  }
+
+  protected togglePointVisibility(index: number): void {
+    this.service().togglePointVisibility(index);
   }
 }

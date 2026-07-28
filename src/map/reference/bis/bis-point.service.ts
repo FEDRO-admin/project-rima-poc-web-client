@@ -97,6 +97,7 @@ export class BisPointService {
         this.store.setAddingGeometry(point);
         this.store.setSketchActive(false);
         this.cleanupSketch();
+        this.refreshDisplayLayer();
       }
     });
 
@@ -259,16 +260,39 @@ export class BisPointService {
 
   // --- Display ---
 
+  toggleDisplay(): void {
+    const visible = !this.store.displayVisible();
+    this.store.setDisplayVisible(visible);
+    if (visible) {
+      this.refreshDisplayLayer();
+    } else {
+      this.removeDisplayLayer();
+    }
+  }
+
+  togglePointVisibility(index: number): void {
+    this.store.togglePointHidden(index);
+    this.refreshDisplayLayer();
+  }
+
   refreshDisplayLayer(): void {
     const view = this.viewService.getMapView();
     if (!view?.map) return;
 
     this.removeDisplayLayer();
 
+    if (!this.store.displayVisible()) return;
+
+    const hiddenIndices = this.store.hiddenPointIndices();
     const graphics = this.store
       .points()
-      .filter((p) => p.geometry)
+      .filter((p, i) => p.geometry && !hiddenIndices.includes(i))
       .map((p) => new Graphic({ geometry: p.geometry, symbol: REF_POINT_BIS_SYMBOL }));
+
+    const addingGeometry = this.store.addingGeometry();
+    if (addingGeometry) {
+      graphics.push(new Graphic({ geometry: addingGeometry, symbol: ADDING_POINT_SYMBOL }));
+    }
 
     if (graphics.length === 0) return;
 

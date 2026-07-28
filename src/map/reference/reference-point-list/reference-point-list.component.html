@@ -4,6 +4,14 @@
       <calcite-icon icon="pin-plus" scale="s"></calcite-icon>
       <span>{{ title() }}</span>
       <span class="refpoint-count">({{ points().length }})</span>
+      <span class="refpoint-header-spacer"></span>
+      <button
+        class="refpoint-display-toggle"
+        (click)="toggleDisplay()"
+        [title]="displayVisible() ? 'Hide points on map' : 'Show points on map'"
+      >
+        <calcite-icon [icon]="displayVisible() ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
+      </button>
     </div>
 
     <!-- Point list -->
@@ -21,6 +29,13 @@
                 <span class="refpoint-badge refpoint-badge--modified">modified</span>
               }
               <span class="refpoint-item-spacer"></span>
+              <button
+                class="refpoint-action-btn"
+                (click)="togglePointVisibility($index)"
+                [title]="isPointHidden($index) ? 'Show on map' : 'Hide on map'"
+              >
+                <calcite-icon [icon]="isPointHidden($index) ? 'view-hide' : 'view-visible'" scale="s"></calcite-icon>
+              </button>
               <button
                 class="refpoint-action-btn"
                 (click)="startEditing($index)"
