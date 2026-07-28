@@ -3,7 +3,7 @@ import FeatureSnappingLayerSource from '@arcgis/core/views/interactive/snapping/
 import type Map from '@arcgis/core/Map';
 import type SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import type MapView from '@arcgis/core/views/MapView';
+import type { RimaView } from '../view/view.service';
 
 export function buildSnappingSources(map: Map): FeatureSnappingLayerSource[] {
   const sources: FeatureSnappingLayerSource[] = [];
@@ -26,7 +26,7 @@ export function updateUndoRedoState(sketchViewModel: SketchViewModel | undefined
 export function cleanupSketchResources(
   sketchViewModel: SketchViewModel | undefined,
   sketchLayer: GraphicsLayer | undefined,
-  view: MapView | undefined,
+  view: RimaView | undefined,
 ): { sketchViewModel: undefined; sketchLayer: undefined } {
   if (sketchViewModel) {
     sketchViewModel.cancel();

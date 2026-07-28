@@ -7,6 +7,8 @@ import { DeleteEffects } from '../map/delete/delete-effects';
 import { HierarchyEffects } from '../map/popup/content/hierarchy-tab/hierarchy-effects';
 import { HistoryEffects } from '../map/history/history-effects';
 import { PopupReferencePointEffects } from '../map/popup/reference-point/popup-reference-point-effects';
+import { ViewEffects } from '../map/view/view-effects';
+import { DocumentsEffects } from '../map/documents/documents-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -24,6 +26,8 @@ export class AppEffectsService {
     inject(DeleteEffects);
     inject(HierarchyEffects);
     inject(HistoryEffects);
+    inject(DocumentsEffects);
+    inject(ViewEffects);
     inject(PopupReferencePointEffects);
   }
 }

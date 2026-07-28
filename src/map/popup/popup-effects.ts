@@ -1,13 +1,13 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { PopupService } from './popup.service';
 import { PopupStore } from './popup.store';
-import { MapViewService } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PopupEffects {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly popupService = inject(PopupService);
   private readonly popupStore = inject(PopupStore);
 
@@ -20,7 +20,7 @@ export class PopupEffects {
 
   private attachClickHandler(): void {
     effect(() => {
-      const view = this.viewService.mapView();
+      const view = this.viewService.activeView();
       untracked(() => {
         if (view) {
           this.popupService.attach(view);

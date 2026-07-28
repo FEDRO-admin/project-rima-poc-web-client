@@ -34,7 +34,7 @@ export class EditFormComponent implements OnDestroy {
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   ngOnDestroy(): void {
-    this.editService.reset();
+    this.store.reset();
   }
 
   protected readonly fields = computed<AttributeEditField[]>(() => {
