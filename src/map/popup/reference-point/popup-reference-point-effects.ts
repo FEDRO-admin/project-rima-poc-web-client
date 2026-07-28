@@ -10,21 +10,7 @@ export class PopupReferencePointEffects {
   private readonly popupRefPointService = inject(PopupReferencePointService);
 
   constructor() {
-    this.resolveAndLoadOnSelection();
     this.cleanupOnClose();
-  }
-
-  private resolveAndLoadOnSelection(): void {
-    effect(() => {
-      const graphic = this.popupStore.selectedGraphic();
-      untracked(() => {
-        this.popupRefPointService.cleanup();
-        if (graphic) {
-          this.popupRefPointService.resolveForGraphic(graphic);
-          this.popupRefPointService.loadPoints(graphic);
-        }
-      });
-    });
   }
 
   private cleanupOnClose(): void {

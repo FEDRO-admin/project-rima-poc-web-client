@@ -27,10 +27,6 @@ export class EditFormComponent implements OnDestroy {
   private readonly vonPointStore = inject(VonPointStore);
   private readonly bisPointStore = inject(BisPointStore);
 
-  protected readonly hasReferencePoints = computed(() => {
-    return this.vonPointStore.hasRelationship() || this.bisPointStore.hasRelationship();
-  });
-
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   ngOnDestroy(): void {

@@ -111,19 +111,15 @@
             />
           </div>
 
-          <!-- Reference Points Section -->
-          @if (hasReferencePoints()) {
-            <div class="create-section">
-              <rima-reference-point-list
-                type="von"
-                [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-              />
-              <rima-reference-point-list
-                type="bis"
-                [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-              />
-            </div>
-          }
+          <!-- Reference Points -->
+          <rima-reference-point-list
+            type="von"
+            [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+          />
+          <rima-reference-point-list
+            type="bis"
+            [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
+          />
 
           <!-- Actions -->
           <div class="create-form-actions">

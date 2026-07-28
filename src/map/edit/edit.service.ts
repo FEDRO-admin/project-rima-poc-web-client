@@ -24,7 +24,7 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly popupStore = inject(PopupStore);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly vonPointService = inject(VonPointService);
   private readonly bisPointService = inject(BisPointService);
 
@@ -39,11 +39,11 @@ export class EditService implements OnDestroy {
   private _originalGeometry: Geometry | undefined;
 
   ngOnDestroy(): void {
-    this.reset();
+    this.store.reset();
   }
 
   activate(graphic: Graphic): void {
-    this.reset();
+    this.store.reset();
     this.store.activate(graphic);
     this.popupStore.close();
     this.showHighlight(graphic.geometry!);
@@ -156,7 +156,7 @@ export class EditService implements OnDestroy {
 
   cancel(): void {
     const graphic = this.store.graphic();
-    this.reset();
+    this.store.reset();
 
     // Reopen popup with the original graphic
     if (graphic) {

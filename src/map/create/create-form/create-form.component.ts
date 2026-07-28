@@ -43,10 +43,6 @@ export class CreateFormComponent implements OnDestroy {
   private readonly vonPointService = inject(VonPointService);
   private readonly bisPointService = inject(BisPointService);
 
-  protected readonly hasReferencePoints = computed(() => {
-    return this.refPointStore.hasRelationship() || this.bisPointStore.hasRelationship();
-  });
-
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);

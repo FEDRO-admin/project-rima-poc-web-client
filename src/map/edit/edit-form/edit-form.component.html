@@ -80,13 +80,9 @@
         />
       </div>
 
-      <!-- Reference Points Section -->
-      @if (hasReferencePoints()) {
-        <div class="edit-section">
-          <rima-reference-point-list type="von" [disabled]="store.saving() || store.sketchActive()" />
-          <rima-reference-point-list type="bis" [disabled]="store.saving() || store.sketchActive()" />
-        </div>
-      }
+      <!-- Reference Points -->
+      <rima-reference-point-list type="von" [disabled]="store.saving() || store.sketchActive()" />
+      <rima-reference-point-list type="bis" [disabled]="store.saving() || store.sketchActive()" />
 
       <!-- Actions -->
       <div class="edit-form-actions">

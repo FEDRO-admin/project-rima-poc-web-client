@@ -1,0 +1,49 @@
+@if (relationship()) {
+  <div class="refpoint-view-section">
+    <div class="refpoint-view-header">
+      <calcite-icon icon="pin" scale="s"></calcite-icon>
+      <span>{{ title() }}</span>
+      <span class="refpoint-view-count">({{ points().length }})</span>
+    </div>
+
+    @if (loading()) {
+      <div class="refpoint-view-loading">Loading reference points...</div>
+    }
+
+    @if (points().length > 0) {
+      <div class="refpoint-view-list">
+        @for (point of points(); track $index) {
+          <details class="refpoint-view-item">
+            <summary class="refpoint-view-item-row">
+              <calcite-icon icon="pin" scale="s"></calcite-icon>
+              <span class="refpoint-view-item-label">{{ getPointLabel(point) }}</span>
+              <span class="refpoint-view-item-spacer"></span>
+              <button
+                class="refpoint-view-action-btn"
+                (click)="toggleHighlight($index); $event.preventDefault()"
+                [title]="isHighlighted($index) ? 'Hide on map' : 'Show on map'"
+              >
+                <calcite-icon [icon]="isHighlighted($index) ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
+              </button>
+              <calcite-icon icon="information" scale="s" class="refpoint-view-info-icon"></calcite-icon>
+            </summary>
+            <div class="refpoint-view-detail">
+              <table class="refpoint-view-attributes-table">
+                @for (field of getDisplayFields(point); track field.label) {
+                  <tr>
+                    <td class="refpoint-view-attr-key">{{ field.label }}</td>
+                    <td class="refpoint-view-attr-value" [class.refpoint-view-attr-value--null]="field.value == null">
+                      {{ field.value == null ? 'null' : field.value }}
+                    </td>
+                  </tr>
+                }
+              </table>
+            </div>
+          </details>
+        }
+      </div>
+    } @else if (!loading()) {
+      <div class="refpoint-view-empty">No reference points</div>
+    }
+  </div>
+}
