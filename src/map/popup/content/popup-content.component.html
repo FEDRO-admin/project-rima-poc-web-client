@@ -20,6 +20,8 @@
     @case ('attributes') {
       <div class="popup-panel">
         <rima-attributes-tab [graphic]="graphic()" />
+        <rima-reference-point-view [graphic]="graphic()" type="von" />
+        <rima-reference-point-view [graphic]="graphic()" type="bis" />
       </div>
     }
     @case ('hierarchy') {
@@ -33,7 +35,4 @@
       </div>
     }
   }
-
-  <rima-reference-point-view [graphic]="graphic()" type="von" />
-  <rima-reference-point-view [graphic]="graphic()" type="bis" />
 </div>
