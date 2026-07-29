@@ -7,12 +7,19 @@ export type ReferencePointType = 'von' | 'bis';
 export type AttributeValue = string | number | boolean | null;
 
 export interface ReferencePoint {
+  clientId: string;
   objectId: number | undefined;
   globalId: string | undefined;
   geometry: Point | undefined;
   attributes: Record<string, AttributeValue>;
   isNew: boolean;
   isModified: boolean;
+}
+
+let nextClientId = 0;
+
+export function generateClientId(): string {
+  return `rp-${Date.now()}-${++nextClientId}`;
 }
 
 export interface ReferencePointRelationshipInfo {

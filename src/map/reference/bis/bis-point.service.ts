@@ -7,14 +7,13 @@ import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 
 import { ReferencePointSaveError, ReferencePointLoadError } from '../reference-point-errors';
-import { ReferencePoint, AttributeValue } from '../reference-point-types';
+import { ReferencePoint, AttributeValue, generateClientId } from '../reference-point-types';
 import { REF_POINT_BIS_SYMBOL } from '../reference-point-config';
 import { resolveAllRelationships, queryRelatedPoints } from '../reference-point-resolution';
 import { applyPointEdits } from '../reference-point-helpers';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { BisPointStore } from './bis-point.store';
-import { ViewService } from '../../view/view.service';
 import { MapViewService } from '../../view/mapview/mapview.service';
 
 const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
@@ -126,6 +125,7 @@ export class BisPointService {
     if (!geometry) return;
 
     const newPoint: ReferencePoint = {
+      clientId: generateClientId(),
       objectId: undefined,
       globalId: undefined,
       geometry,
@@ -141,17 +141,18 @@ export class BisPointService {
 
   cancelAdd(): void {
     this.cleanupSketch();
+    this.store.setSketchActive(false);
     this.store.cancelAdding();
   }
 
   // --- Editing ---
 
-  startEditingPoint(index: number): void {
-    this.store.setActiveEdit(index);
+  startEditingPoint(clientId: string): void {
+    this.store.setActiveEdit(clientId);
   }
 
-  startEditingPointGeometry(index: number): void {
-    const point = this.store.points()[index];
+  startEditingPointGeometry(clientId: string): void {
+    const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point?.geometry) return;
 
     const view = this.viewService.getMapView();
@@ -182,12 +183,10 @@ export class BisPointService {
       if (event.state === 'active' || event.state === 'complete') {
         const updatedGeometry = event.graphics[0]?.geometry as Point;
         if (updatedGeometry) {
-          const updatedPoint: ReferencePoint = {
-            ...point,
+          this.store.updatePoint(clientId, {
             geometry: updatedGeometry,
             isModified: !point.isNew,
-          };
-          this.store.updatePoint(index, updatedPoint);
+          });
         }
       }
       if (event.state === 'complete') {
@@ -201,26 +200,25 @@ export class BisPointService {
     this.store.setSketchActive(true);
   }
 
-  updatePointAttribute(index: number, fieldName: string, value: AttributeValue): void {
-    const point = this.store.points()[index];
+  updatePointAttribute(clientId: string, fieldName: string, value: AttributeValue): void {
+    const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point) return;
 
-    const updatedPoint: ReferencePoint = {
-      ...point,
+    this.store.updatePoint(clientId, {
       attributes: { ...point.attributes, [fieldName]: value },
       isModified: !point.isNew,
-    };
-    this.store.updatePoint(index, updatedPoint);
+    });
   }
 
   confirmEditPoint(): void {
     this.cleanupSketch();
+    this.store.setSketchActive(false);
     this.store.setActiveEdit(undefined);
     this.refreshDisplayLayer();
   }
 
-  deletePoint(index: number): void {
-    this.store.removePoint(index);
+  deletePoint(clientId: string): void {
+    this.store.removePoint(clientId);
     this.refreshDisplayLayer();
   }
 
@@ -270,8 +268,8 @@ export class BisPointService {
     }
   }
 
-  togglePointVisibility(index: number): void {
-    this.store.togglePointHidden(index);
+  togglePointVisibility(clientId: string): void {
+    this.store.togglePointHidden(clientId);
     this.refreshDisplayLayer();
   }
 
@@ -279,14 +277,15 @@ export class BisPointService {
     const view = this.viewService.getMapView();
     if (!view?.map) return;
 
-    this.removeDisplayLayer();
+    if (!this.store.displayVisible()) {
+      this.removeDisplayLayer();
+      return;
+    }
 
-    if (!this.store.displayVisible()) return;
-
-    const hiddenIndices = this.store.hiddenPointIndices();
+    const hiddenIds = this.store.hiddenPointIds();
     const graphics = this.store
       .points()
-      .filter((p, i) => p.geometry && !hiddenIndices.includes(i))
+      .filter((p) => p.geometry && !hiddenIds.includes(p.clientId))
       .map((p) => new Graphic({ geometry: p.geometry, symbol: REF_POINT_BIS_SYMBOL }));
 
     const addingGeometry = this.store.addingGeometry();
@@ -294,11 +293,13 @@ export class BisPointService {
       graphics.push(new Graphic({ geometry: addingGeometry, symbol: ADDING_POINT_SYMBOL }));
     }
 
-    if (graphics.length === 0) return;
+    if (!this.displayLayer) {
+      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Bis Punkte' });
+      view.map.add(this.displayLayer);
+    }
 
-    this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Bis Punkte' });
+    this.displayLayer.removeAll();
     this.displayLayer.addMany(graphics);
-    view.map.add(this.displayLayer);
   }
 
   // --- Private ---

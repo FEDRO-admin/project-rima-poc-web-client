@@ -56,16 +56,16 @@ export class ReferencePointListComponent {
     return this.store().displayVisible();
   });
 
-  protected readonly hiddenPointIndices = computed(() => {
-    return this.store().hiddenPointIndices();
+  protected readonly hiddenPointIds = computed(() => {
+    return this.store().hiddenPointIds();
   });
 
   protected readonly isAddingThisType = computed(() => {
     return this.store().addingActive();
   });
 
-  protected readonly activeEditIndex = computed(() => {
-    return this.store().activeEditIndex();
+  protected readonly activeEditId = computed(() => {
+    return this.store().activeEditId();
   });
 
   protected readonly addingGeometry = computed(() => {
@@ -140,35 +140,35 @@ export class ReferencePointListComponent {
     this.service().cancelAdd();
   }
 
-  protected startEditing(index: number): void {
-    this.service().startEditingPoint(index);
+  protected startEditing(clientId: string): void {
+    this.service().startEditingPoint(clientId);
   }
 
-  protected startEditingGeometry(index: number): void {
-    this.service().startEditingPointGeometry(index);
+  protected startEditingGeometry(clientId: string): void {
+    this.service().startEditingPointGeometry(clientId);
   }
 
-  protected onEditFieldChange(index: number, event: { fieldName: string; value: AttributeValue }): void {
-    this.service().updatePointAttribute(index, event.fieldName, event.value);
+  protected onEditFieldChange(clientId: string, event: { fieldName: string; value: AttributeValue }): void {
+    this.service().updatePointAttribute(clientId, event.fieldName, event.value);
   }
 
   protected confirmEdit(): void {
     this.service().confirmEditPoint();
   }
 
-  protected deletePoint(index: number): void {
-    this.service().deletePoint(index);
+  protected deletePoint(clientId: string): void {
+    this.service().deletePoint(clientId);
   }
 
   protected toggleDisplay(): void {
     this.service().toggleDisplay();
   }
 
-  protected isPointHidden(index: number): boolean {
-    return this.hiddenPointIndices().includes(index);
+  protected isPointHidden(clientId: string): boolean {
+    return this.hiddenPointIds().includes(clientId);
   }
 
-  protected togglePointVisibility(index: number): void {
-    this.service().togglePointVisibility(index);
+  protected togglePointVisibility(clientId: string): void {
+    this.service().togglePointVisibility(clientId);
   }
 }

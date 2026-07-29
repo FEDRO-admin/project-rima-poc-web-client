@@ -6,9 +6,9 @@ import { ReferencePoint, ReferencePointRelationshipInfo, AttributeValue } from '
 interface BisPointState {
   points: ReferencePoint[];
   deletedObjectIds: number[];
-  hiddenPointIndices: number[];
+  hiddenPointIds: string[];
   relationship: ReferencePointRelationshipInfo | undefined;
-  activeEditIndex: number | undefined;
+  activeEditId: string | undefined;
   addingActive: boolean;
   addingGeometry: Point | undefined;
   addingAttributes: Record<string, AttributeValue>;
@@ -21,9 +21,9 @@ interface BisPointState {
 const initialState: BisPointState = {
   points: [],
   deletedObjectIds: [],
-  hiddenPointIndices: [],
+  hiddenPointIds: [],
   relationship: undefined,
-  activeEditIndex: undefined,
+  activeEditId: undefined,
   addingActive: false,
   addingGeometry: undefined,
   addingAttributes: {},
@@ -59,22 +59,22 @@ export const BisPointStore = signalStore(
     addPoint(point: ReferencePoint): void {
       patchState(store, { points: [...store.points(), point] });
     },
-    updatePoint(index: number, point: ReferencePoint): void {
-      const points = [...store.points()];
-      points[index] = point;
+    updatePoint(clientId: string, updates: Partial<ReferencePoint>): void {
+      const points = store.points().map((p) => (p.clientId === clientId ? { ...p, ...updates } : p));
       patchState(store, { points });
     },
-    removePoint(index: number): void {
-      const points = [...store.points()];
-      const removed = points.splice(index, 1)[0];
+    removePoint(clientId: string): void {
+      const point = store.points().find((p) => p.clientId === clientId);
+      const points = store.points().filter((p) => p.clientId !== clientId);
       const deletedObjectIds =
-        removed && !removed.isNew && removed.objectId != null
-          ? [...store.deletedObjectIds(), removed.objectId]
+        point && !point.isNew && point.objectId != null
+          ? [...store.deletedObjectIds(), point.objectId]
           : store.deletedObjectIds();
-      patchState(store, { points, deletedObjectIds });
+      const hiddenPointIds = store.hiddenPointIds().filter((id) => id !== clientId);
+      patchState(store, { points, deletedObjectIds, hiddenPointIds });
     },
-    setActiveEdit(index: number | undefined): void {
-      patchState(store, { activeEditIndex: index });
+    setActiveEdit(clientId: string | undefined): void {
+      patchState(store, { activeEditId: clientId });
     },
     startAdding(): void {
       patchState(store, { addingActive: true, addingGeometry: undefined, addingAttributes: {} });
@@ -94,10 +94,10 @@ export const BisPointStore = signalStore(
     setDisplayVisible(displayVisible: boolean): void {
       patchState(store, { displayVisible });
     },
-    togglePointHidden(index: number): void {
-      const hidden = store.hiddenPointIndices();
-      const updated = hidden.includes(index) ? hidden.filter((i) => i !== index) : [...hidden, index];
-      patchState(store, { hiddenPointIndices: updated });
+    togglePointHidden(clientId: string): void {
+      const hidden = store.hiddenPointIds();
+      const updated = hidden.includes(clientId) ? hidden.filter((id) => id !== clientId) : [...hidden, clientId];
+      patchState(store, { hiddenPointIds: updated });
     },
     reset(): void {
       patchState(store, initialState);

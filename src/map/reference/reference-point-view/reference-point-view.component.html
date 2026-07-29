@@ -12,7 +12,7 @@
 
     @if (points().length > 0) {
       <div class="refpoint-view-list">
-        @for (point of points(); track $index) {
+        @for (point of points(); track point.clientId) {
           <details class="refpoint-view-item">
             <summary class="refpoint-view-item-row">
               <calcite-icon icon="pin" scale="s"></calcite-icon>
@@ -20,10 +20,13 @@
               <span class="refpoint-view-item-spacer"></span>
               <button
                 class="refpoint-view-action-btn"
-                (click)="toggleHighlight($index); $event.preventDefault()"
-                [title]="isHighlighted($index) ? 'Hide on map' : 'Show on map'"
+                (click)="toggleHighlight(point); $event.preventDefault()"
+                [title]="isHighlighted(point.clientId) ? 'Hide on map' : 'Show on map'"
               >
-                <calcite-icon [icon]="isHighlighted($index) ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
+                <calcite-icon
+                  [icon]="isHighlighted(point.clientId) ? 'view-visible' : 'view-hide'"
+                  scale="s"
+                ></calcite-icon>
               </button>
               <calcite-icon icon="information" scale="s" class="refpoint-view-info-icon"></calcite-icon>
             </summary>

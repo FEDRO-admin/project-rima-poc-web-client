@@ -2,20 +2,16 @@ import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import { resolveAllRelationships, queryRelatedPoints } from '../../reference/reference-point-resolution';
-import { ReferencePointLoadError } from '../../reference/reference-point-errors';
-import { REF_POINT_VON_SYMBOL, REF_POINT_BIS_SYMBOL } from '../../reference/reference-point-config';
-import type {
-  ReferencePoint,
-  ReferencePointRelationshipInfo,
-  ReferencePointType,
-} from '../../reference/reference-point-types';
+import { resolveAllRelationships, queryRelatedPoints } from '../reference-point-resolution';
+import { ReferencePointLoadError } from '../reference-point-errors';
+import { REF_POINT_VON_SYMBOL, REF_POINT_BIS_SYMBOL } from '../reference-point-config';
+import type { ReferencePoint, ReferencePointRelationshipInfo, ReferencePointType } from '../reference-point-types';
 import { MapViewService } from '../../view/mapview/mapview.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class PopupReferencePointService {
+export class ReferencePointViewService {
   private readonly viewService = inject(MapViewService);
 
   private highlightLayer: GraphicsLayer | undefined;

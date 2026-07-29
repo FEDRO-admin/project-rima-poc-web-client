@@ -12,7 +12,7 @@ import {
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { PopupReferencePointService } from './popup-reference-point.service';
+import { ReferencePointViewService } from './reference-point-view.service';
 import { resolveFieldDisplayValue } from '../../layer/layer-attribute-domain-resolver';
 import { isImmutableField } from '../../layer/layer-attributes';
 import type {
@@ -20,7 +20,7 @@ import type {
   ReferencePointRelationshipInfo,
   ReferencePointType,
   AttributeValue,
-} from '../../reference/reference-point-types';
+} from '../reference-point-types';
 
 interface FieldEntry {
   label: string;
@@ -38,7 +38,7 @@ export class ReferencePointViewComponent {
   readonly graphic = input.required<Graphic>();
   readonly type = input.required<ReferencePointType>();
 
-  private readonly service = inject(PopupReferencePointService);
+  private readonly service = inject(ReferencePointViewService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly writableRelationship = signal<ReferencePointRelationshipInfo | undefined>(undefined);
@@ -49,7 +49,7 @@ export class ReferencePointViewComponent {
   protected readonly points = this.writablePoints.asReadonly();
   protected readonly loading = this.writableLoading.asReadonly();
 
-  private readonly highlightedGraphics = new Map<number, Graphic>();
+  private readonly highlightedGraphics = new Map<string, Graphic>();
 
   protected readonly title = computed(() => {
     return this.type() === 'von' ? 'Von Punkte' : 'Bis Punkte';
@@ -63,20 +63,18 @@ export class ReferencePointViewComponent {
     });
   }
 
-  protected isHighlighted(index: number): boolean {
-    return this.highlightedGraphics.has(index);
+  protected isHighlighted(clientId: string): boolean {
+    return this.highlightedGraphics.has(clientId);
   }
 
-  protected toggleHighlight(index: number): void {
-    const existing = this.highlightedGraphics.get(index);
+  protected toggleHighlight(point: ReferencePoint): void {
+    const existing = this.highlightedGraphics.get(point.clientId);
     if (existing) {
       this.service.unhighlightPoint(existing);
-      this.highlightedGraphics.delete(index);
+      this.highlightedGraphics.delete(point.clientId);
     } else {
-      const point = this.points()[index];
-      if (!point) return;
       const handle = this.service.highlightPoint(point, this.type());
-      this.highlightedGraphics.set(index, handle);
+      this.highlightedGraphics.set(point.clientId, handle);
     }
   }
 

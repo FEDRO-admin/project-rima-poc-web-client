@@ -17,8 +17,8 @@
     <!-- Point list -->
     @if (points().length > 0) {
       <div class="refpoint-list">
-        @for (point of points(); track $index) {
-          <div class="refpoint-item" [class.refpoint-item--editing]="activeEditIndex() === $index">
+        @for (point of points(); track point.clientId) {
+          <div class="refpoint-item" [class.refpoint-item--editing]="activeEditId() === point.clientId">
             <div class="refpoint-item-row">
               <calcite-icon icon="pin" scale="s"></calcite-icon>
               <span class="refpoint-item-label">{{ getPointLabel(point) }}</span>
@@ -31,14 +31,17 @@
               <span class="refpoint-item-spacer"></span>
               <button
                 class="refpoint-action-btn"
-                (click)="togglePointVisibility($index)"
-                [title]="isPointHidden($index) ? 'Show on map' : 'Hide on map'"
+                (click)="togglePointVisibility(point.clientId)"
+                [title]="isPointHidden(point.clientId) ? 'Show on map' : 'Hide on map'"
               >
-                <calcite-icon [icon]="isPointHidden($index) ? 'view-hide' : 'view-visible'" scale="s"></calcite-icon>
+                <calcite-icon
+                  [icon]="isPointHidden(point.clientId) ? 'view-hide' : 'view-visible'"
+                  scale="s"
+                ></calcite-icon>
               </button>
               <button
                 class="refpoint-action-btn"
-                (click)="startEditing($index)"
+                (click)="startEditing(point.clientId)"
                 [disabled]="disabled() || sketchActive()"
                 title="Edit point"
               >
@@ -46,7 +49,7 @@
               </button>
               <button
                 class="refpoint-action-btn refpoint-action-btn--delete"
-                (click)="deletePoint($index)"
+                (click)="deletePoint(point.clientId)"
                 [disabled]="disabled() || sketchActive()"
                 title="Delete point"
               >
@@ -55,10 +58,14 @@
             </div>
 
             <!-- Inline editor -->
-            @if (activeEditIndex() === $index) {
+            @if (activeEditId() === point.clientId) {
               <div class="refpoint-editor">
                 <div class="refpoint-editor-geometry">
-                  <button class="refpoint-geo-btn" (click)="startEditingGeometry($index)" [disabled]="sketchActive()">
+                  <button
+                    class="refpoint-geo-btn"
+                    (click)="startEditingGeometry(point.clientId)"
+                    [disabled]="sketchActive()"
+                  >
                     <calcite-icon icon="pin-tear" scale="s"></calcite-icon>
                     Move Point on Map
                   </button>
@@ -71,8 +78,8 @@
                   [fields]="fields()"
                   [values]="point.attributes"
                   [disabled]="disabled() || sketchActive()"
-                  [idPrefix]="'refpoint-edit-' + $index"
-                  (fieldChange)="onEditFieldChange($index, $event)"
+                  [idPrefix]="'refpoint-edit-' + point.clientId"
+                  (fieldChange)="onEditFieldChange(point.clientId, $event)"
                 />
 
                 <div class="refpoint-editor-actions">

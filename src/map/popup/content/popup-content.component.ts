@@ -3,7 +3,7 @@ import type Graphic from '@arcgis/core/Graphic';
 import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
 import { HierarchyTabComponent } from './hierarchy-tab/hierarchy-tab.component';
 import { DocumentsTabComponent } from './documents-tab/documents-tab.component';
-import { ReferencePointViewComponent } from '../reference-point/reference-point-view.component';
+import { ReferencePointViewComponent } from '../../reference/reference-point-view/reference-point-view.component';
 
 export type PopupTab = 'attributes' | 'hierarchy' | 'documents';
 

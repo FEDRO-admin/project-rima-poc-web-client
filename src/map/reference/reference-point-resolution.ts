@@ -6,7 +6,12 @@ import type Point from '@arcgis/core/geometry/Point';
 import type MapView from '@arcgis/core/views/MapView';
 import { AttributeEditField, convertAttributeFieldType } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
-import { ReferencePoint, ReferencePointRelationshipInfo, classifyRelationshipName } from './reference-point-types';
+import {
+  ReferencePoint,
+  ReferencePointRelationshipInfo,
+  classifyRelationshipName,
+  generateClientId,
+} from './reference-point-types';
 import { REF_POINT_AUTO_POPULATED_FIELDS } from './reference-point-config';
 
 export function resolveAllRelationships(
@@ -58,6 +63,7 @@ export async function queryRelatedPoints(
 function graphicToReferencePoint(graphic: Graphic): ReferencePoint {
   const layer = graphic.layer as FeatureLayer | undefined;
   return {
+    clientId: generateClientId(),
     objectId: layer ? graphic.attributes[layer.objectIdField] : graphic.attributes.objectid,
     globalId: graphic.attributes.globalid ?? undefined,
     geometry: graphic.geometry as Point | undefined,

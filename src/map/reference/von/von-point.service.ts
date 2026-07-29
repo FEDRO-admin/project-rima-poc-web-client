@@ -6,7 +6,7 @@ import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { ReferencePointSaveError, ReferencePointLoadError } from '../reference-point-errors';
-import { ReferencePoint, AttributeValue } from '../reference-point-types';
+import { ReferencePoint, AttributeValue, generateClientId } from '../reference-point-types';
 import { REF_POINT_VON_SYMBOL } from '../reference-point-config';
 import { resolveAllRelationships, queryRelatedPoints } from '../reference-point-resolution';
 import { applyPointEdits } from '../reference-point-helpers';
@@ -124,6 +124,7 @@ export class VonPointService {
     if (!geometry) return;
 
     const newPoint: ReferencePoint = {
+      clientId: generateClientId(),
       objectId: undefined,
       globalId: undefined,
       geometry,
@@ -139,17 +140,18 @@ export class VonPointService {
 
   cancelAdd(): void {
     this.cleanupSketch();
+    this.store.setSketchActive(false);
     this.store.cancelAdding();
   }
 
   // --- Editing ---
 
-  startEditingPoint(index: number): void {
-    this.store.setActiveEdit(index);
+  startEditingPoint(clientId: string): void {
+    this.store.setActiveEdit(clientId);
   }
 
-  startEditingPointGeometry(index: number): void {
-    const point = this.store.points()[index];
+  startEditingPointGeometry(clientId: string): void {
+    const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point?.geometry) return;
 
     const view = this.viewService.getMapView();
@@ -180,12 +182,10 @@ export class VonPointService {
       if (event.state === 'active' || event.state === 'complete') {
         const updatedGeometry = event.graphics[0]?.geometry as Point;
         if (updatedGeometry) {
-          const updatedPoint: ReferencePoint = {
-            ...point,
+          this.store.updatePoint(clientId, {
             geometry: updatedGeometry,
             isModified: !point.isNew,
-          };
-          this.store.updatePoint(index, updatedPoint);
+          });
         }
       }
       if (event.state === 'complete') {
@@ -199,26 +199,25 @@ export class VonPointService {
     this.store.setSketchActive(true);
   }
 
-  updatePointAttribute(index: number, fieldName: string, value: AttributeValue): void {
-    const point = this.store.points()[index];
+  updatePointAttribute(clientId: string, fieldName: string, value: AttributeValue): void {
+    const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point) return;
 
-    const updatedPoint: ReferencePoint = {
-      ...point,
+    this.store.updatePoint(clientId, {
       attributes: { ...point.attributes, [fieldName]: value },
       isModified: !point.isNew,
-    };
-    this.store.updatePoint(index, updatedPoint);
+    });
   }
 
   confirmEditPoint(): void {
     this.cleanupSketch();
+    this.store.setSketchActive(false);
     this.store.setActiveEdit(undefined);
     this.refreshDisplayLayer();
   }
 
-  deletePoint(index: number): void {
-    this.store.removePoint(index);
+  deletePoint(clientId: string): void {
+    this.store.removePoint(clientId);
     this.refreshDisplayLayer();
   }
 
@@ -268,8 +267,8 @@ export class VonPointService {
     }
   }
 
-  togglePointVisibility(index: number): void {
-    this.store.togglePointHidden(index);
+  togglePointVisibility(clientId: string): void {
+    this.store.togglePointHidden(clientId);
     this.refreshDisplayLayer();
   }
 
@@ -277,14 +276,15 @@ export class VonPointService {
     const view = this.viewService.getMapView();
     if (!view?.map) return;
 
-    this.removeDisplayLayer();
+    if (!this.store.displayVisible()) {
+      this.removeDisplayLayer();
+      return;
+    }
 
-    if (!this.store.displayVisible()) return;
-
-    const hiddenIndices = this.store.hiddenPointIndices();
+    const hiddenIds = this.store.hiddenPointIds();
     const graphics = this.store
       .points()
-      .filter((p, i) => p.geometry && !hiddenIndices.includes(i))
+      .filter((p) => p.geometry && !hiddenIds.includes(p.clientId))
       .map((p) => new Graphic({ geometry: p.geometry, symbol: REF_POINT_VON_SYMBOL }));
 
     const addingGeometry = this.store.addingGeometry();
@@ -292,11 +292,13 @@ export class VonPointService {
       graphics.push(new Graphic({ geometry: addingGeometry, symbol: ADDING_POINT_SYMBOL }));
     }
 
-    if (graphics.length === 0) return;
+    if (!this.displayLayer) {
+      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Von Punkte' });
+      view.map.add(this.displayLayer);
+    }
 
-    this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Von Punkte' });
+    this.displayLayer.removeAll();
     this.displayLayer.addMany(graphics);
-    view.map.add(this.displayLayer);
   }
 
   // --- Private ---
