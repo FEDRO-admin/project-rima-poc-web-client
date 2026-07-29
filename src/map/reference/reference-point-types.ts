@@ -2,7 +2,9 @@ import type Point from '@arcgis/core/geometry/Point';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { AttributeEditField } from '../shared/attribute-edit-field';
 
-export type ReferencePointType = 'von' | 'bis';
+import { REFERENCE_POINT_TYPES, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+
+export type ReferencePointType = (typeof REFERENCE_POINT_TYPES)[number];
 
 export type AttributeValue = string | number | boolean | null;
 
@@ -29,15 +31,9 @@ export interface ReferencePointRelationshipInfo {
   fields: AttributeEditField[];
 }
 
-/**
- * Matches layer titles containing "punkt" combined with "von" or "bis"
- * in any order (e.g. "Von Punkte", "Bis Punkte", "Punkte_von", etc.)
- */
-const VON_PATTERN = /punkt.*von|von.*punkt/i;
-const BIS_PATTERN = /punkt.*bis|bis.*punkt/i;
-
-export function classifyRelationshipName(title: string): ReferencePointType | undefined {
-  if (VON_PATTERN.test(title)) return 'von';
-  if (BIS_PATTERN.test(title)) return 'bis';
+export function classifyRelationshipByLayerId(layerId: number): ReferencePointType | undefined {
+  for (const config of Object.values(REF_POINT_TYPE_CONFIGS)) {
+    if (config.layerId === layerId) return config.type;
+  }
   return undefined;
 }

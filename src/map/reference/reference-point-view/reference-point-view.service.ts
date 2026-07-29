@@ -4,7 +4,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import { resolveAllRelationships, queryRelatedPoints } from '../reference-point-resolution';
 import { ReferencePointLoadError } from '../reference-point-errors';
-import { REF_POINT_VON_SYMBOL, REF_POINT_BIS_SYMBOL } from '../reference-point-config';
+import { REF_POINT_TYPE_CONFIGS } from '../reference-point-config';
 import type { ReferencePoint, ReferencePointRelationshipInfo, ReferencePointType } from '../reference-point-types';
 import { MapViewService } from '../../view/mapview/mapview.service';
 
@@ -22,9 +22,14 @@ export class ReferencePointViewService {
     return relationships.find((r) => r.type === type);
   }
 
-  async loadPoints(layer: FeatureLayer, graphic: Graphic, relationshipId: number): Promise<ReferencePoint[]> {
+  async loadPoints(
+    layer: FeatureLayer,
+    graphic: Graphic,
+    relationshipId: number,
+    relatedLayer: FeatureLayer,
+  ): Promise<ReferencePoint[]> {
     try {
-      return await queryRelatedPoints(layer, graphic, relationshipId);
+      return await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
     } catch (error) {
       throw new ReferencePointLoadError(error);
     }
@@ -35,7 +40,7 @@ export class ReferencePointViewService {
 
     const graphic = new Graphic({
       geometry: point.geometry ?? undefined,
-      symbol: type === 'von' ? REF_POINT_VON_SYMBOL : REF_POINT_BIS_SYMBOL,
+      symbol: REF_POINT_TYPE_CONFIGS[type].symbol,
     });
 
     this.highlightLayer!.add(graphic);
@@ -61,7 +66,7 @@ export class ReferencePointViewService {
     const view = this.viewService.getMapView();
     if (!view?.map) return;
 
-    this.highlightLayer = new GraphicsLayer({ title: 'Reference Point Highlights' });
+    this.highlightLayer = new GraphicsLayer({ title: 'Reference Point Highlights', listMode: 'hide' });
     view.map.add(this.highlightLayer);
   }
 }

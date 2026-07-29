@@ -2,12 +2,10 @@ import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@ang
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { VonPointStore } from '../von/von-point.store';
-import { VonPointService } from '../von/von-point.service';
-import { BisPointStore } from '../bis/bis-point.store';
-import { BisPointService } from '../bis/bis-point.service';
+import { ReferencePointStore } from '../reference-point.store';
+import { ReferencePointService } from '../reference-point.service';
 import { ReferencePointType, AttributeValue } from '../reference-point-types';
-import { AttributeEditField } from '../../shared/attribute-edit-field';
+import { REF_POINT_TYPE_CONFIGS } from '../reference-point-config';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 
@@ -22,62 +20,33 @@ export class ReferencePointListComponent {
   readonly type = input.required<ReferencePointType>();
   readonly disabled = input<boolean>(false);
 
-  private readonly vonStore = inject(VonPointStore);
-  private readonly bisStore = inject(BisPointStore);
-  private readonly vonService = inject(VonPointService);
-  private readonly bisService = inject(BisPointService);
+  protected readonly store = inject(ReferencePointStore);
+  private readonly service = inject(ReferencePointService);
 
-  protected readonly store = computed(() => {
-    return this.type() === 'von' ? this.vonStore : this.bisStore;
+  protected readonly typeStore = computed(() => this.store.forType(this.type()));
+
+  protected readonly relationship = computed(() => this.typeStore().relationship());
+
+  protected readonly points = computed(() => this.typeStore().points());
+
+  protected readonly displayVisible = computed(() => this.typeStore().displayVisible());
+
+  protected readonly activeEditId = computed(() => {
+    return this.store.editingType() === this.type() ? this.store.activeEditId() : undefined;
   });
 
-  private readonly service = computed(() => {
-    return this.type() === 'von' ? this.vonService : this.bisService;
+  protected readonly isAdding = computed(() => {
+    return this.store.addingType() === this.type();
   });
 
-  protected readonly points = computed(() => {
-    return this.store().points();
-  });
+  protected readonly hiddenPointIds = computed(() => this.typeStore().hiddenPointIds());
 
-  protected readonly relationship = computed(() => {
-    return this.store().relationship();
-  });
-
-  protected readonly fields = computed<AttributeEditField[]>(() => {
-    const rel = this.relationship();
-    return rel?.fields ?? [];
+  protected readonly fields = computed(() => {
+    return this.relationship()?.fields ?? [];
   });
 
   protected readonly title = computed(() => {
-    return this.type() === 'von' ? 'Von Punkte' : 'Bis Punkte';
-  });
-
-  protected readonly displayVisible = computed(() => {
-    return this.store().displayVisible();
-  });
-
-  protected readonly hiddenPointIds = computed(() => {
-    return this.store().hiddenPointIds();
-  });
-
-  protected readonly isAddingThisType = computed(() => {
-    return this.store().addingActive();
-  });
-
-  protected readonly activeEditId = computed(() => {
-    return this.store().activeEditId();
-  });
-
-  protected readonly addingGeometry = computed(() => {
-    return this.store().addingGeometry();
-  });
-
-  protected readonly addingAttributes = computed(() => {
-    return this.store().addingAttributes();
-  });
-
-  protected readonly sketchActive = computed(() => {
-    return this.store().sketchActive();
+    return REF_POINT_TYPE_CONFIGS[this.type()].displayTitle;
   });
 
   protected coordinateX = '';
@@ -96,7 +65,7 @@ export class ReferencePointListComponent {
     this.coordinateY = '';
     this.coordinateError = '';
     this.useCoordinateInput = false;
-    this.service().startAdding();
+    this.service.startAdding(this.type());
   }
 
   protected toggleCoordinateInput(): void {
@@ -107,7 +76,7 @@ export class ReferencePointListComponent {
   }
 
   protected placeOnMap(): void {
-    this.service().startPlacingOnMap();
+    this.service.startPlacingOnMap(this.type());
   }
 
   protected applyCoordinates(): void {
@@ -125,43 +94,43 @@ export class ReferencePointListComponent {
     }
 
     this.coordinateError = '';
-    this.service().setAddingGeometryFromCoordinates(x, y);
+    this.service.setAddingGeometryFromCoordinates(x, y);
   }
 
   protected onAddingFieldChange(event: { fieldName: string; value: AttributeValue }): void {
-    this.store().updateAddingAttribute(event.fieldName, event.value);
+    this.store.addingAttributes.update((attrs) => ({ ...attrs, [event.fieldName]: event.value }));
   }
 
   protected confirmAdd(): void {
-    this.service().confirmAdd();
+    this.service.confirmAdd(this.type());
   }
 
   protected cancelAdd(): void {
-    this.service().cancelAdd();
+    this.service.cancelAdd();
   }
 
   protected startEditing(clientId: string): void {
-    this.service().startEditingPoint(clientId);
+    this.service.startEditingPoint(this.type(), clientId);
   }
 
   protected startEditingGeometry(clientId: string): void {
-    this.service().startEditingPointGeometry(clientId);
+    this.service.startEditingPointGeometry(this.type(), clientId);
   }
 
   protected onEditFieldChange(clientId: string, event: { fieldName: string; value: AttributeValue }): void {
-    this.service().updatePointAttribute(clientId, event.fieldName, event.value);
+    this.service.updatePointAttribute(this.type(), clientId, event.fieldName, event.value);
   }
 
   protected confirmEdit(): void {
-    this.service().confirmEditPoint();
+    this.service.confirmEditPoint(this.type());
   }
 
   protected deletePoint(clientId: string): void {
-    this.service().deletePoint(clientId);
+    this.service.deletePoint(this.type(), clientId);
   }
 
   protected toggleDisplay(): void {
-    this.service().toggleDisplay();
+    this.service.toggleDisplay(this.type());
   }
 
   protected isPointHidden(clientId: string): boolean {
@@ -169,6 +138,6 @@ export class ReferencePointListComponent {
   }
 
   protected togglePointVisibility(clientId: string): void {
-    this.service().togglePointVisibility(clientId);
+    this.service.togglePointVisibility(this.type(), clientId);
   }
 }

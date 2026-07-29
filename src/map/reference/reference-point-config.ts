@@ -1,4 +1,5 @@
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import type { ReferencePointType } from './reference-point-types';
 
 /**
  * Field names used on the reference point FeatureService layers.
@@ -18,7 +19,7 @@ export const REF_POINT_AUTO_POPULATED_FIELDS: readonly string[] = [
 ];
 
 /** Symbol for "Von" reference points (blue circle). */
-export const REF_POINT_VON_SYMBOL = new SimpleMarkerSymbol({
+const REF_POINT_VON_SYMBOL = new SimpleMarkerSymbol({
   style: 'circle',
   color: [0, 121, 193, 0.8],
   size: 10,
@@ -26,9 +27,33 @@ export const REF_POINT_VON_SYMBOL = new SimpleMarkerSymbol({
 });
 
 /** Symbol for "Bis" reference points (red circle). */
-export const REF_POINT_BIS_SYMBOL = new SimpleMarkerSymbol({
+const REF_POINT_BIS_SYMBOL = new SimpleMarkerSymbol({
   style: 'circle',
   color: [193, 64, 0, 0.8],
   size: 10,
   outline: { color: [255, 255, 255], width: 2 },
 });
+
+export const REFERENCE_POINT_TYPES = ['von', 'bis'] as const;
+
+export interface ReferencePointTypeConfig {
+  type: ReferencePointType;
+  layerId: number;
+  symbol: SimpleMarkerSymbol;
+  displayTitle: string;
+}
+
+export const REF_POINT_TYPE_CONFIGS: Record<ReferencePointType, ReferencePointTypeConfig> = {
+  von: {
+    type: 'von',
+    layerId: 20,
+    symbol: REF_POINT_VON_SYMBOL,
+    displayTitle: 'Von Punkte',
+  },
+  bis: {
+    type: 'bis',
+    layerId: 21,
+    symbol: REF_POINT_BIS_SYMBOL,
+    displayTitle: 'Bis Punkte',
+  },
+};

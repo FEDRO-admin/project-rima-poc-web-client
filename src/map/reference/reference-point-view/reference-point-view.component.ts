@@ -2,10 +2,10 @@ import {
   Component,
   computed,
   CUSTOM_ELEMENTS_SCHEMA,
-  DestroyRef,
   effect,
   inject,
   input,
+  OnDestroy,
   signal,
   untracked,
 } from '@angular/core';
@@ -34,12 +34,11 @@ interface FieldEntry {
   templateUrl: './reference-point-view.component.html',
   styleUrl: './reference-point-view.component.scss',
 })
-export class ReferencePointViewComponent {
+export class ReferencePointViewComponent implements OnDestroy {
   readonly graphic = input.required<Graphic>();
   readonly type = input.required<ReferencePointType>();
 
   private readonly service = inject(ReferencePointViewService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private readonly writableRelationship = signal<ReferencePointRelationshipInfo | undefined>(undefined);
   private readonly writablePoints = signal<ReferencePoint[]>([]);
@@ -50,21 +49,44 @@ export class ReferencePointViewComponent {
   protected readonly loading = this.writableLoading.asReadonly();
 
   private readonly highlightedGraphics = new Map<string, Graphic>();
+  private readonly writableHighlightedIds = signal(new Set<string>());
+  protected readonly highlightedIds = this.writableHighlightedIds.asReadonly();
 
   protected readonly title = computed(() => {
     return this.type() === 'von' ? 'Von Punkte' : 'Bis Punkte';
   });
 
+  protected readonly allHighlighted = computed(() => {
+    const pts = this.points();
+    const ids = this.highlightedIds();
+    return pts.length > 0 && pts.every((p) => ids.has(p.clientId));
+  });
+
   constructor() {
     this.loadOnGraphicChange();
+  }
 
-    this.destroyRef.onDestroy(() => {
-      this.clearHighlights();
-    });
+  ngOnDestroy(): void {
+    this.clearHighlights();
   }
 
   protected isHighlighted(clientId: string): boolean {
-    return this.highlightedGraphics.has(clientId);
+    return this.highlightedIds().has(clientId);
+  }
+
+  protected toggleAllHighlights(): void {
+    const pts = this.points();
+    if (this.allHighlighted()) {
+      this.clearHighlights();
+    } else {
+      for (const point of pts) {
+        if (!this.highlightedGraphics.has(point.clientId)) {
+          const handle = this.service.highlightPoint(point, this.type());
+          this.highlightedGraphics.set(point.clientId, handle);
+        }
+      }
+      this.writableHighlightedIds.set(new Set(this.highlightedGraphics.keys()));
+    }
   }
 
   protected toggleHighlight(point: ReferencePoint): void {
@@ -76,6 +98,7 @@ export class ReferencePointViewComponent {
       const handle = this.service.highlightPoint(point, this.type());
       this.highlightedGraphics.set(point.clientId, handle);
     }
+    this.writableHighlightedIds.set(new Set(this.highlightedGraphics.keys()));
   }
 
   protected getPointLabel(point: ReferencePoint): string {
@@ -85,19 +108,16 @@ export class ReferencePointViewComponent {
   }
 
   protected getDisplayFields(point: ReferencePoint): FieldEntry[] {
-    const rel = this.relationship();
-    if (!rel?.relatedLayer?.fields?.length) return [];
+    const relatedLayer = this.relationship()?.relatedLayer;
+    if (!relatedLayer?.fields?.length) return [];
 
-    return rel.relatedLayer.fields
-      .filter((field) => !isImmutableField(field.name, rel.relatedLayer))
-      .map((field) => ({
-        label: field.alias || field.name,
-        value: resolveFieldDisplayValue(
-          new Graphic({ attributes: point.attributes, layer: rel.relatedLayer }),
-          field,
-          point.attributes[field.name],
-        ),
-      }));
+    const graphic = new Graphic({ attributes: point.attributes, layer: relatedLayer });
+    const editableFields = relatedLayer.fields.filter((field) => !isImmutableField(field.name, relatedLayer));
+
+    return editableFields.map((field) => ({
+      label: field.alias || field.name,
+      value: resolveFieldDisplayValue(graphic, field, point.attributes[field.name]),
+    }));
   }
 
   private loadOnGraphicChange(): void {
@@ -105,31 +125,32 @@ export class ReferencePointViewComponent {
       const graphic = this.graphic();
       const type = this.type();
       untracked(() => {
-        this.clearHighlights();
-        this.writablePoints.set([]);
-        this.writableRelationship.set(undefined);
-        this.writableLoading.set(false);
-
-        const layer = graphic.layer;
-        if (!(layer instanceof FeatureLayer)) return;
-
-        const rel = this.service.resolveRelationship(layer, type);
-        if (!rel) return;
-
-        this.writableRelationship.set(rel);
-        this.writableLoading.set(true);
-
-        this.service.loadPoints(layer, graphic, rel.relationshipId).then(
-          (points) => {
-            this.writablePoints.set(points);
-            this.writableLoading.set(false);
-          },
-          () => {
-            this.writableLoading.set(false);
-          },
-        );
+        this.loadReferencePoints(graphic, type);
       });
     });
+  }
+
+  private async loadReferencePoints(graphic: Graphic, type: ReferencePointType): Promise<void> {
+    this.clearHighlights();
+    this.writablePoints.set([]);
+    this.writableRelationship.set(undefined);
+    this.writableLoading.set(false);
+
+    const layer = graphic.layer;
+    if (!(layer instanceof FeatureLayer)) return;
+
+    const rel = this.service.resolveRelationship(layer, type);
+    if (!rel) return;
+
+    this.writableRelationship.set(rel);
+    this.writableLoading.set(true);
+
+    try {
+      const points = await this.service.loadPoints(layer, graphic, rel.relationshipId, rel.relatedLayer);
+      this.writablePoints.set(points);
+    } finally {
+      this.writableLoading.set(false);
+    }
   }
 
   private clearHighlights(): void {
@@ -137,5 +158,6 @@ export class ReferencePointViewComponent {
       this.service.unhighlightPoint(graphic);
     }
     this.highlightedGraphics.clear();
+    this.writableHighlightedIds.set(new Set());
   }
 }

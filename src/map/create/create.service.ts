@@ -6,8 +6,7 @@ import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
-import { VonPointService } from '../reference/von/von-point.service';
-import { BisPointService } from '../reference/bis/bis-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -18,8 +17,7 @@ export class CreateService {
   private readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
-  private readonly vonPointService = inject(VonPointService);
-  private readonly bisPointService = inject(BisPointService);
+  private readonly refPointService = inject(ReferencePointService);
 
   async save(): Promise<number | undefined> {
     const layer = this.createStore.layer();
@@ -58,8 +56,7 @@ export class CreateService {
 
   cancel(): void {
     this.createGeometryService.cancel();
-    this.vonPointService.reset();
-    this.bisPointService.reset();
+    this.refPointService.reset();
     this.createStore.reset();
   }
 
@@ -99,11 +96,9 @@ export class CreateService {
         // Save reference points with the new feature's id
         const parentId = graphic.attributes.id;
         if (parentId) {
-          await this.vonPointService.save(parentId, layer.layerId);
-          await this.bisPointService.save(parentId, layer.layerId);
+          await this.refPointService.save(parentId, layer.layerId);
         }
-        this.vonPointService.reset();
-        this.bisPointService.reset();
+        this.refPointService.reset();
         this.popupStore.open([graphic]);
       }
     } catch (error) {

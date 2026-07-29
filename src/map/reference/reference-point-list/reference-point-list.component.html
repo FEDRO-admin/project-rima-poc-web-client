@@ -42,7 +42,7 @@
               <button
                 class="refpoint-action-btn"
                 (click)="startEditing(point.clientId)"
-                [disabled]="disabled() || sketchActive()"
+                [disabled]="disabled() || store.sketchActive()"
                 title="Edit point"
               >
                 <calcite-icon icon="pencil" scale="s"></calcite-icon>
@@ -50,7 +50,7 @@
               <button
                 class="refpoint-action-btn refpoint-action-btn--delete"
                 (click)="deletePoint(point.clientId)"
-                [disabled]="disabled() || sketchActive()"
+                [disabled]="disabled() || store.sketchActive()"
                 title="Delete point"
               >
                 <calcite-icon icon="trash" scale="s"></calcite-icon>
@@ -64,12 +64,12 @@
                   <button
                     class="refpoint-geo-btn"
                     (click)="startEditingGeometry(point.clientId)"
-                    [disabled]="sketchActive()"
+                    [disabled]="store.sketchActive()"
                   >
                     <calcite-icon icon="pin-tear" scale="s"></calcite-icon>
                     Move Point on Map
                   </button>
-                  @if (sketchActive()) {
+                  @if (store.sketchActive()) {
                     <span class="refpoint-geo-status">Moving point... click to place</span>
                   }
                 </div>
@@ -77,7 +77,7 @@
                 <rima-attribute-form
                   [fields]="fields()"
                   [values]="point.attributes"
-                  [disabled]="disabled() || sketchActive()"
+                  [disabled]="disabled() || store.sketchActive()"
                   [idPrefix]="'refpoint-edit-' + point.clientId"
                   (fieldChange)="onEditFieldChange(point.clientId, $event)"
                 />
@@ -90,12 +90,12 @@
           </div>
         }
       </div>
-    } @else if (!isAddingThisType()) {
+    } @else if (!isAdding()) {
       <div class="refpoint-empty">No reference points</div>
     }
 
     <!-- Adding new point -->
-    @if (isAddingThisType()) {
+    @if (isAdding()) {
       <div class="refpoint-adding">
         <div class="refpoint-adding-header">
           <calcite-icon icon="plus" scale="s"></calcite-icon>
@@ -104,9 +104,9 @@
 
         <!-- Geometry input -->
         <div class="refpoint-adding-geometry">
-          @if (!addingGeometry()) {
+          @if (!store.addingGeometry()) {
             <div class="refpoint-geo-options">
-              <button class="refpoint-geo-btn" (click)="placeOnMap()" [disabled]="sketchActive()">
+              <button class="refpoint-geo-btn" (click)="placeOnMap()" [disabled]="store.sketchActive()">
                 <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
                 Place on Map
               </button>
@@ -116,7 +116,7 @@
               </button>
             </div>
 
-            @if (sketchActive()) {
+            @if (store.sketchActive()) {
               <div class="refpoint-geo-status-bar">
                 <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
                 <span>Click on map to place the point...</span>
@@ -155,18 +155,18 @@
             <div class="refpoint-geo-placed">
               <calcite-icon icon="check-circle" scale="s"></calcite-icon>
               <span
-                >Point placed ({{ addingGeometry()!.x | number: '1.0-0' }},
-                {{ addingGeometry()!.y | number: '1.0-0' }})</span
+                >Point placed ({{ store.addingGeometry()!.x | number: '1.0-0' }},
+                {{ store.addingGeometry()!.y | number: '1.0-0' }})</span
               >
             </div>
           }
         </div>
 
         <!-- Attributes for new point -->
-        @if (addingGeometry()) {
+        @if (store.addingGeometry()) {
           <rima-attribute-form
             [fields]="fields()"
-            [values]="addingAttributes()"
+            [values]="store.addingAttributes()"
             [disabled]="false"
             idPrefix="refpoint-add"
             (fieldChange)="onAddingFieldChange($event)"
@@ -176,7 +176,9 @@
         <!-- Add/Cancel actions -->
         <div class="refpoint-adding-actions">
           <button class="refpoint-cancel-btn" (click)="cancelAdd()">Cancel</button>
-          <button class="refpoint-confirm-btn" (click)="confirmAdd()" [disabled]="!addingGeometry()">Add Point</button>
+          <button class="refpoint-confirm-btn" (click)="confirmAdd()" [disabled]="!store.addingGeometry()">
+            Add Point
+          </button>
         </div>
       </div>
     } @else {
@@ -184,7 +186,7 @@
       <button
         class="refpoint-add-btn"
         (click)="startAdding()"
-        [disabled]="disabled() || sketchActive() || isAddingThisType()"
+        [disabled]="disabled() || store.sketchActive() || isAdding()"
       >
         <calcite-icon icon="plus" scale="s"></calcite-icon>
         Add Point

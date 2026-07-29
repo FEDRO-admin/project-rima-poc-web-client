@@ -20,10 +20,8 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
-import { VonPointStore } from '../../reference/von/von-point.store';
-import { BisPointStore } from '../../reference/bis/bis-point.store';
-import { VonPointService } from '../../reference/von/von-point.service';
-import { BisPointService } from '../../reference/bis/bis-point.service';
+import { ReferencePointStore } from '../../reference/reference-point.store';
+import { ReferencePointService } from '../../reference/reference-point.service';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -38,10 +36,8 @@ export class CreateFormComponent implements OnDestroy {
   protected readonly createStore = inject(CreateStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
-  protected readonly refPointStore = inject(VonPointStore);
-  private readonly bisPointStore = inject(BisPointStore);
-  private readonly vonPointService = inject(VonPointService);
-  private readonly bisPointService = inject(BisPointService);
+  protected readonly refPointStore = inject(ReferencePointStore);
+  private readonly refPointService = inject(ReferencePointService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -52,8 +48,7 @@ export class CreateFormComponent implements OnDestroy {
       const layer = this.createStore.layer();
       untracked(() => {
         if (layer) {
-          this.vonPointService.initializeForLayer(layer);
-          this.bisPointService.initializeForLayer(layer);
+          this.refPointService.initializeForLayer(layer);
         }
       });
     });
