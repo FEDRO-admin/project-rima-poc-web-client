@@ -95,7 +95,7 @@ export class MapViewInitService {
     const items: PortalItem[] = await this.portalService.queryItems(query);
     const layerGroups: Layer[][] = await Promise.all(items.map((item) => this.loadWebMapItem(item)));
 
-    return layerGroups.flat();
+    return layerGroups.flat().reverse();
   }
 
   private async loadWebMapItem(item: PortalItem): Promise<Layer[]> {
