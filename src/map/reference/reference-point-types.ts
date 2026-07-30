@@ -1,8 +1,6 @@
 import type Point from '@arcgis/core/geometry/Point';
-import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import type { AttributeEditField } from '../shared/attribute-edit-field';
 
-import { REFERENCE_POINT_TYPES, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+import { REFERENCE_POINT_TYPES } from './reference-point-config';
 
 export type ReferencePointType = (typeof REFERENCE_POINT_TYPES)[number];
 
@@ -22,18 +20,4 @@ let nextClientId = 0;
 
 export function generateClientId(): string {
   return `rp-${Date.now()}-${++nextClientId}`;
-}
-
-export interface ReferencePointRelationshipInfo {
-  type: ReferencePointType;
-  relationshipId: number;
-  relatedLayer: FeatureLayer;
-  fields: AttributeEditField[];
-}
-
-export function classifyRelationshipByLayerId(layerId: number): ReferencePointType | undefined {
-  for (const config of Object.values(REF_POINT_TYPE_CONFIGS)) {
-    if (config.layerId === layerId) return config.type;
-  }
-  return undefined;
 }

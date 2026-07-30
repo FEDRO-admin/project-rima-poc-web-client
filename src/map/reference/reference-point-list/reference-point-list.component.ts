@@ -25,11 +25,7 @@ export class ReferencePointListComponent {
 
   protected readonly typeStore = computed(() => this.store.forType(this.type()));
 
-  protected readonly relationship = computed(() => this.typeStore().relationship());
-
-  protected readonly points = computed(() => this.typeStore().points());
-
-  protected readonly displayVisible = computed(() => this.typeStore().displayVisible());
+  protected readonly displayTitle = computed(() => REF_POINT_TYPE_CONFIGS[this.type()].displayTitle);
 
   protected readonly activeEditId = computed(() => {
     return this.store.editingType() === this.type() ? this.store.activeEditId() : undefined;
@@ -37,16 +33,6 @@ export class ReferencePointListComponent {
 
   protected readonly isAdding = computed(() => {
     return this.store.addingType() === this.type();
-  });
-
-  protected readonly hiddenPointIds = computed(() => this.typeStore().hiddenPointIds());
-
-  protected readonly fields = computed(() => {
-    return this.relationship()?.fields ?? [];
-  });
-
-  protected readonly title = computed(() => {
-    return REF_POINT_TYPE_CONFIGS[this.type()].displayTitle;
   });
 
   protected coordinateX = '';
@@ -134,7 +120,7 @@ export class ReferencePointListComponent {
   }
 
   protected isPointHidden(clientId: string): boolean {
-    return this.hiddenPointIds().includes(clientId);
+    return this.typeStore().hiddenPointIds().includes(clientId);
   }
 
   protected togglePointVisibility(clientId: string): void {

@@ -48,7 +48,7 @@ export class CreateFormComponent implements OnDestroy {
       const layer = this.createStore.layer();
       untracked(() => {
         if (layer) {
-          this.refPointService.initializeForLayer(layer);
+          this.refPointService.prepareForLayer(layer);
         }
       });
     });

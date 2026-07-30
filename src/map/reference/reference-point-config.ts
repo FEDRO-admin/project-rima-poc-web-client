@@ -34,6 +34,14 @@ const REF_POINT_BIS_SYMBOL = new SimpleMarkerSymbol({
   outline: { color: [255, 255, 255], width: 2 },
 });
 
+/** Symbol for points being added (green diamond). */
+export const REF_POINT_ADDING_SYMBOL = new SimpleMarkerSymbol({
+  style: 'diamond',
+  color: [46, 204, 113, 0.9],
+  size: 12,
+  outline: { color: [255, 255, 255], width: 2 },
+});
+
 export const REFERENCE_POINT_TYPES = ['von', 'bis'] as const;
 
 export interface ReferencePointTypeConfig {

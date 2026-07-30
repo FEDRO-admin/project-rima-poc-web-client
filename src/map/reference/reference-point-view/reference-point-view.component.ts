@@ -12,15 +12,10 @@ import {
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { ReferencePointViewService } from './reference-point-view.service';
+import { ReferencePointService } from '../reference-point.service';
 import { resolveFieldDisplayValue } from '../../layer/layer-attribute-domain-resolver';
 import { isImmutableField } from '../../layer/layer-attributes';
-import type {
-  ReferencePoint,
-  ReferencePointRelationshipInfo,
-  ReferencePointType,
-  AttributeValue,
-} from '../reference-point-types';
+import type { ReferencePoint, ReferencePointType, AttributeValue } from '../reference-point-types';
 
 interface FieldEntry {
   label: string;
@@ -38,13 +33,13 @@ export class ReferencePointViewComponent implements OnDestroy {
   readonly graphic = input.required<Graphic>();
   readonly type = input.required<ReferencePointType>();
 
-  private readonly service = inject(ReferencePointViewService);
+  private readonly service = inject(ReferencePointService);
 
-  private readonly writableRelationship = signal<ReferencePointRelationshipInfo | undefined>(undefined);
+  private readonly writableRelatedLayer = signal<FeatureLayer | undefined>(undefined);
   private readonly writablePoints = signal<ReferencePoint[]>([]);
   private readonly writableLoading = signal(false);
 
-  protected readonly relationship = this.writableRelationship.asReadonly();
+  protected readonly relatedLayer = this.writableRelatedLayer.asReadonly();
   protected readonly points = this.writablePoints.asReadonly();
   protected readonly loading = this.writableLoading.asReadonly();
 
@@ -67,7 +62,7 @@ export class ReferencePointViewComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.clearHighlights();
+    this.service.cleanupHighlights();
   }
 
   protected isHighlighted(clientId: string): boolean {
@@ -108,11 +103,11 @@ export class ReferencePointViewComponent implements OnDestroy {
   }
 
   protected getDisplayFields(point: ReferencePoint): FieldEntry[] {
-    const relatedLayer = this.relationship()?.relatedLayer;
-    if (!relatedLayer?.fields?.length) return [];
+    const layer = this.relatedLayer();
+    if (!layer?.fields?.length) return [];
 
-    const graphic = new Graphic({ attributes: point.attributes, layer: relatedLayer });
-    const editableFields = relatedLayer.fields.filter((field) => !isImmutableField(field.name, relatedLayer));
+    const graphic = new Graphic({ attributes: point.attributes, layer });
+    const editableFields = layer.fields.filter((field) => !isImmutableField(field.name, layer));
 
     return editableFields.map((field) => ({
       label: field.alias || field.name,
@@ -133,20 +128,20 @@ export class ReferencePointViewComponent implements OnDestroy {
   private async loadReferencePoints(graphic: Graphic, type: ReferencePointType): Promise<void> {
     this.clearHighlights();
     this.writablePoints.set([]);
-    this.writableRelationship.set(undefined);
+    this.writableRelatedLayer.set(undefined);
     this.writableLoading.set(false);
 
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    const rel = this.service.resolveRelationship(layer, type);
-    if (!rel) return;
+    const resolved = this.service.resolveForView(layer, type);
+    if (!resolved) return;
 
-    this.writableRelationship.set(rel);
+    this.writableRelatedLayer.set(resolved.relatedLayer);
     this.writableLoading.set(true);
 
     try {
-      const points = await this.service.loadPoints(layer, graphic, rel.relationshipId, rel.relatedLayer);
+      const points = await this.service.loadPoints(layer, graphic, resolved.relationshipId, resolved.relatedLayer);
       this.writablePoints.set(points);
     } finally {
       this.writableLoading.set(false);

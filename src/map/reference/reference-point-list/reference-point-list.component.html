@@ -1,23 +1,23 @@
-@if (relationship()) {
+@if (typeStore().available()) {
   <div class="refpoint-section">
     <div class="refpoint-section-header">
       <calcite-icon icon="pin-plus" scale="s"></calcite-icon>
-      <span>{{ title() }}</span>
-      <span class="refpoint-count">({{ points().length }})</span>
+      <span>{{ displayTitle() }}</span>
+      <span class="refpoint-count">({{ typeStore().points().length }})</span>
       <span class="refpoint-header-spacer"></span>
       <button
         class="refpoint-display-toggle"
         (click)="toggleDisplay()"
-        [title]="displayVisible() ? 'Hide points on map' : 'Show points on map'"
+        [title]="typeStore().displayVisible() ? 'Hide points on map' : 'Show points on map'"
       >
-        <calcite-icon [icon]="displayVisible() ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
+        <calcite-icon [icon]="typeStore().displayVisible() ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
       </button>
     </div>
 
     <!-- Point list -->
-    @if (points().length > 0) {
+    @if (typeStore().points().length > 0) {
       <div class="refpoint-list">
-        @for (point of points(); track point.clientId) {
+        @for (point of typeStore().points(); track point.clientId) {
           <div class="refpoint-item" [class.refpoint-item--editing]="activeEditId() === point.clientId">
             <div class="refpoint-item-row">
               <calcite-icon icon="pin" scale="s"></calcite-icon>
@@ -75,7 +75,7 @@
                 </div>
 
                 <rima-attribute-form
-                  [fields]="fields()"
+                  [fields]="typeStore().fields()"
                   [values]="point.attributes"
                   [disabled]="disabled() || store.sketchActive()"
                   [idPrefix]="'refpoint-edit-' + point.clientId"
@@ -165,7 +165,7 @@
         <!-- Attributes for new point -->
         @if (store.addingGeometry()) {
           <rima-attribute-form
-            [fields]="fields()"
+            [fields]="typeStore().fields()"
             [values]="store.addingAttributes()"
             [disabled]="false"
             idPrefix="refpoint-add"

@@ -4,42 +4,43 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { ReferencePointSaveError, ReferencePointLoadError } from './reference-point-errors';
 import { ReferencePoint, ReferencePointType, AttributeValue, generateClientId } from './reference-point-types';
-import { REFERENCE_POINT_TYPES, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
-import { resolveAllRelationships, queryRelatedPoints } from './reference-point-resolution';
+import { REFERENCE_POINT_TYPES, REF_POINT_TYPE_CONFIGS, REF_POINT_ADDING_SYMBOL } from './reference-point-config';
+import {
+  findRelationshipId,
+  findRelatedLayer,
+  resolveEditableFields,
+  queryRelatedPoints,
+} from './reference-point-resolution';
 import { applyPointEdits } from './reference-point-helpers';
 import { buildSnappingSources, cleanupSketchResources } from '../shared/sketch-utils';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
 import { ReferencePointStore } from './reference-point.store';
 import { MapViewService } from '../view/mapview/mapview.service';
-
-const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
-  style: 'diamond',
-  color: [46, 204, 113, 0.9],
-  size: 12,
-  outline: { color: [255, 255, 255], width: 2 },
-});
+import { HistoryStore } from '../history/history.store';
 
 @Injectable({ providedIn: 'root' })
 export class ReferencePointService {
   readonly store = inject(ReferencePointStore);
   private readonly viewService = inject(MapViewService);
+  private readonly historyStore = inject(HistoryStore);
 
   private displayLayers: Partial<Record<ReferencePointType, GraphicsLayer>> = {};
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
   private eventHandle: { remove(): void } | undefined;
+  private highlightLayer: GraphicsLayer | undefined;
 
   // --- Lifecycle ---
 
-  initializeForLayer(layer: FeatureLayer): void {
+  prepareForLayer(layer: FeatureLayer): void {
     const view = this.viewService.getMapView();
-    const relationships = resolveAllRelationships(layer, view);
     for (const type of REFERENCE_POINT_TYPES) {
-      const relationship = relationships.find((r) => r.type === type);
-      this.store.forType(type).initialize(relationship);
+      const relationshipId = findRelationshipId(layer, type);
+      const relatedLayer = view && relationshipId != null ? findRelatedLayer(view, type) : undefined;
+      const fields = relatedLayer ? resolveEditableFields(relatedLayer) : [];
+      this.store.forType(type).setup(relationshipId, relatedLayer, fields);
     }
   }
 
@@ -47,19 +48,17 @@ export class ReferencePointService {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    const view = this.viewService.getMapView();
-    const relationships = resolveAllRelationships(layer, view);
+    this.prepareForLayer(layer);
 
     for (const type of REFERENCE_POINT_TYPES) {
       const typeStore = this.store.forType(type);
-      const relationship = relationships.find((r) => r.type === type);
-      typeStore.initialize(relationship);
-
-      if (!relationship) continue;
+      const relationshipId = typeStore.relationshipId();
+      const relatedLayer = typeStore.relatedLayer();
+      if (relationshipId == null || !relatedLayer) continue;
 
       typeStore.setLoading(true);
       try {
-        const points = await queryRelatedPoints(layer, graphic, relationship.relationshipId, relationship.relatedLayer);
+        const points = await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
         typeStore.setPoints(points);
         typeStore.setLoading(false);
         this.refreshDisplayLayer(type);
@@ -88,7 +87,7 @@ export class ReferencePointService {
     this.sketchViewModel = new SketchViewModel({
       view,
       layer: this.sketchLayer,
-      pointSymbol: ADDING_POINT_SYMBOL,
+      pointSymbol: REF_POINT_ADDING_SYMBOL,
       snappingOptions: {
         enabled: true,
         featureSources: buildSnappingSources(view.map),
@@ -173,7 +172,7 @@ export class ReferencePointService {
 
     const graphic = new Graphic({
       geometry: point.geometry.clone(),
-      symbol: ADDING_POINT_SYMBOL,
+      symbol: REF_POINT_ADDING_SYMBOL,
     });
     this.sketchLayer.add(graphic);
 
@@ -238,16 +237,10 @@ export class ReferencePointService {
     try {
       for (const type of REFERENCE_POINT_TYPES) {
         const typeStore = this.store.forType(type);
-        const relationship = typeStore.relationship();
-        if (!relationship) continue;
+        const relatedLayer = typeStore.relatedLayer();
+        if (!relatedLayer) continue;
 
-        await applyPointEdits(
-          relationship.relatedLayer,
-          typeStore.points(),
-          typeStore.deletedObjectIds(),
-          parentId,
-          parentLayerId,
-        );
+        await applyPointEdits(relatedLayer, typeStore.points(), typeStore.deletedObjectIds(), parentId, parentLayerId);
       }
       this.store.saving.set(false);
     } catch (error) {
@@ -256,10 +249,68 @@ export class ReferencePointService {
     }
   }
 
+  // --- View / Highlight ---
+
+  resolveForView(
+    layer: FeatureLayer,
+    type: ReferencePointType,
+  ): { relationshipId: number; relatedLayer: FeatureLayer } | undefined {
+    const view = this.viewService.getMapView();
+    if (!view) return undefined;
+
+    const relationshipId = findRelationshipId(layer, type);
+    if (relationshipId == null) return undefined;
+
+    const relatedLayer = findRelatedLayer(view, type);
+    if (!relatedLayer) return undefined;
+
+    return { relationshipId, relatedLayer };
+  }
+
+  async loadPoints(
+    layer: FeatureLayer,
+    graphic: Graphic,
+    relationshipId: number,
+    relatedLayer: FeatureLayer,
+  ): Promise<ReferencePoint[]> {
+    try {
+      const historicMoment = this.historyStore.selectedDate() ?? undefined;
+      return await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer, historicMoment);
+    } catch (error) {
+      throw new ReferencePointLoadError(error);
+    }
+  }
+
+  highlightPoint(point: ReferencePoint, type: ReferencePointType): Graphic {
+    this.ensureHighlightLayer();
+
+    const graphic = new Graphic({
+      geometry: point.geometry ?? undefined,
+      symbol: REF_POINT_TYPE_CONFIGS[type].symbol,
+    });
+
+    this.highlightLayer!.add(graphic);
+    return graphic;
+  }
+
+  unhighlightPoint(graphic: Graphic): void {
+    this.highlightLayer?.remove(graphic);
+  }
+
+  cleanupHighlights(): void {
+    const view = this.viewService.getMapView();
+    if (this.highlightLayer) {
+      this.highlightLayer.removeAll();
+      view?.map?.remove(this.highlightLayer);
+      this.highlightLayer = undefined;
+    }
+  }
+
   // --- Cleanup ---
 
   cleanup(): void {
     this.cleanupSketch();
+    this.cleanupHighlights();
     for (const type of REFERENCE_POINT_TYPES) {
       this.removeDisplayLayer(type);
     }
@@ -308,7 +359,7 @@ export class ReferencePointService {
     if (this.store.addingType() === type) {
       const addingGeometry = this.store.addingGeometry();
       if (addingGeometry) {
-        graphics.push(new Graphic({ geometry: addingGeometry, symbol: ADDING_POINT_SYMBOL }));
+        graphics.push(new Graphic({ geometry: addingGeometry, symbol: REF_POINT_ADDING_SYMBOL }));
       }
     }
 
@@ -343,5 +394,15 @@ export class ReferencePointService {
       displayLayer.destroy();
     }
     this.displayLayers[type] = undefined;
+  }
+
+  private ensureHighlightLayer(): void {
+    if (this.highlightLayer) return;
+
+    const view = this.viewService.getMapView();
+    if (!view?.map) return;
+
+    this.highlightLayer = new GraphicsLayer({ title: 'Reference Point Highlights', listMode: 'hide' });
+    view.map.add(this.highlightLayer);
   }
 }

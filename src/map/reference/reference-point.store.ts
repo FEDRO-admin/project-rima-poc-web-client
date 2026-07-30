@@ -1,20 +1,18 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { patchState, signalStore, signalStoreFeature, withComputed, withMethods, withState } from '@ngrx/signals';
 import type Point from '@arcgis/core/geometry/Point';
-import {
-  ReferencePoint,
-  ReferencePointRelationshipInfo,
-  ReferencePointType,
-  AttributeValue,
-} from './reference-point-types';
+import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { ReferencePoint, ReferencePointType, AttributeValue } from './reference-point-types';
+import type { AttributeEditField } from '../shared/attribute-edit-field';
 
 // --- Per-type store (factory) ---
-
 interface ReferencePointTypeState {
   points: ReferencePoint[];
   deletedObjectIds: number[];
   hiddenPointIds: string[];
-  relationship: ReferencePointRelationshipInfo | undefined;
+  relationshipId: number | undefined;
+  relatedLayer: FeatureLayer | undefined;
+  fields: AttributeEditField[];
   displayVisible: boolean;
   loading: boolean;
 }
@@ -23,7 +21,9 @@ const TYPE_INITIAL_STATE: ReferencePointTypeState = {
   points: [],
   deletedObjectIds: [],
   hiddenPointIds: [],
-  relationship: undefined,
+  relationshipId: undefined,
+  relatedLayer: undefined,
+  fields: [],
   displayVisible: true,
   loading: false,
 };
@@ -31,14 +31,18 @@ const TYPE_INITIAL_STATE: ReferencePointTypeState = {
 const referencePointTypeFeature = signalStoreFeature(
   withState(TYPE_INITIAL_STATE),
   withComputed((store) => ({
-    hasRelationship: computed(() => store.relationship() != null),
+    available: computed(() => store.relationshipId() != null),
     hasPendingChanges: computed(
       () => store.points().some((p) => p.isNew || p.isModified) || store.deletedObjectIds().length > 0,
     ),
   })),
   withMethods((store) => ({
-    initialize(relationship: ReferencePointRelationshipInfo | undefined): void {
-      patchState(store, { ...TYPE_INITIAL_STATE, relationship });
+    setup(
+      relationshipId: number | undefined,
+      relatedLayer: FeatureLayer | undefined,
+      fields: AttributeEditField[],
+    ): void {
+      patchState(store, { ...TYPE_INITIAL_STATE, relationshipId, relatedLayer, fields });
     },
     setLoading(loading: boolean): void {
       patchState(store, { loading });
@@ -78,14 +82,12 @@ const referencePointTypeFeature = signalStoreFeature(
 );
 
 // --- Concrete per-type stores ---
-
 export const VonPointTypeStore = signalStore({ providedIn: 'root' }, referencePointTypeFeature);
 export const BisPointTypeStore = signalStore({ providedIn: 'root' }, referencePointTypeFeature);
 
 type ReferencePointTypeStoreInstance = InstanceType<typeof VonPointTypeStore> | InstanceType<typeof BisPointTypeStore>;
 
 // --- Parent store (composes per-type stores + shared state) ---
-
 @Injectable({ providedIn: 'root' })
 export class ReferencePointStore {
   readonly von: ReferencePointTypeStoreInstance = inject(VonPointTypeStore);

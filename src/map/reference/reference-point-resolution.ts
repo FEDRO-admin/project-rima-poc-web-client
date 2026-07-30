@@ -2,41 +2,42 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Field from '@arcgis/core/layers/support/Field';
-import type Relationship from '@arcgis/core/layers/support/Relationship';
 import type Point from '@arcgis/core/geometry/Point';
 import type MapView from '@arcgis/core/views/MapView';
 import { AttributeEditField, convertAttributeFieldType } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
-import {
-  ReferencePoint,
-  ReferencePointRelationshipInfo,
-  classifyRelationshipByLayerId,
-  generateClientId,
-} from './reference-point-types';
-import { REF_POINT_AUTO_POPULATED_FIELDS } from './reference-point-config';
+import { ReferencePoint, ReferencePointType, generateClientId } from './reference-point-types';
+import { REF_POINT_AUTO_POPULATED_FIELDS, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
 
-export function resolveAllRelationships(
-  layer: FeatureLayer,
-  view: MapView | undefined,
-): ReferencePointRelationshipInfo[] {
-  if (!layer.relationships?.length || !view?.map) return [];
+export function findRelationshipId(layer: FeatureLayer, type: ReferencePointType): number | undefined {
+  const config = REF_POINT_TYPE_CONFIGS[type];
+  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === config.layerId)?.id;
+}
 
-  const results: ReferencePointRelationshipInfo[] = [];
+export function findRelatedLayer(view: MapView, type: ReferencePointType): FeatureLayer | undefined {
+  const config = REF_POINT_TYPE_CONFIGS[type];
+  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === config.layerId) as
+    | FeatureLayer
+    | undefined;
+}
 
-  for (const rel of layer.relationships) {
-    if (rel.role !== 'origin') continue;
+export function resolveEditableFields(layer: FeatureLayer): AttributeEditField[] {
+  if (!layer.fields?.length) return [];
 
-    const relatedLayer = findLayerByRelationship(rel, view);
-    if (!relatedLayer) continue;
-
-    const type = classifyRelationshipByLayerId(relatedLayer.layerId);
-    if (!type) continue;
-
-    const fields = resolveEditableFields(relatedLayer);
-    results.push({ type, relationshipId: rel.id, relatedLayer, fields });
-  }
-
-  return results;
+  return layer.fields
+    .filter(
+      (field) =>
+        !isImmutableField(field.name, layer) && !REF_POINT_AUTO_POPULATED_FIELDS.includes(field.name.toLowerCase()),
+    )
+    .map((field) => ({
+      name: field.name,
+      alias: field.alias || field.name,
+      fieldType: convertAttributeFieldType(field),
+      nullable: field.nullable,
+      length: field.length ?? undefined,
+      codedValues: extractCodedValues(field),
+      editable: field.editable,
+    }));
 }
 
 export async function queryRelatedPoints(
@@ -44,6 +45,7 @@ export async function queryRelatedPoints(
   graphic: Graphic,
   relationshipId: number,
   relatedLayer: FeatureLayer,
+  historicMoment?: Date,
 ): Promise<ReferencePoint[]> {
   const objectId = graphic.attributes[layer.objectIdField];
   if (objectId == null) return [];
@@ -53,6 +55,7 @@ export async function queryRelatedPoints(
     relationshipId,
     outFields: ['*'],
     returnGeometry: true,
+    historicMoment: historicMoment ?? undefined,
   });
 
   const result = await layer.queryRelatedFeatures(query);
@@ -74,36 +77,9 @@ function graphicToReferencePoint(graphic: Graphic, relatedLayer: FeatureLayer): 
   };
 }
 
-function resolveEditableFields(layer: FeatureLayer): AttributeEditField[] {
-  if (!layer.fields?.length) return [];
-
-  return layer.fields
-    .filter(
-      (field) =>
-        !isImmutableField(field.name, layer) && !REF_POINT_AUTO_POPULATED_FIELDS.includes(field.name.toLowerCase()),
-    )
-    .map((field) => ({
-      name: field.name,
-      alias: field.alias || field.name,
-      fieldType: convertAttributeFieldType(field),
-      nullable: field.nullable,
-      length: field.length ?? undefined,
-      codedValues: extractCodedValues(field),
-      editable: field.editable,
-    }));
-}
-
 function extractCodedValues(field: Field): { code: string | number; name: string }[] {
   if (field.domain?.type === 'coded-value' && field.domain.codedValues) {
     return field.domain.codedValues.map((cv) => ({ code: cv.code, name: cv.name }));
   }
   return [];
-}
-
-function findLayerByRelationship(relationship: Relationship, view: MapView): FeatureLayer | undefined {
-  const allLayers = view.map!.allLayers;
-  return allLayers.find((layer) => {
-    if (!(layer instanceof FeatureLayer)) return false;
-    return layer.layerId === relationship.relatedTableId;
-  }) as FeatureLayer | undefined;
 }

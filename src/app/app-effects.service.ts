@@ -6,7 +6,6 @@ import { CreateEffects } from '../map/create/create-effects';
 import { DeleteEffects } from '../map/delete/delete-effects';
 import { HierarchyEffects } from '../map/popup/content/hierarchy-tab/hierarchy-effects';
 import { HistoryEffects } from '../map/history/history-effects';
-import { ReferencePointViewEffects } from '../map/reference/reference-point-view/reference-point-view-effects';
 import { ViewEffects } from '../map/view/view-effects';
 import { DocumentsEffects } from '../map/documents/documents-effects';
 
@@ -28,6 +27,5 @@ export class AppEffectsService {
     inject(HistoryEffects);
     inject(DocumentsEffects);
     inject(ViewEffects);
-    inject(ReferencePointViewEffects);
   }
 }
