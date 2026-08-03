@@ -10,12 +10,14 @@ import { resolveEditableAttributeFields } from '../../layer/layer-attribute-doma
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
 import { ReferencePointStore } from '../../reference/reference-point.store';
+import { StatusEditComponent } from '../../status/status-edit/status-edit.component';
+import { StatusStore } from '../../status/status.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-edit-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent, StatusEditComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './edit-form.component.html',
   styleUrl: './edit-form.component.scss',
@@ -24,6 +26,7 @@ export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
   private readonly editService = inject(EditService);
   private readonly refPointStore = inject(ReferencePointStore);
+  private readonly statusStore = inject(StatusStore);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -55,7 +58,8 @@ export class EditFormComponent implements OnDestroy {
   });
 
   protected readonly canSave = computed(() => {
-    const dirty = this.store.isDirty() || this.refPointStore.hasPendingChanges();
+    const dirty =
+      this.store.isDirty() || this.refPointStore.hasPendingChanges() || this.statusStore.hasPendingChanges();
     return dirty && !this.store.saving();
   });
 

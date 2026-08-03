@@ -1,0 +1,59 @@
+@if (store.statusLayer()) {
+  <div class="status-edit-section">
+    <div class="status-edit-header">
+      <calcite-icon icon="clipboard-check" scale="s"></calcite-icon>
+      <span>Zustand</span>
+      @if (store.deleted()) {
+        <span class="status-edit-badge status-edit-badge--deleted">Deleted</span>
+      }
+    </div>
+
+    @if (store.loading()) {
+      <div class="status-edit-loading">Loading status...</div>
+    } @else if (store.deleted()) {
+      <div class="status-edit-deleted-info">Status record will be deleted on save.</div>
+    } @else if (store.showForm()) {
+      <rima-attribute-form
+        [fields]="store.fields()"
+        [values]="store.editedAttributes()"
+        [disabled]="disabled()"
+        idPrefix="status"
+        (fieldChange)="onFieldChange($event)"
+      />
+      <div class="status-edit-actions">
+        <button class="status-edit-btn status-edit-btn--delete" (click)="requestDelete()" [disabled]="disabled()">
+          <calcite-icon icon="trash" scale="s"></calcite-icon>
+          Delete Status
+        </button>
+      </div>
+    } @else if (store.showCreateForm()) {
+      <rima-attribute-form
+        [fields]="store.fields()"
+        [values]="store.editedAttributes()"
+        [disabled]="disabled()"
+        idPrefix="status-new"
+        (fieldChange)="onFieldChange($event)"
+      />
+      <div class="status-edit-actions">
+        <button class="status-edit-btn status-edit-btn--cancel" (click)="cancelCreate()" [disabled]="disabled()">
+          Cancel
+        </button>
+      </div>
+    } @else if (store.showCreateButton()) {
+      <button class="status-edit-btn status-edit-btn--create" (click)="createStatus()" [disabled]="disabled()">
+        <calcite-icon icon="plus" scale="s"></calcite-icon>
+        Create Status
+      </button>
+    }
+  </div>
+
+  @if (confirmingDelete()) {
+    <rima-confirm-dialog
+      title="Delete Status"
+      message="Are you sure you want to delete the status record? This will be applied on save."
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      (confirmed)="onDeleteConfirm($event)"
+    />
+  }
+}

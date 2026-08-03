@@ -13,6 +13,8 @@ import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
 import { ReferencePointService } from '../reference/reference-point.service';
+import { StatusService } from '../status/status.service';
+import { StatusStore } from '../status/status.store';
 
 type AttributeValue = string | number | boolean | null;
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -25,6 +27,8 @@ export class EditService implements OnDestroy {
   private readonly popupStore = inject(PopupStore);
   private readonly viewService = inject(ViewService);
   private readonly refPointService = inject(ReferencePointService);
+  private readonly statusService = inject(StatusService);
+  private readonly statusStore = inject(StatusStore);
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
@@ -46,6 +50,7 @@ export class EditService implements OnDestroy {
     this.popupStore.close();
     this.showHighlight(graphic.geometry!);
     this.refPointService.loadForFeature(graphic);
+    this.statusService.loadForGraphic(graphic);
   }
 
   startGeometryEditing(): void {
@@ -125,8 +130,12 @@ export class EditService implements OnDestroy {
         await this.refPointService.save(parentId, layer.layerId);
       }
 
+      // Save status
+      await this.saveStatusRecord(graphic, layer);
+
       layer.refresh();
       this.refPointService.reset();
+      this.statusStore.reset();
       this.store.reset();
 
       // Reopen popup with refreshed feature
@@ -152,6 +161,7 @@ export class EditService implements OnDestroy {
   cancel(): void {
     const graphic = this.store.graphic();
     this.store.reset();
+    this.statusStore.reset();
 
     // Reopen popup with the original graphic
     if (graphic) {
@@ -164,6 +174,7 @@ export class EditService implements OnDestroy {
     this.removeHighlight();
     this._originalGeometry = undefined;
     this.refPointService.reset();
+    this.statusStore.reset();
     this.store.reset();
   }
 
@@ -314,6 +325,34 @@ export class EditService implements OnDestroy {
         return EDIT_LINE_SYMBOL;
       default:
         return EDIT_POLYGON_SYMBOL;
+    }
+  }
+
+  private async saveStatusRecord(graphic: Graphic, layer: FeatureLayer): Promise<void> {
+    const statusLayer = this.statusStore.statusLayer();
+    if (!statusLayer) return;
+
+    if (this.statusStore.deleted()) {
+      const record = this.statusStore.record();
+      if (record?.objectId != null) {
+        await this.statusService.deleteStatus(statusLayer, record.objectId);
+      }
+    } else if (this.statusStore.creating()) {
+      const parentId = graphic.attributes.id;
+      const parentClassName = String(layer.layerId);
+      if (parentId) {
+        await this.statusService.createStatus(
+          statusLayer,
+          parentId,
+          parentClassName,
+          this.statusStore.editedAttributes(),
+        );
+      }
+    } else if (this.statusStore.hasPendingChanges()) {
+      const record = this.statusStore.record();
+      if (record) {
+        await this.statusService.saveStatus(statusLayer, record, this.statusStore.editedAttributes());
+      }
     }
   }
 }

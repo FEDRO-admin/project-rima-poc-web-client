@@ -1,11 +1,11 @@
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
-import type Field from '@arcgis/core/layers/support/Field';
 import type Point from '@arcgis/core/geometry/Point';
 import type MapView from '@arcgis/core/views/MapView';
-import { AttributeEditField, convertAttributeFieldType } from '../shared/attribute-edit-field';
+import { AttributeEditField } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
+import { buildEditAttributeField } from '../layer/layer-attribute-domain-resolver';
 import { ReferencePoint, ReferencePointType, generateClientId } from './reference-point-types';
 import { REF_POINT_AUTO_POPULATED_FIELDS, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
 
@@ -29,15 +29,7 @@ export function resolveEditableFields(layer: FeatureLayer): AttributeEditField[]
       (field) =>
         !isImmutableField(field.name, layer) && !REF_POINT_AUTO_POPULATED_FIELDS.includes(field.name.toLowerCase()),
     )
-    .map((field) => ({
-      name: field.name,
-      alias: field.alias || field.name,
-      fieldType: convertAttributeFieldType(field),
-      nullable: field.nullable,
-      length: field.length ?? undefined,
-      codedValues: extractCodedValues(field),
-      editable: field.editable,
-    }));
+    .map((field) => buildEditAttributeField(field));
 }
 
 export async function queryRelatedPoints(
@@ -75,11 +67,4 @@ function graphicToReferencePoint(graphic: Graphic, relatedLayer: FeatureLayer): 
     isNew: false,
     isModified: false,
   };
-}
-
-function extractCodedValues(field: Field): { code: string | number; name: string }[] {
-  if (field.domain?.type === 'coded-value' && field.domain.codedValues) {
-    return field.domain.codedValues.map((cv) => ({ code: cv.code, name: cv.name }));
-  }
-  return [];
 }
