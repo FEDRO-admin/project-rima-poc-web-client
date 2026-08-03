@@ -12,16 +12,17 @@ skinparam ArrowColor #444444
 skinparam defaultFontSize 11
 skinparam SequenceMessageAlignment left
 
-title RIMA PoC - Table of Contents (ToC) Flow\nTask 579 / July 2026
+title RIMA PoC - Table of Contents (ToC) Flow\nTask 579 / August 2026
 
 actor "User" as user #LightBlue
 participant "MapComponent\ntemplate" as mapTpl #E8F5E9
 participant "TocComponent" as tocComp #F3E5F5
 participant "HistoryPickerComponent" as histPicker #F3E5F5
 participant "arcgis-layer-list\n[Web Component]" as layerList #FFEBEE
-participant "MapViewService\n[Signal]" as viewSvc #E8F5E9
+participant "ViewService\n[Signal]" as viewSvc #E8F5E9
+participant "HistoryStore\n[SignalStore]" as histStore #E3F2FD
 participant "CreateStore\n[SignalStore]" as createStore #E3F2FD
-participant "ArcGIS MapView" as mapView #FFEBEE
+participant "ArcGIS View\n(MapView/SceneView)" as view #FFEBEE
 participant "ArcGIS Layer" as layer #FFEBEE
 
 == Component Initialisation ==
@@ -31,11 +32,11 @@ activate tocComp
 
 note over tocComp
   TocComponent constructor:
-  - injects MapViewService, CreateStore
+  - injects ViewService, CreateStore, HistoryStore
   - resolves viewChild('layerList')
     -> reference to <arcgis-layer-list> element
   - registers Angular effect() watching
-    viewService.mapView() signal
+    viewService.activeView() signal
 end note
 
 tocComp -> layerList : Template renders:\n<arcgis-layer-list\n  #layerList\n  heading-level="2"\n  show-heading\n  show-errors\n  show-filter\n  min-filter-items="1"\n  selection-mode="single"\n  visibility-appearance="checkbox"\n  (arcgisTriggerAction)="onTriggerAction($event)"\n>
@@ -46,25 +47,26 @@ activate histPicker
 
 note over layerList
   At this point the layer list is empty.
-  It requires a MapView reference before
+  It requires a view reference before
   it can display any layers.
 end note
 
-== Reactive Binding (triggered by MapView registration) ==
+== Reactive Binding (triggered by view registration) ==
 
-viewSvc -> viewSvc : writableMapView.set(view)\n[signal emits from MapComponent.initMap()]
+viewSvc -> viewSvc : writableActiveView.set(view)\n[signal emits from ViewService.setInitialView()]
 
 note over tocComp
   Angular effect() fires because
-  viewService.mapView() signal changed.
-  Runs inside untracked() to prevent
-  re-triggering on layerList changes.
+  viewService.activeView() signal changed.
+  Inside untracked():
+  - assigns view to layer list
+  - sets listItemCreatedFunction callback
 end note
 
-tocComp -> layerList : layerList.view = mapView
+tocComp -> layerList : layerList.view = activeView
 tocComp -> layerList : layerList.listItemCreatedFunction =\n  onListItemCreated callback
 
-layerList -> mapView : reads map.layers collection
+layerList -> view : reads map.layers collection
 layerList -> layerList : builds list items from\nmap layer hierarchy\n(GroupLayer -> nested items,\n FeatureLayer/MapImageLayer/WMTSLayer -> leaf items)
 
 == List Item Creation (per layer) ==
@@ -76,8 +78,8 @@ group For each layer in the map
   alt item.layer instanceof FeatureLayer
     tocComp -> layerList : item.actionsSections = [\n  [{ title:'Zoom to',\n     icon:'zoom-to-object',\n     id:'zoom-to-layer' }],\n  [{ title:'Create',\n     icon:'plus',\n     id:'create-feature' }]\n]
     note right of layerList
-      Adds "Zoom to" AND "Create" actions.
-      FeatureLayer entries get both buttons.
+      FeatureLayer entries get both
+      "Zoom to" AND "Create" actions.
     end note
   else item.layer instanceof MapImageLayer
     tocComp -> layerList : item.actionsSections = [\n  [{ title:'Zoom to',\n     icon:'zoom-to-object',\n     id:'zoom-to-layer' }]\n]
@@ -85,7 +87,7 @@ group For each layer in the map
       MapImageLayer entries get
       only "Zoom to" action.
     end note
-  else other layer types (GroupLayer, WMTSLayer, etc.)
+  else other layer types (GroupLayer, WMSLayer, WMTSLayer, etc.)
     tocComp -> layerList : no action added
   end
 
@@ -106,8 +108,8 @@ end note
 == User Interaction: Toggle Visibility ==
 
 user -> layerList : clicks checkbox on a layer
-layerList -> mapView : layer.visible = true/false
-note over mapView : ArcGIS SDK immediately\nshows/hides the layer on the map
+layerList -> view : layer.visible = true/false
+note over view : ArcGIS SDK immediately\nshows/hides the layer on the map
 
 == User Interaction: Zoom to Layer ==
 
@@ -116,8 +118,8 @@ layerList -> tocComp : (arcgisTriggerAction) event\n{ action: { id:'zoom-to-laye
 activate tocComp
 
 tocComp -> tocComp : onTriggerAction(event)\ncheck: action.id === 'zoom-to-layer'
-tocComp -> viewSvc : read mapView() signal
-viewSvc --> tocComp : MapView reference
+tocComp -> viewSvc : read activeView() signal
+viewSvc --> tocComp : MapView or SceneView reference
 
 tocComp -> layer : [ASYNC] layer.load()
 activate layer
@@ -130,9 +132,9 @@ layer --> tocComp : layer loaded
 deactivate layer
 
 alt layer.fullExtent exists (FeatureLayer / MapImageLayer)
-  tocComp -> mapView : [ASYNC] view.goTo(layer.fullExtent)
+  tocComp -> view : [ASYNC] view.goTo(layer.fullExtent)
 else layer.type === 'wmts' (fallback)
-  tocComp -> mapView : [ASYNC] view.goTo(\n  layer.activeLayer.fullExtent)
+  tocComp -> view : [ASYNC] view.goTo(\n  layer.activeLayer.fullExtent)
 else no extent available
   tocComp -> tocComp : no navigation (silent)
 end
@@ -152,32 +154,26 @@ activate tocComp
 
 tocComp -> tocComp : onTriggerAction(event)\ncheck: action.id === 'create-feature'
 
-tocComp -> layer : [ASYNC] layer.load()
-activate layer
-layer --> tocComp : layer loaded
-deactivate layer
-
-tocComp -> tocComp : getSubtypeFieldName(layer)\n-> subtypeField or undefined
-
-alt subtypeField exists
-  tocComp -> layer : [ASYNC] layer.queryFeatures()\n  query.num = 1\n  query.outFields = [subtypeField]
+tocComp -> histStore : check historyStore.active()
+alt history mode is active
+  tocComp -> tocComp : return (creation blocked)
+else history mode is inactive
+  tocComp -> layer : [ASYNC] layer.load()
   activate layer
-  layer --> tocComp : feature result
+  layer --> tocComp : layer loaded
   deactivate layer
-  tocComp -> tocComp : extract subtypeValue from result\nor fallback:\n  getSubtypeCodeFromLayerName(layer)\n  ?? getDefaultSubtypeCode(layer)
-end
 
-tocComp -> createStore : activate(layer, subtypeField, subtypeValue)
-note over createStore
-  CreateStore.activate() sets:
-  - active = true
-  - layer reference
-  - subtype configuration
-  
-  This triggers CreateEffects:
-  - closePopupOnCreate: closes open popup
-  - cancelEditsOnCreate: resets active edits
-end note
+  tocComp -> createStore : activate(layer)
+  note over createStore
+    CreateStore.activate() sets:
+    - active = true
+    - layer reference
+    
+    This triggers CreateEffects:
+    - closes any open popup
+    - cancels active edits
+  end note
+end
 
 deactivate tocComp
 
