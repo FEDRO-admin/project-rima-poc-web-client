@@ -31,7 +31,7 @@
               <span class="refpoint-item-spacer"></span>
               <button
                 class="refpoint-action-btn"
-                (click)="startEditing($index)"
+                (click)="startEditing(point.clientId)"
                 [disabled]="disabled() || viewStore.sketchActive()"
                 title="Edit point"
               >
@@ -39,7 +39,7 @@
               </button>
               <button
                 class="refpoint-action-btn refpoint-action-btn--delete"
-                (click)="deletePoint($index)"
+                (click)="deletePoint(point.clientId)"
                 [disabled]="disabled() || viewStore.sketchActive()"
                 title="Delete point"
               >
@@ -53,7 +53,7 @@
                 <div class="refpoint-editor-geometry">
                   <button
                     class="refpoint-geo-btn"
-                    (click)="startEditingGeometry($index)"
+                    (click)="startEditingGeometry(point.clientId)"
                     [disabled]="viewStore.sketchActive()"
                   >
                     <calcite-icon icon="pin-tear" scale="s"></calcite-icon>
@@ -68,8 +68,8 @@
                   [fields]="typeStore().fields()"
                   [values]="point.attributes"
                   [disabled]="disabled() || viewStore.sketchActive()"
-                  [idPrefix]="'refpoint-edit-' + $index"
-                  (fieldChange)="onEditFieldChange($index, $event)"
+                  [idPrefix]="'refpoint-edit-' + point.clientId"
+                  (fieldChange)="onEditFieldChange(point.clientId, $event)"
                 />
 
                 <div class="refpoint-editor-actions">
@@ -176,7 +176,7 @@
       <button
         class="refpoint-add-btn"
         (click)="startAdding()"
-        [disabled]="disabled() || viewStore.sketchActive() || store.isAdding()"
+        [disabled]="disabled() || viewStore.sketchActive() || isAdding()"
       >
         <calcite-icon icon="plus" scale="s"></calcite-icon>
         Add Point

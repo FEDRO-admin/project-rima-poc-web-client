@@ -25,7 +25,7 @@ export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
   protected readonly viewStore = inject(ViewStore);
   private readonly editService = inject(EditService);
-  private readonly refPointStore = inject(ReferencePointStore);
+  protected readonly refPointStore = inject(ReferencePointStore);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 

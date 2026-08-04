@@ -80,13 +80,11 @@
         />
       </div>
 
-      <!-- Reference Points Section -->
-      @if (refPointStore.hasRelationships()) {
-        <div class="edit-section">
-          <rima-reference-point-list type="von" [disabled]="viewStore.busy()" />
-          <rima-reference-point-list type="bis" [disabled]="viewStore.busy()" />
-        </div>
-      }
+      <!-- Reference Points -->
+      <div class="edit-section">
+        <rima-reference-point-list type="von" [disabled]="viewStore.busy()" />
+        <rima-reference-point-list type="bis" [disabled]="viewStore.busy()" />
+      </div>
 
       <!-- Actions -->
       <div class="edit-form-actions">

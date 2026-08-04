@@ -111,13 +111,11 @@
             />
           </div>
 
-          <!-- Reference Points Section -->
-          @if (refPointStore.hasRelationships()) {
-            <div class="create-section">
-              <rima-reference-point-list type="von" [disabled]="viewStore.busy() || createStore.adjusting()" />
-              <rima-reference-point-list type="bis" [disabled]="viewStore.busy() || createStore.adjusting()" />
-            </div>
-          }
+          <!-- Reference Points -->
+          <div class="create-section">
+            <rima-reference-point-list type="von" [disabled]="viewStore.busy() || createStore.adjusting()" />
+            <rima-reference-point-list type="bis" [disabled]="viewStore.busy() || createStore.adjusting()" />
+          </div>
 
           <!-- Actions -->
           <div class="create-form-actions">

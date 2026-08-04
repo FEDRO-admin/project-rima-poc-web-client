@@ -43,7 +43,7 @@ export class EditService implements OnDestroy {
   }
 
   activate(graphic: Graphic): void {
-    this.reset();
+    this.cleanup();
     this.viewStore.setInteractionMode('editing');
     this.store.activate(graphic);
     this.popupStore.close();
@@ -129,7 +129,7 @@ export class EditService implements OnDestroy {
       }
 
       layer.refresh();
-      this.referencePointService.reset();
+      this.refPointService.reset();
       this.viewStore.setSaving(false);
       this.store.reset();
 
@@ -155,7 +155,7 @@ export class EditService implements OnDestroy {
 
   cancel(): void {
     const graphic = this.store.graphic();
-    this.store.reset();
+    this.cleanup();
 
     // Reopen popup with the original graphic
     if (graphic) {

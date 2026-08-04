@@ -2,7 +2,7 @@ import { effect, inject, Injectable, untracked } from '@angular/core';
 import { CreateStore } from './create.store';
 import { CreateGeometryService } from './create-geometry.service';
 import { ViewStore } from '../view/view.store';
-import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 @Injectable({
   providedIn: 'root',

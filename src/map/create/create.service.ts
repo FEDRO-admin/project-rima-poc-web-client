@@ -7,7 +7,7 @@ import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from '.
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
 import { ViewStore } from '../view/view.store';
-import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 
