@@ -6,6 +6,7 @@ import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { ViewService } from '../../view/view.service';
+import { ViewStore } from '../../view/view.store';
 import { ReferencePointStore } from './reference-point.store';
 import { ReferencePointResolutionService } from './reference-point-resolution.service';
 import { ReferencePointSaveError, ReferencePointLoadError } from './reference-point-errors';
@@ -44,6 +45,7 @@ const ADDING_POINT_SYMBOL = new SimpleMarkerSymbol({
 })
 export class ReferencePointService implements OnDestroy {
   private readonly viewService = inject(ViewService);
+  private readonly viewStore = inject(ViewStore);
   private readonly store = inject(ReferencePointStore);
   private readonly resolutionService = inject(ReferencePointResolutionService);
 
@@ -123,13 +125,13 @@ export class ReferencePointService implements OnDestroy {
       if (event.state === 'complete' && event.graphic?.geometry) {
         const point = event.graphic.geometry as Point;
         this.store.setAddingGeometry(point);
-        this.store.setSketchActive(false);
+        this.viewStore.setSketchActive(false);
         this.cleanupSketch();
       }
     });
 
     this.sketchViewModel.create('point');
-    this.store.setSketchActive(true);
+    this.viewStore.setSketchActive(true);
   }
 
   setAddingGeometryFromCoordinates(x: number, y: number): boolean {
@@ -220,13 +222,13 @@ export class ReferencePointService implements OnDestroy {
       }
       if (event.state === 'complete') {
         this.cleanupSketch();
-        this.store.setSketchActive(false);
+        this.viewStore.setSketchActive(false);
         this.refreshDisplayLayer();
       }
     });
 
     this.sketchViewModel.update(graphic, { tool: 'move' });
-    this.store.setSketchActive(true);
+    this.viewStore.setSketchActive(true);
   }
 
   updatePointAttribute(type: ReferencePointType, index: number, fieldName: string, value: AttributeValue): void {
@@ -257,7 +259,7 @@ export class ReferencePointService implements OnDestroy {
     const vonRel = this.store.vonRelationship();
     const bisRel = this.store.bisRelationship();
 
-    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
 
     try {
       if (vonRel) {
@@ -266,9 +268,9 @@ export class ReferencePointService implements OnDestroy {
       if (bisRel) {
         await this.savePointsForType('bis', bisRel, parentId);
       }
-      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
     } catch (error) {
-      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
       throw new ReferencePointSaveError(error);
     }
   }

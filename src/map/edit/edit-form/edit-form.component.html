@@ -16,7 +16,7 @@
             <span>Geometry</span>
           </div>
 
-          @if (store.sketchActive()) {
+          @if (viewStore.sketchActive()) {
             <div class="geometry-status geometry-status--active">
               <span>Editing geometry...</span>
               <div class="geometry-tools">
@@ -45,7 +45,7 @@
               <button
                 class="geometry-edit-btn"
                 (click)="reenterSketch()"
-                [disabled]="store.saving() || refPointSketchActive()"
+                [disabled]="viewStore.saving() || viewStore.sketchActive()"
               >
                 <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
                 Continue Editing
@@ -55,7 +55,7 @@
             <button
               class="geometry-start-btn"
               (click)="startGeometryEditing()"
-              [disabled]="store.saving() || refPointSketchActive()"
+              [disabled]="viewStore.saving() || viewStore.sketchActive()"
             >
               <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
               Edit Geometry
@@ -74,7 +74,7 @@
         <rima-attribute-form
           [fields]="fields()"
           [values]="store.editedAttributes()"
-          [disabled]="store.saving()"
+          [disabled]="viewStore.saving()"
           idPrefix="edit"
           (fieldChange)="onAttributeFieldChange($event)"
         />
@@ -83,16 +83,18 @@
       <!-- Reference Points Section -->
       @if (refPointStore.hasRelationships()) {
         <div class="edit-section">
-          <rima-reference-point-list type="von" [disabled]="store.saving() || store.sketchActive()" />
-          <rima-reference-point-list type="bis" [disabled]="store.saving() || store.sketchActive()" />
+          <rima-reference-point-list type="von" [disabled]="viewStore.busy()" />
+          <rima-reference-point-list type="bis" [disabled]="viewStore.busy()" />
         </div>
       }
 
       <!-- Actions -->
       <div class="edit-form-actions">
-        <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="store.saving()">Cancel</button>
+        <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="viewStore.saving()">
+          Cancel
+        </button>
         <button class="edit-btn edit-btn--save" (click)="requestSave()" [disabled]="!canSave()">
-          @if (store.saving()) {
+          @if (viewStore.saving()) {
             Saving...
           } @else {
             Save

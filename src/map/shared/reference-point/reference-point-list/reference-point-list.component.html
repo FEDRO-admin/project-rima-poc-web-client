@@ -24,7 +24,7 @@
               <button
                 class="refpoint-action-btn"
                 (click)="startEditing($index)"
-                [disabled]="disabled() || store.sketchActive()"
+                [disabled]="disabled() || viewStore.sketchActive()"
                 title="Edit point"
               >
                 <calcite-icon icon="pencil" scale="s"></calcite-icon>
@@ -32,7 +32,7 @@
               <button
                 class="refpoint-action-btn refpoint-action-btn--delete"
                 (click)="deletePoint($index)"
-                [disabled]="disabled() || store.sketchActive()"
+                [disabled]="disabled() || viewStore.sketchActive()"
                 title="Delete point"
               >
                 <calcite-icon icon="trash" scale="s"></calcite-icon>
@@ -46,12 +46,12 @@
                   <button
                     class="refpoint-geo-btn"
                     (click)="startEditingGeometry($index)"
-                    [disabled]="store.sketchActive()"
+                    [disabled]="viewStore.sketchActive()"
                   >
                     <calcite-icon icon="pin-tear" scale="s"></calcite-icon>
                     Move Point on Map
                   </button>
-                  @if (store.sketchActive()) {
+                  @if (viewStore.sketchActive()) {
                     <span class="refpoint-geo-status">Moving point... click to place</span>
                   }
                 </div>
@@ -59,7 +59,7 @@
                 <rima-attribute-form
                   [fields]="fields()"
                   [values]="point.attributes"
-                  [disabled]="disabled() || store.sketchActive()"
+                  [disabled]="disabled() || viewStore.sketchActive()"
                   [idPrefix]="'refpoint-edit-' + $index"
                   (fieldChange)="onEditFieldChange($index, $event)"
                 />
@@ -88,7 +88,7 @@
         <div class="refpoint-adding-geometry">
           @if (!store.addingGeometry()) {
             <div class="refpoint-geo-options">
-              <button class="refpoint-geo-btn" (click)="placeOnMap()" [disabled]="store.sketchActive()">
+              <button class="refpoint-geo-btn" (click)="placeOnMap()" [disabled]="viewStore.sketchActive()">
                 <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
                 Place on Map
               </button>
@@ -98,7 +98,7 @@
               </button>
             </div>
 
-            @if (store.sketchActive()) {
+            @if (viewStore.sketchActive()) {
               <div class="refpoint-geo-status-bar">
                 <calcite-icon icon="cursor-click" scale="s"></calcite-icon>
                 <span>Click on map to place the point...</span>
@@ -168,7 +168,7 @@
       <button
         class="refpoint-add-btn"
         (click)="startAdding()"
-        [disabled]="disabled() || store.sketchActive() || store.isAdding()"
+        [disabled]="disabled() || viewStore.sketchActive() || store.isAdding()"
       >
         <calcite-icon icon="plus" scale="s"></calcite-icon>
         Add Point

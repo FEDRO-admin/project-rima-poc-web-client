@@ -2,6 +2,7 @@ import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal 
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { EditStore } from '../edit.store';
 import { EditService } from '../edit.service';
+import { ViewStore } from '../../view/view.store';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
@@ -22,6 +23,7 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 })
 export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
+  protected readonly viewStore = inject(ViewStore);
   private readonly editService = inject(EditService);
   protected readonly refPointStore = inject(ReferencePointStore);
 
@@ -50,11 +52,9 @@ export class EditFormComponent implements OnDestroy {
     return graphic?.geometry != null;
   });
 
-  protected readonly refPointSketchActive = computed(() => this.refPointStore.sketchActive());
-
   protected readonly canSave = computed(() => {
     const dirty = this.store.isDirty() || this.refPointStore.hasPendingChanges();
-    return dirty && !this.store.saving();
+    return dirty && !this.viewStore.saving();
   });
 
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {

@@ -1,6 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracked, viewChild } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { ViewService } from '../view/view.service';
+import { ViewStore } from '../view/view.store';
 import { CreateStore } from '../create/create.store';
 import { HistoryPickerComponent } from '../history/history-picker/history-picker.component';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -8,7 +9,6 @@ import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import { HistoryStore } from '../history/history.store';
 
 @Component({
   selector: 'rima-toc',
@@ -19,8 +19,8 @@ import { HistoryStore } from '../history/history.store';
 })
 export class TocComponent {
   private readonly viewService = inject(ViewService);
+  private readonly viewStore = inject(ViewStore);
   private readonly createStore = inject(CreateStore);
-  private readonly historyStore = inject(HistoryStore);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -66,7 +66,8 @@ export class TocComponent {
   protected async onTriggerAction(event: CustomEvent): Promise<void> {
     const { action, item } = event.detail;
     if (action.id === 'zoom-to-layer') await this.zoomToLayer(item.layer);
-    if (action.id === 'create-feature' && !this.historyStore.active()) await this.createFeature(item.layer);
+    if (action.id === 'create-feature' && !this.viewStore.locked() && !this.viewStore.historic())
+      await this.createFeature(item.layer);
   }
 
   private async zoomToLayer(layer: Layer): Promise<void> {
@@ -86,6 +87,7 @@ export class TocComponent {
     if (!(layer instanceof FeatureLayer)) return;
 
     await layer.load();
+    this.viewStore.setInteractionMode('creating');
     this.createStore.activate(layer);
   }
 }

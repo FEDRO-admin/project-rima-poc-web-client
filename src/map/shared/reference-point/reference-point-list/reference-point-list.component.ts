@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { ReferencePointStore } from '../reference-point.store';
 import { ReferencePointService } from '../reference-point.service';
+import { ViewStore } from '../../../view/view.store';
 import { ReferencePointType, AttributeValue } from '../reference-point-types';
 import { AttributeEditField } from '../../attribute-edit-field';
 import { AttributeFormComponent } from '../../attribute-form/attribute-form.component';
@@ -21,6 +22,7 @@ export class ReferencePointListComponent {
   readonly disabled = input<boolean>(false);
 
   protected readonly store = inject(ReferencePointStore);
+  protected readonly viewStore = inject(ViewStore);
   private readonly service = inject(ReferencePointService);
 
   protected readonly points = computed(() => {

@@ -19,9 +19,7 @@ interface ReferencePointState {
   addingType: ReferencePointType | undefined;
   addingGeometry: Point | undefined;
   addingAttributes: Record<string, AttributeValue>;
-  sketchActive: boolean;
   loading: boolean;
-  saving: boolean;
 }
 
 const initialState: ReferencePointState = {
@@ -35,9 +33,7 @@ const initialState: ReferencePointState = {
   addingType: undefined,
   addingGeometry: undefined,
   addingAttributes: {},
-  sketchActive: false,
   loading: false,
-  saving: false,
 };
 
 export const ReferencePointStore = signalStore(
@@ -74,17 +70,13 @@ export const ReferencePointStore = signalStore(
         addingType: undefined,
         addingGeometry: undefined,
         addingAttributes: {},
-        sketchActive: false,
         loading: false,
-        saving: false,
       });
     },
     setLoading(loading: boolean): void {
       patchState(store, { loading });
     },
-    setSaving(saving: boolean): void {
-      patchState(store, { saving });
-    },
+
     setPoints(type: ReferencePointType, points: ReferencePoint[]): void {
       if (type === 'von') {
         patchState(store, { vonPoints: points });
@@ -146,9 +138,7 @@ export const ReferencePointStore = signalStore(
     cancelAdding(): void {
       patchState(store, { addingType: undefined, addingGeometry: undefined, addingAttributes: {} });
     },
-    setSketchActive(sketchActive: boolean): void {
-      patchState(store, { sketchActive });
-    },
+
     reset(): void {
       patchState(store, initialState);
     },
