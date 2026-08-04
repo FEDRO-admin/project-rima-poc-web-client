@@ -39,7 +39,7 @@ export class CreateFormComponent implements OnDestroy {
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
   protected readonly refPointStore = inject(ReferencePointStore);
-  private readonly referencePointService = inject(ReferencePointService);
+  private readonly refPointService = inject(ReferencePointService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -50,7 +50,7 @@ export class CreateFormComponent implements OnDestroy {
       const layer = this.createStore.layer();
       untracked(() => {
         if (layer) {
-          this.referencePointService.initializeForCreate(layer);
+          this.refPointService.prepareForLayer(layer);
         }
       });
     });

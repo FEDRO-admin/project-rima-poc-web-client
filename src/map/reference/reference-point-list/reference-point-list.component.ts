@@ -6,9 +6,9 @@ import { ReferencePointStore } from '../reference-point.store';
 import { ReferencePointService } from '../reference-point.service';
 import { ViewStore } from '../../../view/view.store';
 import { ReferencePointType, AttributeValue } from '../reference-point-types';
-import { AttributeEditField } from '../../attribute-edit-field';
-import { AttributeFormComponent } from '../../attribute-form/attribute-form.component';
-import { RIMA_SWITZERLAND_EXTENT } from '../../../map-constants';
+import { REF_POINT_TYPE_CONFIGS } from '../reference-point-config';
+import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
+import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 
 @Component({
   selector: 'rima-reference-point-list',
@@ -25,31 +25,16 @@ export class ReferencePointListComponent {
   protected readonly viewStore = inject(ViewStore);
   private readonly service = inject(ReferencePointService);
 
-  protected readonly points = computed(() => {
-    return this.type() === 'von' ? this.store.vonPoints() : this.store.bisPoints();
+  protected readonly typeStore = computed(() => this.store.forType(this.type()));
+
+  protected readonly displayTitle = computed(() => REF_POINT_TYPE_CONFIGS[this.type()].displayTitle);
+
+  protected readonly activeEditId = computed(() => {
+    return this.store.editingType() === this.type() ? this.store.activeEditId() : undefined;
   });
 
-  protected readonly relationship = computed(() => {
-    return this.type() === 'von' ? this.store.vonRelationship() : this.store.bisRelationship();
-  });
-
-  protected readonly fields = computed<AttributeEditField[]>(() => {
-    const rel = this.relationship();
-    return rel?.fields ?? [];
-  });
-
-  protected readonly title = computed(() => {
-    return this.type() === 'von' ? 'Von Punkte' : 'Bis Punkte';
-  });
-
-  protected readonly isAddingThisType = computed(() => {
+  protected readonly isAdding = computed(() => {
     return this.store.addingType() === this.type();
-  });
-
-  protected readonly activeEditForThisType = computed(() => {
-    const edit = this.store.activeEdit();
-    if (!edit || edit.type !== this.type()) return undefined;
-    return edit;
   });
 
   protected coordinateX = '';
@@ -79,7 +64,7 @@ export class ReferencePointListComponent {
   }
 
   protected placeOnMap(): void {
-    this.service.startPlacingOnMap();
+    this.service.startPlacingOnMap(this.type());
   }
 
   protected applyCoordinates(): void {
@@ -101,34 +86,46 @@ export class ReferencePointListComponent {
   }
 
   protected onAddingFieldChange(event: { fieldName: string; value: AttributeValue }): void {
-    this.store.updateAddingAttribute(event.fieldName, event.value);
+    this.store.addingAttributes.update((attrs) => ({ ...attrs, [event.fieldName]: event.value }));
   }
 
   protected confirmAdd(): void {
-    this.service.confirmAdd();
+    this.service.confirmAdd(this.type());
   }
 
   protected cancelAdd(): void {
     this.service.cancelAdd();
   }
 
-  protected startEditing(index: number): void {
-    this.service.startEditingPoint(this.type(), index);
+  protected startEditing(clientId: string): void {
+    this.service.startEditingPoint(this.type(), clientId);
   }
 
-  protected startEditingGeometry(index: number): void {
-    this.service.startEditingPointGeometry(this.type(), index);
+  protected startEditingGeometry(clientId: string): void {
+    this.service.startEditingPointGeometry(this.type(), clientId);
   }
 
-  protected onEditFieldChange(index: number, event: { fieldName: string; value: AttributeValue }): void {
-    this.service.updatePointAttribute(this.type(), index, event.fieldName, event.value);
+  protected onEditFieldChange(clientId: string, event: { fieldName: string; value: AttributeValue }): void {
+    this.service.updatePointAttribute(this.type(), clientId, event.fieldName, event.value);
   }
 
   protected confirmEdit(): void {
-    this.service.confirmEditPoint();
+    this.service.confirmEditPoint(this.type());
   }
 
-  protected deletePoint(index: number): void {
-    this.service.deletePoint(this.type(), index);
+  protected deletePoint(clientId: string): void {
+    this.service.deletePoint(this.type(), clientId);
+  }
+
+  protected toggleDisplay(): void {
+    this.service.toggleDisplay(this.type());
+  }
+
+  protected isPointHidden(clientId: string): boolean {
+    return this.typeStore().hiddenPointIds().includes(clientId);
+  }
+
+  protected togglePointVisibility(clientId: string): void {
+    this.service.togglePointVisibility(this.type(), clientId);
   }
 }

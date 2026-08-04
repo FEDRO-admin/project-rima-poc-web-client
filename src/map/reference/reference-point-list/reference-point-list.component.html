@@ -1,16 +1,24 @@
-@if (relationship()) {
+@if (typeStore().available()) {
   <div class="refpoint-section">
     <div class="refpoint-section-header">
       <calcite-icon icon="pin-plus" scale="s"></calcite-icon>
-      <span>{{ title() }}</span>
-      <span class="refpoint-count">({{ points().length }})</span>
+      <span>{{ displayTitle() }}</span>
+      <span class="refpoint-count">({{ typeStore().points().length }})</span>
+      <span class="refpoint-header-spacer"></span>
+      <button
+        class="refpoint-display-toggle"
+        (click)="toggleDisplay()"
+        [title]="typeStore().displayVisible() ? 'Hide points on map' : 'Show points on map'"
+      >
+        <calcite-icon [icon]="typeStore().displayVisible() ? 'view-visible' : 'view-hide'" scale="s"></calcite-icon>
+      </button>
     </div>
 
     <!-- Point list -->
-    @if (points().length > 0) {
+    @if (typeStore().points().length > 0) {
       <div class="refpoint-list">
-        @for (point of points(); track $index) {
-          <div class="refpoint-item" [class.refpoint-item--editing]="activeEditForThisType()?.index === $index">
+        @for (point of typeStore().points(); track point.clientId) {
+          <div class="refpoint-item" [class.refpoint-item--editing]="activeEditId() === point.clientId">
             <div class="refpoint-item-row">
               <calcite-icon icon="pin" scale="s"></calcite-icon>
               <span class="refpoint-item-label">{{ getPointLabel(point) }}</span>
@@ -40,7 +48,7 @@
             </div>
 
             <!-- Inline editor -->
-            @if (activeEditForThisType()?.index === $index) {
+            @if (activeEditId() === point.clientId) {
               <div class="refpoint-editor">
                 <div class="refpoint-editor-geometry">
                   <button
@@ -57,7 +65,7 @@
                 </div>
 
                 <rima-attribute-form
-                  [fields]="fields()"
+                  [fields]="typeStore().fields()"
                   [values]="point.attributes"
                   [disabled]="disabled() || viewStore.sketchActive()"
                   [idPrefix]="'refpoint-edit-' + $index"
@@ -72,12 +80,12 @@
           </div>
         }
       </div>
-    } @else if (!isAddingThisType()) {
+    } @else if (!isAdding()) {
       <div class="refpoint-empty">No reference points</div>
     }
 
     <!-- Adding new point -->
-    @if (isAddingThisType()) {
+    @if (isAdding()) {
       <div class="refpoint-adding">
         <div class="refpoint-adding-header">
           <calcite-icon icon="plus" scale="s"></calcite-icon>
@@ -147,7 +155,7 @@
         <!-- Attributes for new point -->
         @if (store.addingGeometry()) {
           <rima-attribute-form
-            [fields]="fields()"
+            [fields]="typeStore().fields()"
             [values]="store.addingAttributes()"
             [disabled]="false"
             idPrefix="refpoint-add"

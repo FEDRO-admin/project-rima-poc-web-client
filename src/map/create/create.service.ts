@@ -19,7 +19,7 @@ export class CreateService {
   private readonly viewStore = inject(ViewStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
-  private readonly referencePointService = inject(ReferencePointService);
+  private readonly refPointService = inject(ReferencePointService);
 
   async save(): Promise<number | undefined> {
     const layer = this.createStore.layer();
@@ -59,7 +59,7 @@ export class CreateService {
 
   cancel(): void {
     this.createGeometryService.cancel();
-    this.referencePointService.reset();
+    this.refPointService.reset();
     this.createStore.reset();
   }
 
@@ -99,9 +99,9 @@ export class CreateService {
         // Save reference points with the new feature's id
         const parentId = graphic.attributes.id;
         if (parentId) {
-          await this.referencePointService.saveAll(parentId);
+          await this.refPointService.save(parentId, layer.layerId);
         }
-        this.referencePointService.reset();
+        this.refPointService.reset();
         this.popupStore.open([graphic]);
       }
     } catch (error) {
