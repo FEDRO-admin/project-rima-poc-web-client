@@ -12,7 +12,7 @@ import { EditSaveError } from './edit-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { EDIT_LINE_SYMBOL, EDIT_POINT_SYMBOL, EDIT_POLYGON_SYMBOL } from './edit-config';
 import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } from '../shared/sketch-utils';
-import { ReferencePointService } from '../shared/reference-point/reference-point.service';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 type SketchTool = 'move' | 'reshape' | 'transform';
@@ -24,7 +24,7 @@ export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly popupStore = inject(PopupStore);
   private readonly viewService = inject(ViewService);
-  private readonly referencePointService = inject(ReferencePointService);
+  private readonly refPointService = inject(ReferencePointService);
 
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
@@ -37,15 +37,15 @@ export class EditService implements OnDestroy {
   private _originalGeometry: Geometry | undefined;
 
   ngOnDestroy(): void {
-    this.reset();
+    this.store.reset();
   }
 
   activate(graphic: Graphic): void {
-    this.reset();
+    this.store.reset();
     this.store.activate(graphic);
     this.popupStore.close();
     this.showHighlight(graphic.geometry!);
-    this.referencePointService.loadForFeature(graphic);
+    this.refPointService.loadForFeature(graphic);
   }
 
   startGeometryEditing(): void {
@@ -122,11 +122,11 @@ export class EditService implements OnDestroy {
       // Save reference points
       const parentId = graphic.attributes.id;
       if (parentId) {
-        await this.referencePointService.saveAll(parentId);
+        await this.refPointService.save(parentId, layer.layerId);
       }
 
       layer.refresh();
-      this.referencePointService.reset();
+      this.refPointService.reset();
       this.store.reset();
 
       // Reopen popup with refreshed feature
@@ -151,7 +151,7 @@ export class EditService implements OnDestroy {
 
   cancel(): void {
     const graphic = this.store.graphic();
-    this.reset();
+    this.store.reset();
 
     // Reopen popup with the original graphic
     if (graphic) {
@@ -163,11 +163,7 @@ export class EditService implements OnDestroy {
     this.deactivateSketch();
     this.removeHighlight();
     this._originalGeometry = undefined;
-    this.referencePointService.reset();
-  }
-
-  reset(): void {
-    this.cleanup();
+    this.refPointService.reset();
     this.store.reset();
   }
 

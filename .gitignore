@@ -43,5 +43,6 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 .github/copilot-instructions.md
+.github/brainstorming/
 .gitignore
 .github/brainstorming/

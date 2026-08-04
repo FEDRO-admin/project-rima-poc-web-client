@@ -1,4 +1,4 @@
-import { RecoverableError } from '../../../error-handling/base-error';
+import { RecoverableError } from '../../error-handling/base-error';
 
 export class ReferencePointSaveError extends RecoverableError {
   public override message = 'Error saving reference points';

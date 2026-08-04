@@ -29,8 +29,8 @@ import { HistoryPickerComponent } from './history/history-picker/history-picker.
 })
 export class MapComponent {
   private readonly viewService = inject(ViewService);
-  private readonly mapViewInitService = inject(MapViewInitService);
-  private readonly sceneViewInitService = inject(SceneViewInitService);
+  private readonly mapViewInitService = inject(MapViewService);
+  private readonly sceneViewInitService = inject(SceneViewService);
   protected readonly viewStore = inject(ViewStore);
 
   protected readonly switzerlandExtent = RIMA_SWITZERLAND_EXTENT;
