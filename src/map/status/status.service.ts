@@ -53,7 +53,7 @@ export class StatusService {
     const resolved = this.resolveForView(layer);
     if (!resolved) return;
 
-    this.store.setup(resolved.statusLayer, resolved.relationshipId, resolved.fields);
+    this.store.setup(resolved.relationshipId);
     this.store.setLoading(true);
 
     try {
@@ -62,6 +62,19 @@ export class StatusService {
     } finally {
       this.store.setLoading(false);
     }
+  }
+
+  getStatusLayer(): FeatureLayer | undefined {
+    if (this.store.relationshipId() == null) return undefined;
+    const view = this.viewService.getMapView();
+    if (!view) return undefined;
+    return findStatusLayer(view);
+  }
+
+  getFields(): AttributeEditField[] {
+    const statusLayer = this.getStatusLayer();
+    if (!statusLayer) return [];
+    return resolveStatusEditableFields(statusLayer);
   }
 
   getZustandsklasse(): number | undefined {
@@ -79,7 +92,7 @@ export class StatusService {
 
   getDisplayFields(): StatusFieldEntry[] {
     const rec = this.store.record();
-    const layer = this.store.statusLayer();
+    const layer = this.getStatusLayer();
     if (!rec || !layer?.fields?.length) return [];
 
     const graphic = new Graphic({ attributes: rec.attributes, layer });

@@ -1,8 +1,6 @@
 import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { StatusRecord, AttributeValue } from './status-types';
-import { AttributeEditField } from '../shared/attribute-edit-field';
 
 export interface StatusFieldEntry {
   label: string;
@@ -17,8 +15,6 @@ interface StatusState {
   creating: boolean;
   saving: boolean;
   loading: boolean;
-  statusLayer: FeatureLayer | undefined;
-  fields: AttributeEditField[];
   relationshipId: number | undefined;
 }
 
@@ -30,8 +26,6 @@ const initialState: StatusState = {
   creating: false,
   saving: false,
   loading: false,
-  statusLayer: undefined,
-  fields: [],
   relationshipId: undefined,
 };
 
@@ -47,14 +41,15 @@ export const StatusStore = signalStore(
       return Object.keys(edited).some((key) => edited[key] !== original[key]);
     }),
     hasRecord: computed(() => store.record() != null),
+    available: computed(() => store.relationshipId() != null),
     showForm: computed(() => store.record() != null && !store.deleted()),
     showCreateForm: computed(() => store.creating()),
-    showCreateButton: computed(() => store.statusLayer() != null && store.record() == null && !store.creating()),
+    showCreateButton: computed(() => store.relationshipId() != null && store.record() == null && !store.creating()),
     showDeleteButton: computed(() => store.record() != null && !store.deleted()),
   })),
   withMethods((store) => ({
-    setup(statusLayer: FeatureLayer, relationshipId: number, fields: AttributeEditField[]): void {
-      patchState(store, { statusLayer, relationshipId, fields });
+    setup(relationshipId: number): void {
+      patchState(store, { relationshipId });
     },
     setRecord(record: StatusRecord | undefined): void {
       const attributes = record?.attributes ?? {};

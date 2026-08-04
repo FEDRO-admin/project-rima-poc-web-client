@@ -329,7 +329,7 @@ export class EditService implements OnDestroy {
   }
 
   private async saveStatusRecord(graphic: Graphic, layer: FeatureLayer): Promise<void> {
-    const statusLayer = this.statusStore.statusLayer();
+    const statusLayer = this.statusService.getStatusLayer();
     if (!statusLayer) return;
 
     if (this.statusStore.deleted()) {
