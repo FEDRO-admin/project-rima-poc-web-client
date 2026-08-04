@@ -27,7 +27,7 @@ import type { WebmapDataJson } from '../../layer/layer-types';
 @Injectable({
   providedIn: 'root',
 })
-export class MapViewInitService {
+export class MapViewService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
   private readonly layerService = inject(LayerService);

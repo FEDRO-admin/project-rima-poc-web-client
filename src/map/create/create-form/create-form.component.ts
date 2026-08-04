@@ -19,9 +19,9 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { ReferencePointListComponent } from '../../shared/reference-point/reference-point-list/reference-point-list.component';
-import { ReferencePointStore } from '../../shared/reference-point/reference-point.store';
-import { ReferencePointService } from '../../shared/reference-point/reference-point.service';
+import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
+import { ReferencePointStore } from '../../reference/reference-point.store';
+import { ReferencePointService } from '../../reference/reference-point.service';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -37,7 +37,7 @@ export class CreateFormComponent implements OnDestroy {
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
   protected readonly refPointStore = inject(ReferencePointStore);
-  private readonly referencePointService = inject(ReferencePointService);
+  private readonly refPointService = inject(ReferencePointService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
 
@@ -48,7 +48,7 @@ export class CreateFormComponent implements OnDestroy {
       const layer = this.createStore.layer();
       untracked(() => {
         if (layer) {
-          this.referencePointService.initializeForCreate(layer);
+          this.refPointService.prepareForLayer(layer);
         }
       });
     });

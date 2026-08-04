@@ -21,6 +21,25 @@
   font-size: 12px;
 }
 
+.refpoint-header-spacer {
+  flex: 1;
+}
+
+.refpoint-display-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  border-radius: 3px;
+
+  &:hover {
+    color: #0079c1;
+  }
+}
+
 .refpoint-list {
   display: flex;
   flex-direction: column;

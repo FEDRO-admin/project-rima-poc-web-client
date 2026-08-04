@@ -1,5 +1,5 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
-import type Graphic from '@arcgis/core/Graphic';
+import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { GraphicLayer } from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
