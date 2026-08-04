@@ -9,8 +9,8 @@ import { CreateFormComponent } from './create/create-form/create-form.component'
 import { EditFormComponent } from './edit/edit-form/edit-form.component';
 import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component';
 import { ViewStore } from './view/view.store';
-import { MapViewInitService } from './view/mapview/mapview.service';
-import { SceneViewInitService } from './view/sceneview/sceneview.service';
+import { MapViewService } from './view/mapview/mapview.service';
+import { SceneViewService } from './view/sceneview/sceneview.service';
 import { HistoryPickerComponent } from './history/history-picker/history-picker.component';
 
 @Component({
