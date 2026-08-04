@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core
 import { DatePipe } from '@angular/common';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dialog';
+import '@esri/calcite-components/dist/components/calcite-icon';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-input-time-picker';
 import '@esri/calcite-components/dist/components/calcite-input-text';
@@ -9,6 +10,7 @@ import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-list';
 import '@esri/calcite-components/dist/components/calcite-list-item';
 import '@esri/calcite-components/dist/components/calcite-notice';
+import '@esri/calcite-components/dist/components/calcite-popover';
 import { HistoryStore } from '../history.store';
 import { HistoryService } from '../history.service';
 import { HistoryEntry } from '../history-entry';
@@ -24,6 +26,7 @@ export class HistoryPickerComponent {
   protected readonly historyStore = inject(HistoryStore);
   private readonly historyService = inject(HistoryService);
 
+  protected readonly menuOpen = signal(false);
   protected readonly panelExpanded = signal(false);
   protected readonly customExpanded = signal(false);
   protected readonly addFormVisible = signal(false);
@@ -33,9 +36,18 @@ export class HistoryPickerComponent {
   protected readonly newDate = signal('');
   protected readonly newTime = signal('');
 
+  protected toggleMenu(): void {
+    this.menuOpen.set(!this.menuOpen());
+  }
+
+  protected closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
   protected async togglePanel(): Promise<void> {
     const expanded = !this.panelExpanded();
     this.panelExpanded.set(expanded);
+    this.menuOpen.set(false);
     if (expanded) {
       this.customExpanded.set(false);
       if (this.historyStore.momentsState() === undefined) {
@@ -140,6 +152,7 @@ export class HistoryPickerComponent {
   protected toggleCustomPanel(): void {
     const expanded = !this.customExpanded();
     this.customExpanded.set(expanded);
+    this.menuOpen.set(false);
     if (expanded) {
       this.panelExpanded.set(false);
     }

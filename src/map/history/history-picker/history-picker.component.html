@@ -1,31 +1,38 @@
-<div class="history-picker">
-  @if (historyStore.active()) {
-    <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
-      >Return to Present</calcite-button
+<button
+  id="history-toggle-button"
+  class="history-toggle"
+  [class.active]="historyStore.active()"
+  (click)="toggleMenu()"
+  [attr.aria-label]="historyStore.active() ? 'Historical view active' : 'Historical moments'"
+>
+  <calcite-icon icon="clock" scale="s"></calcite-icon>
+</button>
+
+<calcite-popover
+  reference-element="history-toggle-button"
+  placement="left-start"
+  auto-close
+  label="Historical moments"
+  [attr.open]="menuOpen() ? '' : null"
+  (calcitePopoverClose)="closeMenu()"
+>
+  <div class="history-menu">
+    @if (historyStore.active()) {
+      <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
+        >Return to Present</calcite-button
+      >
+      <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
+    }
+
+    <calcite-button appearance="outline" kind="neutral" icon-start="clock" width="full" (click)="togglePanel()"
+      >Historical Moments</calcite-button
     >
-    <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
-  }
 
-  <calcite-button
-    appearance="outline"
-    kind="neutral"
-    icon-start="clock"
-    [attr.icon-end]="panelExpanded() ? 'chevron-up' : 'chevron-down'"
-    width="full"
-    (click)="togglePanel()"
-    >Historical Moments</calcite-button
-  >
-
-  <calcite-button
-    appearance="outline"
-    kind="neutral"
-    icon-start="calendar"
-    [attr.icon-end]="customExpanded() ? 'chevron-up' : 'chevron-down'"
-    width="full"
-    (click)="toggleCustomPanel()"
-    >Custom Date &amp; Time</calcite-button
-  >
-</div>
+    <calcite-button appearance="outline" kind="neutral" icon-start="calendar" width="full" (click)="toggleCustomPanel()"
+      >Custom Date &amp; Time</calcite-button
+    >
+  </div>
+</calcite-popover>
 
 <calcite-dialog
   heading="Historical Moments"
