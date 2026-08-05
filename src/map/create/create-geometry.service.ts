@@ -5,6 +5,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import { ViewService } from '../view/view.service';
+import { ViewStore } from '../view/view.store';
 import { CreateStore } from './create.store';
 import { getDefaultCreateTool } from './create-config';
 import { EDIT_POINT_SYMBOL, EDIT_LINE_SYMBOL, EDIT_POLYGON_SYMBOL } from '../edit/edit-config';
@@ -15,6 +16,7 @@ import { buildSnappingSources, updateUndoRedoState, cleanupSketchResources } fro
 })
 export class CreateGeometryService implements OnDestroy {
   private readonly viewService = inject(ViewService);
+  private readonly viewStore = inject(ViewStore);
   private readonly store = inject(CreateStore);
 
   private sketchViewModel: SketchViewModel | undefined;
@@ -52,19 +54,19 @@ export class CreateGeometryService implements OnDestroy {
 
     this.eventHandle = this.sketchViewModel.on('create', (event) => {
       if (event.state === 'active') {
-        this.store.setSketchActive(true);
+        this.viewStore.setSketchActive(true);
       }
       if (event.state === 'complete' && event.graphic?.geometry) {
         this.sketchGraphic = event.graphic;
         this.store.updateGeometry(event.graphic.geometry);
-        this.store.setSketchActive(false);
+        this.viewStore.setSketchActive(false);
         this.startAdjusting();
       }
       updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
     this.sketchViewModel.create(createTool);
-    this.store.setSketchActive(true);
+    this.viewStore.setSketchActive(true);
   }
 
   redraw(layer: FeatureLayer, tool?: CreateTool): void {
@@ -145,6 +147,7 @@ export class CreateGeometryService implements OnDestroy {
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
 
+    this.viewStore.setSketchActive(false);
     this.store.deactivateSketch();
   }
 

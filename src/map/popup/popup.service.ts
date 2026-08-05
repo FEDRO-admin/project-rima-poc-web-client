@@ -4,9 +4,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { PopupHighlightError, PopupRefreshError } from './popup-errors';
 import { PopupStore } from './popup.store';
-import { EditStore } from '../edit/edit.store';
-import { CreateStore } from '../create/create.store';
-import { DeleteStore } from '../delete/delete.store';
+import { ViewStore } from '../view/view.store';
 import { GraphicHit } from '@arcgis/core/views/types';
 import { type RimaView } from '../view/view.service';
 
@@ -20,9 +18,7 @@ interface Handle {
 export class PopupService implements OnDestroy {
   private readonly viewService = inject(ViewService);
   private readonly popupStore = inject(PopupStore);
-  private readonly editStore = inject(EditStore);
-  private readonly createStore = inject(CreateStore);
-  private readonly deleteStore = inject(DeleteStore);
+  private readonly viewStore = inject(ViewStore);
 
   private clickHandle: Handle | undefined;
   private hoverHighlightHandle: Handle | undefined;
@@ -110,8 +106,7 @@ export class PopupService implements OnDestroy {
   private async handleClick(view: RimaView, event: { x: number; y: number }): Promise<void> {
     if (!view.map) return;
 
-    // Ignore all map clicks while in edit or create mode
-    if (this.editStore.active() || this.createStore.active() || this.deleteStore.active()) {
+    if (this.viewStore.locked()) {
       return;
     }
 

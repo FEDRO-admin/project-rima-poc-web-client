@@ -12,7 +12,7 @@
   <p class="documents-empty">Keine Dokumente vorhanden.</p>
 }
 
-@if (!historyStore.active() && !showUploadForm()) {
+@if (!viewStore.historic() && !showUploadForm()) {
   <div class="documents-actions">
     <button class="documents-add-btn" (click)="openUploadForm()">
       <calcite-icon icon="plus" scale="s"></calcite-icon>
@@ -190,7 +190,7 @@
                 scale="s"
               ></calcite-icon>
             </button>
-            @if (!historyStore.active()) {
+            @if (!viewStore.historic()) {
               <button
                 class="document-item__btn document-item__btn--edit"
                 title="Bearbeiten"

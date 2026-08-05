@@ -1,11 +1,26 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { effect, inject, Injectable, untracked } from '@angular/core';
 import { DeleteStore } from './delete.store';
+import { ViewStore } from '../view/view.store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DeleteEffects {
   private readonly deleteStore = inject(DeleteStore);
+  private readonly viewStore = inject(ViewStore);
 
-  readonly deleting = computed(() => this.deleteStore.active());
+  constructor() {
+    this.resetModeOnDeactivate();
+  }
+
+  private resetModeOnDeactivate(): void {
+    effect(() => {
+      const active = this.deleteStore.active();
+      untracked(() => {
+        if (!active && this.viewStore.interactionMode() === 'deleting') {
+          this.viewStore.setInteractionMode('idle');
+        }
+      });
+    });
+  }
 }

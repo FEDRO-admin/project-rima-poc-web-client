@@ -3,6 +3,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Graphic from '@arcgis/core/Graphic';
 import { DeleteStore } from './delete.store';
 import { PopupStore } from '../popup/popup.store';
+import { ViewStore } from '../view/view.store';
 import { DeleteFeatureError } from './delete-errors';
 
 @Injectable({
@@ -10,9 +11,11 @@ import { DeleteFeatureError } from './delete-errors';
 })
 export class DeleteService {
   private readonly store = inject(DeleteStore);
+  private readonly viewStore = inject(ViewStore);
   private readonly popupStore = inject(PopupStore);
 
   requestDelete(graphic: Graphic): void {
+    this.viewStore.setInteractionMode('deleting');
     this.store.requestDelete(graphic);
   }
 

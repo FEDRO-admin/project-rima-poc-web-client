@@ -1,8 +1,6 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { ViewStore } from './view.store';
 import { PopupStore } from '../popup/popup.store';
-import { CreateStore } from '../create/create.store';
-import { EditStore } from '../edit/edit.store';
 
 @Injectable({
   providedIn: 'root',
@@ -10,26 +8,39 @@ import { EditStore } from '../edit/edit.store';
 export class ViewEffects {
   private readonly viewStore = inject(ViewStore);
   private readonly popupStore = inject(PopupStore);
-  private readonly editStore = inject(EditStore);
-  private readonly createStore = inject(CreateStore);
 
   constructor() {
-    this.cancelActiveModesOnSwitch();
+    this.resetOnViewModeSwitch();
+    this.closePopupOnLock();
+    this.resetOnHistoricDateChange();
   }
 
-  private cancelActiveModesOnSwitch(): void {
+  private resetOnViewModeSwitch(): void {
     effect(() => {
       this.viewStore.mode();
       untracked(() => {
+        this.viewStore.setInteractionMode('idle');
+      });
+    });
+  }
+
+  private closePopupOnLock(): void {
+    effect(() => {
+      const locked = this.viewStore.locked();
+      untracked(() => {
+        if (locked) {
+          this.popupStore.close();
+        }
+      });
+    });
+  }
+
+  private resetOnHistoricDateChange(): void {
+    effect(() => {
+      this.viewStore.historicDate();
+      untracked(() => {
+        this.viewStore.setInteractionMode('idle');
         this.popupStore.close();
-
-        if (this.editStore.active()) {
-          this.editStore.reset();
-        }
-
-        if (this.createStore.active()) {
-          this.createStore.reset();
-        }
       });
     });
   }

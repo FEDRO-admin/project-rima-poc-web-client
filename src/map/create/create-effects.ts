@@ -1,40 +1,42 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { CreateStore } from './create.store';
-import { PopupStore } from '../popup/popup.store';
-import { EditEffects } from '../edit/edit-effects';
-import { EditStore } from '../edit/edit.store';
+import { CreateGeometryService } from './create-geometry.service';
+import { ViewStore } from '../view/view.store';
+import { ReferencePointService } from '../reference/reference-point.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CreateEffects {
   private readonly createStore = inject(CreateStore);
-  private readonly popupStore = inject(PopupStore);
-  private readonly editEffects = inject(EditEffects);
-  private readonly editStore = inject(EditStore);
+  private readonly createGeometryService = inject(CreateGeometryService);
+  private readonly referencePointService = inject(ReferencePointService);
+  private readonly viewStore = inject(ViewStore);
 
   constructor() {
-    this.closePopupOnCreate();
-    this.cancelEditsOnCreate();
+    this.cleanupWhenModeOverridden();
+    this.resetModeOnDeactivate();
   }
 
-  private closePopupOnCreate(): void {
+  private cleanupWhenModeOverridden(): void {
     effect(() => {
-      const active = this.createStore.active();
+      const mode = this.viewStore.interactionMode();
       untracked(() => {
-        if (active) {
-          this.popupStore.close();
+        if (mode !== 'creating' && this.createStore.active()) {
+          this.createGeometryService.cancel();
+          this.referencePointService.reset();
+          this.createStore.reset();
         }
       });
     });
   }
 
-  private cancelEditsOnCreate(): void {
+  private resetModeOnDeactivate(): void {
     effect(() => {
       const active = this.createStore.active();
       untracked(() => {
-        if (active && this.editEffects.editing()) {
-          this.editStore.reset();
+        if (!active && this.viewStore.interactionMode() === 'creating') {
+          this.viewStore.setInteractionMode('idle');
         }
       });
     });

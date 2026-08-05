@@ -11,9 +11,7 @@ interface CreateState {
   layer: FeatureLayer | undefined;
   attributes: Record<string, AttributeValue>;
   geometry: Geometry | undefined;
-  sketchActive: boolean;
   adjusting: boolean;
-  saving: boolean;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -23,9 +21,7 @@ const initialState: CreateState = {
   layer: undefined,
   attributes: {},
   geometry: undefined,
-  sketchActive: false,
   adjusting: false,
-  saving: false,
   canUndo: false,
   canRedo: false,
 };
@@ -49,7 +45,6 @@ export const CreateStore = signalStore(
         layer,
         attributes,
         geometry: undefined,
-        sketchActive: false,
         adjusting: false,
         canUndo: false,
         canRedo: false,
@@ -63,7 +58,6 @@ export const CreateStore = signalStore(
         layer,
         attributes: {},
         geometry: undefined,
-        sketchActive: false,
         adjusting: false,
         canUndo: false,
         canRedo: false,
@@ -79,20 +73,14 @@ export const CreateStore = signalStore(
     updateGeometry(geometry: Geometry): void {
       patchState(store, { geometry });
     },
-    setSketchActive(sketchActive: boolean): void {
-      patchState(store, { sketchActive });
-    },
     setAdjusting(adjusting: boolean): void {
       patchState(store, { adjusting });
-    },
-    setSaving(saving: boolean): void {
-      patchState(store, { saving });
     },
     setUndoRedo(canUndo: boolean, canRedo: boolean): void {
       patchState(store, { canUndo, canRedo });
     },
     deactivateSketch(): void {
-      patchState(store, { sketchActive: false, adjusting: false, canUndo: false, canRedo: false });
+      patchState(store, { adjusting: false, canUndo: false, canRedo: false });
     },
     reset(): void {
       patchState(store, initialState);
