@@ -27,15 +27,10 @@ export class PopupContentComponent {
   readonly activeTab = input.required<PopupTab>();
 
   protected readonly viewStore = inject(ViewStore);
-  readonly activeTab = signal<PopupTab>('attributes');
   readonly refMode = computed<'edit' | 'view'>(() => (this.viewStore.historic() ? 'view' : 'edit'));
 
   readonly title = computed<string>(() => {
     const graphic = this.graphic();
     return graphic.layer?.title ?? 'Feature';
   });
-
-  selectTab(tab: PopupTab): void {
-    this.activeTab.set(tab);
-  }
 }
