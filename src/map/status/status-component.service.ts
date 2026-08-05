@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { MapViewService } from '../view/mapview/mapview.service';
+import { ViewService } from '../view/view.service';
 import { HistoryStore } from '../history/history.store';
 import { ViewStore } from '../view/view.store';
 import { StatusRecord, AttributeValue } from './status-types';
@@ -25,7 +25,7 @@ import { isImmutableField } from '../layer/layer-attributes';
 
 @Injectable()
 export class StatusComponentService {
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
   private readonly viewStore = inject(ViewStore);
   private readonly store = inject(StatusComponentStore);
@@ -33,7 +33,7 @@ export class StatusComponentService {
   resolveForView(
     layer: FeatureLayer,
   ): { relationshipId: number; statusLayer: FeatureLayer; fields: AttributeEditField[] } | undefined {
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view) return undefined;
 
     const relationshipId = findStatusRelationshipId(layer);
@@ -68,7 +68,7 @@ export class StatusComponentService {
 
   getStatusLayer(): FeatureLayer | undefined {
     if (this.store.relationshipId() == null) return undefined;
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view) return undefined;
     return findStatusLayer(view);
   }

@@ -18,14 +18,14 @@ import { applyPointEdits } from './reference-point-helpers';
 import { buildSnappingSources, cleanupSketchResources } from '../shared/sketch-utils';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
 import { ViewStore } from '../view/view.store';
-import { MapViewService } from '../view/mapview/mapview.service';
+import { ViewService } from '../view/view.service';
 import { HistoryStore } from '../history/history.store';
 
 @Injectable()
 export class ReferencePointComponentService implements OnDestroy {
   private readonly store = inject(ReferencePointComponentStore);
   private readonly viewStore = inject(ViewStore);
-  private readonly viewService = inject(MapViewService);
+  private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
 
   private displayLayer: GraphicsLayer | undefined;
@@ -68,7 +68,7 @@ export class ReferencePointComponentService implements OnDestroy {
   }
 
   startPlacingOnMap(): void {
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -151,7 +151,7 @@ export class ReferencePointComponentService implements OnDestroy {
     const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point?.geometry) return;
 
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     this.cleanupSketch();
@@ -298,7 +298,7 @@ export class ReferencePointComponentService implements OnDestroy {
   }
 
   refreshDisplayLayer(type: ReferencePointType): void {
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
 
     if (!this.store.displayVisible()) {
@@ -340,7 +340,7 @@ export class ReferencePointComponentService implements OnDestroy {
   // --- Private ---
 
   private resolve(layer: FeatureLayer, type: ReferencePointType): void {
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     const relationshipId = findRelationshipId(layer, type);
     const relatedLayer = view && relationshipId != null ? findRelatedLayer(view, type) : undefined;
     const fields = relatedLayer ? resolveEditableFields(relatedLayer) : [];
@@ -385,14 +385,14 @@ export class ReferencePointComponentService implements OnDestroy {
     this.eventHandle?.remove();
     this.eventHandle = undefined;
 
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     const cleaned = cleanupSketchResources(this.sketchViewModel, this.sketchLayer, view);
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
   }
 
   private removeDisplayLayer(): void {
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (this.displayLayer && view?.map) {
       view.map.remove(this.displayLayer);
       this.displayLayer.destroy();
@@ -410,7 +410,7 @@ export class ReferencePointComponentService implements OnDestroy {
 
   private ensureHighlightLayer(): void {
     if (this.highlightLayer) return;
-    const view = this.viewService.getMapView();
+    const view = this.viewService.activeView();
     if (!view?.map) return;
     this.highlightLayer = new GraphicsLayer({ title: 'Reference Point Highlights', listMode: 'hide' });
     view.map.add(this.highlightLayer);

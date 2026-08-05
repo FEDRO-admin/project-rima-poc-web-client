@@ -2,7 +2,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Point from '@arcgis/core/geometry/Point';
-import type MapView from '@arcgis/core/views/MapView';
+import type { RimaView } from '../view/view.service';
 import { AttributeEditField } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
 import { buildEditAttributeField } from '../layer/layer-attribute-domain-resolver';
@@ -14,7 +14,7 @@ export function findRelationshipId(layer: FeatureLayer, type: ReferencePointType
   return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === config.layerId)?.id;
 }
 
-export function findRelatedLayer(view: MapView, type: ReferencePointType): FeatureLayer | undefined {
+export function findRelatedLayer(view: RimaView, type: ReferencePointType): FeatureLayer | undefined {
   const config = REF_POINT_TYPE_CONFIGS[type];
   return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === config.layerId) as
     | FeatureLayer

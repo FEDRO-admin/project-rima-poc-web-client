@@ -1,7 +1,7 @@
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
-import type MapView from '@arcgis/core/views/MapView';
+import type { RimaView } from '../view/view.service';
 import { AttributeEditField } from '../shared/attribute-edit-field';
 import { isImmutableField } from '../layer/layer-attributes';
 import { buildEditAttributeField } from '../layer/layer-attribute-domain-resolver';
@@ -12,7 +12,7 @@ export function findStatusRelationshipId(layer: FeatureLayer): number | undefine
   return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === STATUS_LAYER_ID)?.id;
 }
 
-export function findStatusLayer(view: MapView): FeatureLayer | undefined {
+export function findStatusLayer(view: RimaView): FeatureLayer | undefined {
   return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === STATUS_LAYER_ID) as
     | FeatureLayer
     | undefined;
