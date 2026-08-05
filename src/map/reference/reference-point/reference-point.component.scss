@@ -359,6 +359,33 @@
   }
 }
 
+.refpoint-save-section {
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 8px;
+}
+
+.refpoint-save-btn {
+  width: 100%;
+  padding: 8px 16px;
+  background: #0079c1;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #005e95;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 /* --- View mode styles --- */
 
 :host {
