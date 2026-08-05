@@ -7,7 +7,6 @@ import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from '.
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
 import { ViewStore } from '../view/view.store';
-import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
 
@@ -19,9 +18,8 @@ export class CreateService {
   private readonly viewStore = inject(ViewStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
-  private readonly refPointService = inject(ReferencePointService);
 
-  async save(): Promise<number | undefined> {
+  async saveFeature(): Promise<{ objectId: number; layer: FeatureLayer } | undefined> {
     const layer = this.createStore.layer();
     if (!(layer instanceof FeatureLayer)) return undefined;
 
@@ -44,10 +42,10 @@ export class CreateService {
         throw new CreateSaveError(addResult.error);
       }
 
-      const objectId = addResult?.objectId ?? undefined;
-      this.viewStore.setSaving(false);
-      this.createStore.reset();
-      return objectId;
+      const objectId = addResult?.objectId;
+      if (objectId == null) return undefined;
+
+      return { objectId, layer };
     } catch (error) {
       this.viewStore.setSaving(false);
       if (error instanceof CreateSaveError) {
@@ -57,9 +55,13 @@ export class CreateService {
     }
   }
 
+  finalize(): void {
+    this.viewStore.setSaving(false);
+    this.createStore.reset();
+  }
+
   cancel(): void {
     this.createGeometryService.cancel();
-    this.refPointService.reset();
     this.createStore.reset();
   }
 
@@ -79,32 +81,25 @@ export class CreateService {
   }
 
   async saveAndOpenInPopup(): Promise<void> {
-    const layer = this.createStore.layer();
-    if (!(layer instanceof FeatureLayer)) return;
+    const result = await this.saveFeature();
+    if (!result) return;
 
     try {
-      const objectId = await this.save();
-      if (objectId == null) return;
+      result.layer.refresh();
 
-      layer.refresh();
-
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
+      const query = result.layer.createQuery();
+      query.objectIds = [result.objectId];
       query.outFields = ['*'];
       query.returnGeometry = true;
 
-      const featureSet = await layer.queryFeatures(query);
+      const featureSet = await result.layer.queryFeatures(query);
       const graphic = featureSet.features[0];
       if (graphic) {
-        // Save reference points with the new feature's id
-        const parentId = graphic.attributes.id;
-        if (parentId) {
-          await this.refPointService.save(parentId, layer.layerId);
-        }
-        this.refPointService.reset();
         this.popupStore.open([graphic]);
       }
+      this.finalize();
     } catch (error) {
+      this.finalize();
       throw new SaveAndOpenPopupError(error);
     }
   }

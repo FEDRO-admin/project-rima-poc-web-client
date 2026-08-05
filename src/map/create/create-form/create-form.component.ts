@@ -1,14 +1,6 @@
-import {
-  Component,
-  computed,
-  CUSTOM_ELEMENTS_SCHEMA,
-  effect,
-  inject,
-  OnDestroy,
-  signal,
-  untracked,
-} from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal, viewChild } from '@angular/core';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { CreateStore } from '../create.store';
 import { CreateGeometryService } from '../create-geometry.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
@@ -19,16 +11,15 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
-import { ReferencePointStore } from '../../reference/reference-point.store';
-import { ReferencePointService } from '../../reference/reference-point.service';
+import { ReferencePointComponent } from '../../reference/reference-point/reference-point.component';
 import { ViewStore } from '../../view/view.store';
+import { PopupStore } from '../../popup/popup.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-create-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -38,23 +29,13 @@ export class CreateFormComponent implements OnDestroy {
   protected readonly viewStore = inject(ViewStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
-  protected readonly refPointStore = inject(ReferencePointStore);
-  private readonly refPointService = inject(ReferencePointService);
+  private readonly popupStore = inject(PopupStore);
+
+  private readonly vonRef = viewChild<ReferencePointComponent>('vonRef');
+  private readonly bisRef = viewChild<ReferencePointComponent>('bisRef');
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
-
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
-
-  constructor() {
-    effect(() => {
-      const layer = this.createStore.layer();
-      untracked(() => {
-        if (layer) {
-          this.refPointService.prepareForLayer(layer);
-        }
-      });
-    });
-  }
 
   ngOnDestroy(): void {
     this.createGeometryService.cancel();
@@ -145,9 +126,40 @@ export class CreateFormComponent implements OnDestroy {
     if (!confirmed) return;
 
     if (action === 'save') {
-      await this.createService.saveAndOpenInPopup();
+      await this.performSave();
     } else if (action === 'cancel' || action === 'close') {
       this.close();
+    }
+  }
+
+  private async performSave(): Promise<void> {
+    const result = await this.createService.saveFeature();
+    if (!result) return;
+
+    try {
+      result.layer.refresh();
+
+      const query = result.layer.createQuery();
+      query.objectIds = [result.objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await result.layer.queryFeatures(query);
+      const graphic = featureSet.features[0];
+
+      if (graphic) {
+        const parentId = graphic.attributes.id;
+        if (parentId) {
+          await this.vonRef()?.save(parentId, result.layer.layerId);
+          await this.bisRef()?.save(parentId, result.layer.layerId);
+        }
+        this.createService.finalize();
+        this.popupStore.open([graphic]);
+      } else {
+        this.createService.finalize();
+      }
+    } catch {
+      this.createService.finalize();
     }
   }
 
