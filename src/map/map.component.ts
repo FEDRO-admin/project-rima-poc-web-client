@@ -11,10 +11,18 @@ import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component'
 import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
 import { SceneViewService } from './view/sceneview/sceneview.service';
+import { HistoryPickerComponent } from './history/history-picker/history-picker.component';
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent, CreateFormComponent, EditFormComponent, SceneToggleComponent],
+  imports: [
+    TocComponent,
+    PopupComponent,
+    CreateFormComponent,
+    EditFormComponent,
+    SceneToggleComponent,
+    HistoryPickerComponent,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

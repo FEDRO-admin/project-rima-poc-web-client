@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core
 import { PopupStore } from './popup.store';
 import { PopupContentComponent, type PopupTab } from './content/popup-content.component';
 import { ViewService } from '../view/view.service';
+import { ViewStore } from '../view/view.store';
 import { EditService } from '../edit/edit.service';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
@@ -23,6 +24,7 @@ import { HistoryStore } from '../history/history.store';
 })
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
+  private readonly viewStore = inject(ViewStore);
   protected readonly deleteStore = inject(DeleteStore);
   protected readonly activeTab = signal<PopupTab>('attributes');
   private readonly historyStore = inject(HistoryStore);
@@ -31,13 +33,13 @@ export class PopupComponent {
   private readonly viewService = inject(ViewService);
 
   protected isEditable(): boolean {
-    if (this.historyStore.active()) return false;
+    if (this.viewStore.locked() || this.viewStore.historic()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerEditable(graphic) : false;
   }
 
   protected isDeletable(): boolean {
-    if (this.historyStore.active()) return false;
+    if (this.viewStore.locked() || this.viewStore.historic()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerDeletable(graphic) : false;
   }

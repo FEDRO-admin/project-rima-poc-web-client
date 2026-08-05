@@ -1,8 +1,8 @@
 h1. Table of Contents (ToC)
 
 _Task:_ 579
-_Branch:_ feature/585-3D_view
-_Date:_ July 2026
+_Branch:_ feature/579-table*of_contents
+\_Date:* August 2026
 
 ---
 
@@ -18,19 +18,21 @@ The Table of Contents is implemented by {{TocComponent}}, which wraps the ArcGIS
 
 h2. Initialisation
 
-{{TocComponent}} is rendered as part of {{MapComponent}}'s template and is therefore present in the DOM from the moment the map route activates. However, the {{arcgis-layer-list}} element requires a {{MapView}} reference before it can display anything. The component handles this through a reactive Angular effect that watches the {{MapViewService.mapView()}} signal. As soon as step 1 of the [Application Startup|../604-base_web_client_components/application-startup.md] sequence completes (MapView registration), this effect fires and assigns the view to the list element.
+{{TocComponent}} is rendered as part of {{MapComponent}}'s template and is therefore present in the DOM from the moment the map route activates. However, the {{arcgis-layer-list}} element requires a view reference before it can display anything. The component handles this through a reactive Angular {{effect()}} that watches the {{ViewService.activeView()}} signal. As soon as the [Application Startup|../604-base_web_client_components/application-startup.md] sequence sets the initial view (via {{ViewService.setInitialView()}}), this effect fires and assigns the view to the layer list element.
 
-The {{listItemCreatedFunction}} callback is invoked once per layer entry as the list builds itself. It attaches action buttons depending on the layer type:
+Inside {{untracked()}}, the effect also sets the {{listItemCreatedFunction}} callback, which is invoked once per layer entry as the list builds itself. It attaches action buttons depending on the layer type:
 
 ||Layer Type||Actions||
 |{{FeatureLayer}}|Zoom to, Create|
 |{{MapImageLayer}}|Zoom to|
-|Other (GroupLayer, etc.)|None|
+|Other (GroupLayer, WMSLayer, WMTSLayer, etc.)|None|
 
 h2. Zoom to Layer
 
-When a user clicks the _Zoom to_ button on a layer entry, {{TocComponent.onTriggerAction()}} is called. It reads the current {{MapView}} from the signal, ensures the layer is fully loaded by awaiting the layer load, and then navigates the view to the layer's spatial extent. For WMTS layers, which expose their extent via {{layer.activeLayer.fullExtent}} rather than {{layer.fullExtent}} directly, a fallback path is used.
+When a user clicks the _Zoom to_ button on a layer entry, {{TocComponent.onTriggerAction()}} is called. It reads the current active view from the {{ViewService.activeView()}} signal, loads the layer to ensure metadata (including {{fullExtent}}) is available, and navigates the view to the layer's spatial extent.
+
+For WMTS layers, which expose their extent via {{layer.activeLayer.fullExtent}} rather than {{layer.fullExtent}} directly, a fallback path is used. If no extent is available, the action is silently ignored.
 
 h2. Create Feature
 
-When a user clicks the _Create_ button on a {{FeatureLayer}} entry, the component loads the layer, detects the subtype field (if one exists), determines the appropriate default subtype code by querying existing features or falling back to layer name/schema defaults, and then activates the {{CreateStore}}. This opens the creation form panel and triggers the {{CreateEffects}} (which close any open popup and cancel active edits).
+When a user clicks the _Create_ button on a {{FeatureLayer}} entry, the component guards against creation during history mode ({{HistoryStore.active()}}). It then loads the layer and activates the {{CreateStore}} with the layer reference. This opens the creation form panel and triggers the {{CreateEffects}} (which close any open popup and cancel active edits).

@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import Layer from '@arcgis/core/layers/Layer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import WebScene from '@arcgis/core/WebScene';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
 import { languageInfos } from '../../../i18n/language-info-config';
@@ -17,15 +19,15 @@ export class SceneViewLayerService {
   private readonly languageStore = inject(LanguageStore);
 
   private readonly sceneLayers = new WeakSet<Layer>();
-  private cachedLayers: Layer[] | undefined;
+  private cachedGroupLayer: GroupLayer | undefined;
   private cachedForLanguage: string | undefined;
 
-  async load3DLayers(): Promise<Layer[]> {
+  async load3DGroupLayer(): Promise<GroupLayer> {
     const language = this.languageStore.activeLanguage();
     const languageCategory = languageInfos.find((info) => info.code === language)?.catalogId;
 
-    if (this.cachedLayers && this.cachedForLanguage === languageCategory) {
-      return this.cachedLayers;
+    if (this.cachedGroupLayer && this.cachedForLanguage === languageCategory) {
+      return this.cachedGroupLayer;
     }
 
     if (!languageCategory) {
@@ -33,11 +35,11 @@ export class SceneViewLayerService {
     }
 
     try {
-      const items = await this.querySceneItems(languageCategory);
-      const layers = await this.createLayers(items);
-      this.cachedLayers = layers;
+      const items = await this.queryWebSceneItems(languageCategory);
+      const groupLayer = await this.buildGroupHierarchy(items);
+      this.cachedGroupLayer = groupLayer;
       this.cachedForLanguage = languageCategory;
-      return layers;
+      return groupLayer;
     } catch (error) {
       if (isOfTypeRimaError(error)) {
         throw error;
@@ -51,14 +53,14 @@ export class SceneViewLayerService {
   }
 
   invalidateCache(): void {
-    this.cachedLayers = undefined;
+    this.cachedGroupLayer = undefined;
     this.cachedForLanguage = undefined;
   }
 
-  private async querySceneItems(languageCategory: string): Promise<PortalItem[]> {
+  private async queryWebSceneItems(languageCategory: string): Promise<PortalItem[]> {
     const query = new PortalQueryParams({
       categories: [`/Categories/${languageCategory}/${RIMA_SCENEVIEW_3D_CATEGORY}`],
-      query: 'type:"Scene Service" OR type:"Scene Layer"',
+      query: 'type:"Web Scene"',
       num: 100,
       sortField: 'title',
       sortOrder: 'asc',
@@ -67,20 +69,31 @@ export class SceneViewLayerService {
     return this.portalService.queryItems(query);
   }
 
-  private async createLayers(items: PortalItem[]): Promise<Layer[]> {
-    const results = await Promise.all(items.map((item) => this.createLayerFromItem(item)));
-    return results.filter((result): result is Layer => result !== undefined);
+  private async buildGroupHierarchy(items: PortalItem[]): Promise<GroupLayer> {
+    const childGroups = await Promise.all(items.map((item) => this.loadWebSceneAsGroup(item)));
+    const validGroups = childGroups.filter((group): group is GroupLayer => group !== undefined);
+
+    return this.registerSceneLayer(new GroupLayer({ title: RIMA_SCENEVIEW_3D_CATEGORY, layers: validGroups }));
   }
 
-  private async createLayerFromItem(item: PortalItem): Promise<Layer | undefined> {
+  private async loadWebSceneAsGroup(item: PortalItem): Promise<GroupLayer | undefined> {
     try {
-      const layer = await Layer.fromPortalItem({ portalItem: item });
-      await layer.load();
-      layer.title = item.title ?? '';
-      this.sceneLayers.add(layer);
-      return layer;
+      const webScene = new WebScene({ portalItem: item });
+      await webScene.loadAll();
+
+      const layers = webScene.layers.toArray();
+      webScene.layers.removeAll();
+
+      layers.forEach((layer) => this.registerSceneLayer(layer));
+
+      return this.registerSceneLayer(new GroupLayer({ title: item.title ?? '', layers }));
     } catch {
       return undefined;
     }
+  }
+
+  private registerSceneLayer<T extends Layer>(layer: T): T {
+    this.sceneLayers.add(layer);
+    return layer;
   }
 }

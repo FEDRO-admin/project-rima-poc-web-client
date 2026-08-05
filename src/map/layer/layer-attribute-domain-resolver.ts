@@ -47,7 +47,7 @@ export function resolveFieldDisplayValue(
   return value;
 }
 
-function buildEditAttributeField(field: Field): AttributeEditField {
+export function buildEditAttributeField(field: Field): AttributeEditField {
   const fieldType = convertAttributeFieldType(field, field.domain);
   const codedValues = resolveCodedValues(field.domain);
 

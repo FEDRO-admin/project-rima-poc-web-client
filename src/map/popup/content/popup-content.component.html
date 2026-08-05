@@ -5,8 +5,42 @@
     @case ('attributes') {
       <div class="popup-panel">
         <rima-attributes-tab [graphic]="graphic()" />
-        <rima-reference-point-view [graphic]="graphic()" type="von" />
-        <rima-reference-point-view [graphic]="graphic()" type="bis" />
+      </div>
+    }
+    @case ('reference') {
+      <div class="popup-panel">
+        <rima-reference-point
+          #vonRef
+          mode="edit"
+          type="von"
+          [graphic]="graphic()"
+          [disabled]="refSaving()"
+          (pendingChangesChange)="onVonPendingChange($event)"
+        />
+        <rima-reference-point
+          #bisRef
+          mode="edit"
+          type="bis"
+          [graphic]="graphic()"
+          [disabled]="refSaving()"
+          (pendingChangesChange)="onBisPendingChange($event)"
+        />
+        @if (refPendingChanges()) {
+          <div class="popup-panel-actions">
+            <button class="popup-save-btn" (click)="saveReferencePoints()" [disabled]="refSaving()">
+              @if (refSaving()) {
+                Saving...
+              } @else {
+                Save Reference Points
+              }
+            </button>
+          </div>
+        }
+      </div>
+    }
+    @case ('status') {
+      <div class="popup-panel">
+        <rima-status [graphic]="graphic()" />
       </div>
     }
     @case ('hierarchy') {

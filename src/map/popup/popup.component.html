@@ -9,7 +9,19 @@
           (click)="selectTab('attributes')"
         ></calcite-action>
         <calcite-action
-          icon="organization"
+          icon="pin"
+          text="Reference Points"
+          [attr.active]="activeTab() === 'reference' ? '' : null"
+          (click)="selectTab('reference')"
+        ></calcite-action>
+        <calcite-action
+          icon="check-circle"
+          text="Zustand"
+          [attr.active]="activeTab() === 'status' ? '' : null"
+          (click)="selectTab('status')"
+        ></calcite-action>
+        <calcite-action
+          icon="hierarchy"
           text="Hierarchy"
           [attr.active]="activeTab() === 'hierarchy' ? '' : null"
           (click)="selectTab('hierarchy')"
