@@ -6,6 +6,7 @@ import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
 import { PopupStore } from '../popup/popup.store';
+import { ViewStore } from '../view/view.store';
 import { ReferencePointService } from '../reference/reference-point.service';
 
 type AttributeValue = string | number | boolean | null;
@@ -15,6 +16,7 @@ type AttributeValue = string | number | boolean | null;
 })
 export class CreateService {
   private readonly createStore = inject(CreateStore);
+  private readonly viewStore = inject(ViewStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
   private readonly refPointService = inject(ReferencePointService);
@@ -26,7 +28,7 @@ export class CreateService {
     const geometry = this.createStore.geometry();
     if (!geometry) return undefined;
 
-    this.createStore.setSaving(true);
+    this.viewStore.setSaving(true);
 
     try {
       this.createGeometryService.cleanup();
@@ -43,10 +45,11 @@ export class CreateService {
       }
 
       const objectId = addResult?.objectId ?? undefined;
+      this.viewStore.setSaving(false);
       this.createStore.reset();
       return objectId;
     } catch (error) {
-      this.createStore.setSaving(false);
+      this.viewStore.setSaving(false);
       if (error instanceof CreateSaveError) {
         throw error;
       }

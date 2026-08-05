@@ -20,7 +20,7 @@ import {
   DocumentUnsupportedFileTypeError,
   DocumentUploadError,
 } from '../../../documents/documents-errors';
-import { HistoryStore } from '../../../history/history.store';
+import { ViewStore } from '../../../view/view.store';
 import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { DatePipe } from '@angular/common';
 
@@ -65,7 +65,7 @@ export class DocumentsTabComponent {
   readonly graphic = input.required<Graphic>();
 
   protected readonly documentsStore = inject(DocumentsStore);
-  protected readonly historyStore = inject(HistoryStore);
+  protected readonly viewStore = inject(ViewStore);
   private readonly documentsService = inject(DocumentsService);
   private readonly uploadService = inject(DocumentUploadService);
 

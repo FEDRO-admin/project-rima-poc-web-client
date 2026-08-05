@@ -7,6 +7,7 @@ import type Geometry from '@arcgis/core/geometry/Geometry';
 import type { RimaView } from '../view/view.service';
 import { EditStore } from './edit.store';
 import { PopupStore } from '../popup/popup.store';
+import { ViewStore } from '../view/view.store';
 import { ViewService } from '../view/view.service';
 import { EditSaveError } from './edit-errors';
 import { isImmutableField } from '../layer/layer-attributes';
@@ -22,6 +23,7 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 })
 export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
+  private readonly viewStore = inject(ViewStore);
   private readonly popupStore = inject(PopupStore);
   private readonly viewService = inject(ViewService);
   private readonly refPointService = inject(ReferencePointService);
@@ -41,7 +43,8 @@ export class EditService implements OnDestroy {
   }
 
   activate(graphic: Graphic): void {
-    this.store.reset();
+    this.cleanup();
+    this.viewStore.setInteractionMode('editing');
     this.store.activate(graphic);
     this.popupStore.close();
     this.showHighlight(graphic.geometry!);
@@ -95,7 +98,7 @@ export class EditService implements OnDestroy {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
 
     try {
       this.deactivateSketch();
@@ -127,6 +130,7 @@ export class EditService implements OnDestroy {
 
       layer.refresh();
       this.refPointService.reset();
+      this.viewStore.setSaving(false);
       this.store.reset();
 
       // Reopen popup with refreshed feature
@@ -141,7 +145,7 @@ export class EditService implements OnDestroy {
         this.popupStore.open([refreshed]);
       }
     } catch (error) {
-      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
       if (error instanceof EditSaveError) {
         throw error;
       }
@@ -151,7 +155,7 @@ export class EditService implements OnDestroy {
 
   cancel(): void {
     const graphic = this.store.graphic();
-    this.store.reset();
+    this.cleanup();
 
     // Reopen popup with the original graphic
     if (graphic) {
@@ -218,7 +222,7 @@ export class EditService implements OnDestroy {
       toggleToolOnClick: false,
       reshapeOptions: { edgeOperation: 'split', shapeOperation: 'move' },
     });
-    this.store.setSketchActive(true);
+    this.viewStore.setSketchActive(true);
   }
 
   private deactivateSketch(): void {
@@ -231,6 +235,7 @@ export class EditService implements OnDestroy {
     this.sketchViewModel = cleaned.sketchViewModel;
     this.sketchLayer = cleaned.sketchLayer;
 
+    this.viewStore.setSketchActive(false);
     this.store.deactivateSketch();
   }
 

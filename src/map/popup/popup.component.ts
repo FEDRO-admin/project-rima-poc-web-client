@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent } from './content/popup-content.component';
 import { ViewService } from '../view/view.service';
+import { ViewStore } from '../view/view.store';
 import { EditService } from '../edit/edit.service';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
@@ -10,7 +11,6 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { isLayerEditable } from '../layer/layer-capabilities';
 import { isLayerDeletable } from '../layer/layer-capabilities';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
-import { HistoryStore } from '../history/history.store';
 
 @Component({
   selector: 'rima-popup',
@@ -21,20 +21,20 @@ import { HistoryStore } from '../history/history.store';
 })
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
+  private readonly viewStore = inject(ViewStore);
   protected readonly deleteStore = inject(DeleteStore);
-  private readonly historyStore = inject(HistoryStore);
   private readonly editService = inject(EditService);
   private readonly deleteService = inject(DeleteService);
   private readonly viewService = inject(ViewService);
 
   protected isEditable(): boolean {
-    if (this.historyStore.active()) return false;
+    if (this.viewStore.locked() || this.viewStore.historic()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerEditable(graphic) : false;
   }
 
   protected isDeletable(): boolean {
-    if (this.historyStore.active()) return false;
+    if (this.viewStore.locked() || this.viewStore.historic()) return false;
     const graphic = this.store.selectedGraphic();
     return graphic ? isLayerDeletable(graphic) : false;
   }

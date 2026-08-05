@@ -10,8 +10,6 @@ interface EditState {
   originalAttributes: Record<string, AttributeValue>;
   editedAttributes: Record<string, AttributeValue>;
   editedGeometry: Geometry | undefined;
-  sketchActive: boolean;
-  saving: boolean;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -21,8 +19,6 @@ const initialState: EditState = {
   originalAttributes: {},
   editedAttributes: {},
   editedGeometry: undefined,
-  sketchActive: false,
-  saving: false,
   canUndo: false,
   canRedo: false,
 };
@@ -54,8 +50,6 @@ export const EditStore = signalStore(
         originalAttributes: attrs,
         editedAttributes: { ...attrs },
         editedGeometry: undefined,
-        sketchActive: false,
-        saving: false,
         canUndo: false,
         canRedo: false,
       });
@@ -70,17 +64,11 @@ export const EditStore = signalStore(
     clearGeometry(): void {
       patchState(store, { editedGeometry: undefined });
     },
-    setSketchActive(sketchActive: boolean): void {
-      patchState(store, { sketchActive });
-    },
-    setSaving(saving: boolean): void {
-      patchState(store, { saving });
-    },
     setUndoRedo(canUndo: boolean, canRedo: boolean): void {
       patchState(store, { canUndo, canRedo });
     },
     deactivateSketch(): void {
-      patchState(store, { sketchActive: false, canUndo: false, canRedo: false });
+      patchState(store, { canUndo: false, canRedo: false });
     },
     reset(): void {
       patchState(store, initialState);

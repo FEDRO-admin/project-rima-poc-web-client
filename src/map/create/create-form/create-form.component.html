@@ -49,16 +49,16 @@
               <div class="geometry-status geometry-status--complete">
                 <calcite-icon icon="check-circle" scale="s"></calcite-icon>
                 <span>Geometry added</span>
-                <button class="geometry-redraw-btn" (click)="editGeometry()" [disabled]="createStore.saving()">
+                <button class="geometry-redraw-btn" (click)="editGeometry()" [disabled]="viewStore.saving()">
                   <calcite-icon icon="pencil" scale="s"></calcite-icon>
                   Edit
                 </button>
-                <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="createStore.saving()">
+                <button class="geometry-redraw-btn" (click)="clearGeometry()" [disabled]="viewStore.saving()">
                   <calcite-icon icon="refresh" scale="s"></calcite-icon>
                   Redraw
                 </button>
               </div>
-            } @else if (createStore.sketchActive()) {
+            } @else if (viewStore.sketchActive()) {
               <div class="geometry-status geometry-status--active">
                 <span>Drawing...</span>
                 <div class="geometry-tools">
@@ -82,7 +82,7 @@
                       class="geometry-toolbar-btn"
                       [class.active]="activeTool() === tool.tool"
                       (click)="selectTool(tool.tool)"
-                      [disabled]="createStore.saving() || refPointStore.sketchActive()"
+                      [disabled]="viewStore.busy()"
                       [title]="tool.label"
                     >
                       <calcite-icon [icon]="tool.icon" scale="s"></calcite-icon>
@@ -104,7 +104,7 @@
             <rima-attribute-form
               [fields]="fields()"
               [values]="createStore.attributes()"
-              [disabled]="createStore.saving()"
+              [disabled]="viewStore.saving()"
               [showRequiredIndicator]="true"
               idPrefix="create"
               (fieldChange)="onAttributeFieldChange($event)"
@@ -113,25 +113,17 @@
 
           <!-- Reference Points -->
           <div class="create-section">
-            <rima-reference-point-list
-              type="von"
-              [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-            />
-          </div>
-          <div class="create-section">
-            <rima-reference-point-list
-              type="bis"
-              [disabled]="createStore.saving() || createStore.sketchActive() || createStore.adjusting()"
-            />
+            <rima-reference-point-list type="von" [disabled]="viewStore.busy() || createStore.adjusting()" />
+            <rima-reference-point-list type="bis" [disabled]="viewStore.busy() || createStore.adjusting()" />
           </div>
 
           <!-- Actions -->
           <div class="create-form-actions">
-            <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="createStore.saving()">
+            <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="viewStore.saving()">
               Cancel
             </button>
             <button class="create-btn create-btn--save" (click)="requestSave()" [disabled]="!canSave()">
-              @if (createStore.saving()) {
+              @if (viewStore.saving()) {
                 Saving...
               } @else {
                 Create Feature

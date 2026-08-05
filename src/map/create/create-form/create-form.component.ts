@@ -22,6 +22,7 @@ import { AttributeFormComponent } from '../../shared/attribute-form/attribute-fo
 import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
 import { ReferencePointStore } from '../../reference/reference-point.store';
 import { ReferencePointService } from '../../reference/reference-point.service';
+import { ViewStore } from '../../view/view.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
@@ -34,6 +35,7 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 })
 export class CreateFormComponent implements OnDestroy {
   protected readonly createStore = inject(CreateStore);
+  protected readonly viewStore = inject(ViewStore);
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly createService = inject(CreateService);
   protected readonly refPointStore = inject(ReferencePointStore);
@@ -74,7 +76,7 @@ export class CreateFormComponent implements OnDestroy {
 
   protected readonly canSave = computed<boolean>(() => {
     const hasGeometry = this.createStore.geometry() != null;
-    const notSaving = !this.createStore.saving();
+    const notSaving = !this.viewStore.saving();
     return hasGeometry && notSaving;
   });
 
@@ -150,7 +152,6 @@ export class CreateFormComponent implements OnDestroy {
   }
 
   private close(): void {
-    this.createGeometryService.cancel();
-    this.createStore.reset();
+    this.createService.cancel();
   }
 }
