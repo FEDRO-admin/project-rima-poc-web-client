@@ -38,8 +38,8 @@ export class SceneViewService {
 
   async add3DLayers(map: ArcGISMap): Promise<void> {
     try {
-      const layers = await this.sceneViewLayerService.load3DLayers();
-      map.layers.addMany(layers);
+      const groupLayer = await this.sceneViewLayerService.load3DGroupLayer();
+      map.layers.add(groupLayer);
     } catch {
       // Scene layer load failure is non-fatal — 3D view still usable without extra layers
     }
