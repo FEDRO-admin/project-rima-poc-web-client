@@ -6,7 +6,7 @@ import {
   inject,
   input,
   OnDestroy,
-  output,
+  signal,
   untracked,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
@@ -38,19 +38,17 @@ interface FieldEntry {
   styleUrl: './reference-point.component.scss',
 })
 export class ReferencePointComponent implements OnDestroy {
-  readonly mode = input.required<'edit' | 'view'>();
+  readonly mode = input<'edit' | 'view'>('edit');
   readonly type = input.required<ReferencePointType>();
-  readonly graphic = input<Graphic>();
-  readonly layer = input<FeatureLayer>();
+  readonly graphic = input.required<Graphic>();
   readonly disabled = input<boolean>(false);
-
-  readonly pendingChangesChange = output<boolean>();
 
   protected readonly componentStore = inject(ReferencePointComponentStore);
   protected readonly viewStore = inject(ViewStore);
   private readonly service = inject(ReferencePointComponentService);
 
   protected readonly displayTitle = computed(() => REF_POINT_TYPE_CONFIGS[this.type()].displayTitle);
+  protected readonly saving = signal(false);
 
   protected readonly allHighlighted = computed(() => {
     const pts = this.componentStore.points();
@@ -64,25 +62,38 @@ export class ReferencePointComponent implements OnDestroy {
   protected useCoordinateInput = false;
 
   constructor() {
-    this.loadOnInputChange();
-    this.emitPendingChanges();
+    this.loadOnGraphicChange();
   }
 
   ngOnDestroy(): void {
     this.service.cleanup();
   }
 
-  async save(parentId: string, parentLayerId: number): Promise<void> {
-    await this.service.save(parentId, parentLayerId);
+  // --- Save ---
+
+  protected async savePoints(): Promise<void> {
+    const graphic = this.graphic();
+    const parentId = graphic.attributes.id;
+    const layer = graphic.layer;
+    if (!parentId || !(layer instanceof FeatureLayer)) return;
+
+    this.saving.set(true);
+    try {
+      await this.service.save(parentId, layer.layerId);
+    } finally {
+      this.saving.set(false);
+    }
   }
 
-  // --- Edit mode methods ---
+  // --- Shared ---
 
   protected getPointLabel(point: ReferencePoint): string {
     const rbbs = point.attributes['rbbs'];
     if (rbbs != null && rbbs !== '') return String(rbbs);
     return 'Point';
   }
+
+  // --- Edit mode ---
 
   protected startAdding(): void {
     this.coordinateX = '';
@@ -157,7 +168,7 @@ export class ReferencePointComponent implements OnDestroy {
     this.service.toggleDisplay(this.type());
   }
 
-  // --- View mode methods ---
+  // --- View mode ---
 
   protected toggleHighlight(point: ReferencePoint): void {
     this.service.toggleHighlight(point, this.type());
@@ -186,29 +197,17 @@ export class ReferencePointComponent implements OnDestroy {
 
   // --- Private ---
 
-  private loadOnInputChange(): void {
+  private loadOnGraphicChange(): void {
     effect(() => {
       const graphic = this.graphic();
-      const layer = this.layer();
       const type = this.type();
       const mode = this.mode();
       untracked(() => {
-        if (mode === 'edit' && graphic) {
-          this.service.resolveAndLoad(graphic, type);
-        } else if (mode === 'edit' && layer) {
-          this.service.resolveForCreate(layer, type);
-        } else if (mode === 'view' && graphic) {
+        if (mode === 'view') {
           this.service.resolveAndLoadForView(graphic, type);
+        } else {
+          this.service.resolveAndLoad(graphic, type);
         }
-      });
-    });
-  }
-
-  private emitPendingChanges(): void {
-    effect(() => {
-      const pending = this.componentStore.hasPendingChanges();
-      untracked(() => {
-        this.pendingChangesChange.emit(pending);
       });
     });
   }

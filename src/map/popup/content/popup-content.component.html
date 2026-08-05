@@ -27,33 +27,8 @@
     }
     @case ('reference') {
       <div class="popup-panel">
-        <rima-reference-point
-          #vonRef
-          mode="edit"
-          type="von"
-          [graphic]="graphic()"
-          [disabled]="refSaving()"
-          (pendingChangesChange)="onVonPendingChange($event)"
-        />
-        <rima-reference-point
-          #bisRef
-          mode="edit"
-          type="bis"
-          [graphic]="graphic()"
-          [disabled]="refSaving()"
-          (pendingChangesChange)="onBisPendingChange($event)"
-        />
-        @if (refPendingChanges()) {
-          <div class="popup-panel-actions">
-            <button class="popup-save-btn" (click)="saveReferencePoints()" [disabled]="refSaving()">
-              @if (refSaving()) {
-                Saving...
-              } @else {
-                Save Reference Points
-              }
-            </button>
-          </div>
-        }
+        <rima-reference-point [mode]="refMode()" type="von" [graphic]="graphic()" />
+        <rima-reference-point [mode]="refMode()" type="bis" [graphic]="graphic()" />
       </div>
     }
     @case ('hierarchy') {

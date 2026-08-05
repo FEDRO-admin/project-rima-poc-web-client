@@ -19,12 +19,12 @@ export class CreateService {
   private readonly createGeometryService = inject(CreateGeometryService);
   private readonly popupStore = inject(PopupStore);
 
-  async saveFeature(): Promise<{ objectId: number; layer: FeatureLayer } | undefined> {
+  async saveAndOpenInPopup(): Promise<void> {
     const layer = this.createStore.layer();
-    if (!(layer instanceof FeatureLayer)) return undefined;
+    if (!(layer instanceof FeatureLayer)) return;
 
     const geometry = this.createStore.geometry();
-    if (!geometry) return undefined;
+    if (!geometry) return;
 
     this.viewStore.setSaving(true);
 
@@ -35,7 +35,6 @@ export class CreateService {
       const graphic = new Graphic({ attributes, geometry });
 
       const result = await layer.applyEdits({ addFeatures: [graphic] });
-
       const addResult = result.addFeatureResults[0];
 
       if (addResult?.error) {
@@ -43,21 +42,34 @@ export class CreateService {
       }
 
       const objectId = addResult?.objectId;
-      if (objectId == null) return undefined;
+      if (objectId == null) {
+        this.viewStore.setSaving(false);
+        this.createStore.reset();
+        return;
+      }
 
-      return { objectId, layer };
+      layer.refresh();
+
+      const query = layer.createQuery();
+      query.objectIds = [objectId];
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const featureSet = await layer.queryFeatures(query);
+      const created = featureSet.features[0];
+      if (created) {
+        this.popupStore.open([created]);
+      }
+
+      this.viewStore.setSaving(false);
+      this.createStore.reset();
     } catch (error) {
       this.viewStore.setSaving(false);
       if (error instanceof CreateSaveError) {
         throw error;
       }
-      throw new CreateSaveError(error);
+      throw new SaveAndOpenPopupError(error);
     }
-  }
-
-  finalize(): void {
-    this.viewStore.setSaving(false);
-    this.createStore.reset();
   }
 
   cancel(): void {
@@ -78,29 +90,5 @@ export class CreateService {
     }
 
     return payload;
-  }
-
-  async saveAndOpenInPopup(): Promise<void> {
-    const result = await this.saveFeature();
-    if (!result) return;
-
-    try {
-      result.layer.refresh();
-
-      const query = result.layer.createQuery();
-      query.objectIds = [result.objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
-
-      const featureSet = await result.layer.queryFeatures(query);
-      const graphic = featureSet.features[0];
-      if (graphic) {
-        this.popupStore.open([graphic]);
-      }
-      this.finalize();
-    } catch (error) {
-      this.finalize();
-      throw new SaveAndOpenPopupError(error);
-    }
   }
 }

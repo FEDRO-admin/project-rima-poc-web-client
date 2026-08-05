@@ -19,7 +19,10 @@
           </button>
         </div>
 
-        <!-- Point list -->
+        @if (componentStore.loading()) {
+          <div class="refpoint-empty">Loading reference points...</div>
+        }
+
         @if (componentStore.points().length > 0) {
           <div class="refpoint-list">
             @for (point of componentStore.points(); track point.clientId) {
@@ -55,7 +58,6 @@
                   </button>
                 </div>
 
-                <!-- Inline editor -->
                 @if (componentStore.activeEditId() === point.clientId) {
                   <div class="refpoint-editor">
                     <div class="refpoint-editor-geometry">
@@ -88,11 +90,10 @@
               </div>
             }
           </div>
-        } @else if (!componentStore.isAdding()) {
+        } @else if (!componentStore.isAdding() && !componentStore.loading()) {
           <div class="refpoint-empty">No reference points</div>
         }
 
-        <!-- Adding new point -->
         @if (componentStore.isAdding()) {
           <div class="refpoint-adding">
             <div class="refpoint-adding-header">
@@ -185,6 +186,18 @@
             <calcite-icon icon="plus" scale="s"></calcite-icon>
             Add Point
           </button>
+        }
+
+        @if (componentStore.hasPendingChanges()) {
+          <div class="refpoint-save-section">
+            <button class="refpoint-save-btn" (click)="savePoints()" [disabled]="saving()">
+              @if (saving()) {
+                Saving...
+              } @else {
+                Save
+              }
+            </button>
+          </div>
         }
       </div>
     }

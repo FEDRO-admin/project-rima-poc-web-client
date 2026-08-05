@@ -111,24 +111,6 @@
             />
           </div>
 
-          <!-- Reference Points -->
-          <div class="create-section">
-            <rima-reference-point
-              #vonRef
-              mode="edit"
-              type="von"
-              [layer]="createStore.layer()"
-              [disabled]="viewStore.busy() || createStore.adjusting()"
-            />
-            <rima-reference-point
-              #bisRef
-              mode="edit"
-              type="bis"
-              [layer]="createStore.layer()"
-              [disabled]="viewStore.busy() || createStore.adjusting()"
-            />
-          </div>
-
           <!-- Actions -->
           <div class="create-form-actions">
             <button class="create-btn create-btn--cancel" (click)="requestCancel()" [disabled]="viewStore.saving()">
