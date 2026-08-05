@@ -3,6 +3,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { MapViewService } from '../view/mapview/mapview.service';
 import { HistoryStore } from '../history/history.store';
+import { ViewStore } from '../view/view.store';
 import { StatusRecord, AttributeValue } from './status-types';
 import { StatusLoadError, StatusSaveError } from './status-errors';
 import {
@@ -18,15 +19,16 @@ import {
   resolveStatusEditableFields,
 } from './status-resolution';
 import { AttributeEditField } from '../shared/attribute-edit-field';
-import { StatusStore, StatusFieldEntry } from './status.store';
+import { StatusComponentStore, StatusFieldEntry } from './status-component.store';
 import { resolveFieldDisplayValue } from '../layer/layer-attribute-domain-resolver';
 import { isImmutableField } from '../layer/layer-attributes';
 
-@Injectable({ providedIn: 'root' })
-export class StatusService {
+@Injectable()
+export class StatusComponentService {
   private readonly viewService = inject(MapViewService);
   private readonly historyStore = inject(HistoryStore);
-  private readonly store = inject(StatusStore);
+  private readonly viewStore = inject(ViewStore);
+  private readonly store = inject(StatusComponentStore);
 
   resolveForView(
     layer: FeatureLayer,
@@ -186,5 +188,36 @@ export class StatusService {
       if (error instanceof StatusSaveError) throw error;
       throw new StatusSaveError(error);
     }
+  }
+
+  async save(graphic: Graphic, parentId: string | undefined, layerId: number): Promise<void> {
+    const statusLayer = this.getStatusLayer();
+    if (!statusLayer) return;
+
+    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
+    try {
+      if (this.store.deleted()) {
+        const record = this.store.record();
+        if (record?.objectId != null) {
+          await this.deleteStatus(statusLayer, record.objectId);
+        }
+      } else if (this.store.creating()) {
+        if (parentId) {
+          await this.createStatus(statusLayer, parentId, String(layerId), this.store.editedAttributes());
+        }
+      } else if (this.store.hasPendingChanges()) {
+        const record = this.store.record();
+        if (record) {
+          await this.saveStatus(statusLayer, record, this.store.editedAttributes());
+        }
+      }
+    } finally {
+      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
+    }
+
+    // Reload always runs after a successful save; reset() (inside loadForGraphic) restores saving to false too.
+    await this.loadForGraphic(graphic);
   }
 }

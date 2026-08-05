@@ -1,0 +1,101 @@
+@if (store.available()) {
+  <div class="status-section">
+    <div class="status-header">
+      <calcite-icon icon="clipboard-check" scale="s"></calcite-icon>
+      <span>Zustand</span>
+      @if (store.deleted()) {
+        <span class="status-badge status-badge--deleted">Deleted</span>
+      }
+    </div>
+
+    @if (store.loading()) {
+      <div class="status-loading">Loading status...</div>
+    } @else if (store.deleted()) {
+      <div class="status-deleted-info">Status record will be deleted when you save.</div>
+    } @else if (store.showForm() && mode() === 'view') {
+      @if (service.getZustandsklasse(); as klasse) {
+        <div class="status-klasse-badge" [style.background-color]="service.getZustandsklasseColor()">
+          {{ klasse }}
+        </div>
+      }
+      <table class="status-attributes-table">
+        @for (field of service.getDisplayFields(); track field.label) {
+          <tr>
+            <td class="status-attr-key">{{ field.label }}</td>
+            <td class="status-attr-value" [class.status-attr-value--null]="field.value == null">
+              {{ field.value == null ? 'null' : field.value }}
+            </td>
+          </tr>
+        }
+      </table>
+      @if (!viewStore.historic()) {
+        <div class="status-actions">
+          <button class="status-btn status-btn--edit" (click)="startEdit()">
+            <calcite-icon icon="pencil" scale="s"></calcite-icon>
+            Edit Status
+          </button>
+          <button class="status-btn status-btn--delete" (click)="requestDelete()">
+            <calcite-icon icon="trash" scale="s"></calcite-icon>
+            Delete Status
+          </button>
+        </div>
+      }
+    } @else if (store.showForm() && mode() === 'edit') {
+      @if (service.getZustandsklasse(); as klasse) {
+        <div class="status-klasse-badge" [style.background-color]="service.getZustandsklasseColor()">
+          {{ klasse }}
+        </div>
+      }
+      <rima-attribute-form
+        [fields]="service.getFields()"
+        [values]="store.editedAttributes()"
+        [disabled]="store.saving()"
+        idPrefix="status"
+        (fieldChange)="onFieldChange($event)"
+      />
+      <div class="status-actions">
+        <button class="status-btn status-btn--cancel" (click)="cancelEdit()" [disabled]="store.saving()">Cancel</button>
+      </div>
+    } @else if (store.showCreateForm()) {
+      <rima-attribute-form
+        [fields]="service.getFields()"
+        [values]="store.editedAttributes()"
+        [disabled]="store.saving()"
+        idPrefix="status-new"
+        (fieldChange)="onFieldChange($event)"
+      />
+      <div class="status-actions">
+        <button class="status-btn status-btn--cancel" (click)="cancelCreate()" [disabled]="store.saving()">
+          Cancel
+        </button>
+      </div>
+    } @else if (store.showCreateButton() && !viewStore.historic()) {
+      <button class="status-btn status-btn--create" (click)="createStatus()" [disabled]="store.saving()">
+        <calcite-icon icon="plus" scale="s"></calcite-icon>
+        Create Status
+      </button>
+    }
+
+    @if (store.hasPendingChanges() && !viewStore.historic()) {
+      <div class="status-save-actions">
+        <button class="status-btn status-btn--save" (click)="save()" [disabled]="store.saving()">
+          @if (store.saving()) {
+            Saving...
+          } @else {
+            Save Status
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (confirmingDelete()) {
+    <rima-confirm-dialog
+      title="Delete Status"
+      message="Are you sure you want to delete the status record? This will be applied when you save."
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      (confirmed)="onDeleteConfirm($event)"
+    />
+  }
+}

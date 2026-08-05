@@ -29,8 +29,7 @@ const initialState: StatusState = {
   relationshipId: undefined,
 };
 
-export const StatusStore = signalStore(
-  { providedIn: 'root' },
+export const StatusComponentStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     hasPendingChanges: computed(() => {
@@ -45,7 +44,6 @@ export const StatusStore = signalStore(
     showForm: computed(() => store.record() != null && !store.deleted()),
     showCreateForm: computed(() => store.creating()),
     showCreateButton: computed(() => store.relationshipId() != null && store.record() == null && !store.creating()),
-    showDeleteButton: computed(() => store.record() != null && !store.deleted()),
   })),
   withMethods((store) => ({
     setup(relationshipId: number): void {
@@ -69,6 +67,9 @@ export const StatusStore = signalStore(
     },
     updateField(fieldName: string, value: AttributeValue): void {
       patchState(store, { editedAttributes: { ...store.editedAttributes(), [fieldName]: value } });
+    },
+    cancelEdit(): void {
+      patchState(store, { editedAttributes: { ...store.originalAttributes() } });
     },
     markDeleted(): void {
       patchState(store, { deleted: true });

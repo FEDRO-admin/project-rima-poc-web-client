@@ -8,6 +8,9 @@
     >
       Attributes
     </button>
+    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'status'" (click)="selectTab('status')">
+      Zustand
+    </button>
     <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
       Hierarchy
     </button>
@@ -20,9 +23,13 @@
     @case ('attributes') {
       <div class="popup-panel">
         <rima-attributes-tab [graphic]="graphic()" />
-        <rima-status-view [graphic]="graphic()" />
         <rima-reference-point-view [graphic]="graphic()" type="von" />
         <rima-reference-point-view [graphic]="graphic()" type="bis" />
+      </div>
+    }
+    @case ('status') {
+      <div class="popup-panel">
+        <rima-status [graphic]="graphic()" />
       </div>
     }
     @case ('hierarchy') {

@@ -4,9 +4,9 @@ import { AttributesTabComponent } from './attributes-tab/attributes-tab.componen
 import { HierarchyTabComponent } from './hierarchy-tab/hierarchy-tab.component';
 import { DocumentsTabComponent } from './documents-tab/documents-tab.component';
 import { ReferencePointViewComponent } from '../../reference/reference-point-view/reference-point-view.component';
-import { StatusViewComponent } from '../../status/status-view/status-view.component';
+import { StatusComponent } from '../../status/status.component';
 
-export type PopupTab = 'attributes' | 'hierarchy' | 'documents';
+export type PopupTab = 'attributes' | 'hierarchy' | 'documents' | 'status';
 
 @Component({
   selector: 'rima-popup-content',
@@ -15,7 +15,7 @@ export type PopupTab = 'attributes' | 'hierarchy' | 'documents';
     HierarchyTabComponent,
     DocumentsTabComponent,
     ReferencePointViewComponent,
-    StatusViewComponent,
+    StatusComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup-content.component.html',

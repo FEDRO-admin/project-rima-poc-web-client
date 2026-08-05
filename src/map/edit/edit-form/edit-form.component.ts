@@ -11,14 +11,12 @@ import { resolveEditableAttributeFields } from '../../layer/layer-attribute-doma
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
 import { ReferencePointStore } from '../../reference/reference-point.store';
-import { StatusEditComponent } from '../../status/status-edit/status-edit.component';
-import { StatusStore } from '../../status/status.store';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-edit-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent, StatusEditComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './edit-form.component.html',
   styleUrl: './edit-form.component.scss',
