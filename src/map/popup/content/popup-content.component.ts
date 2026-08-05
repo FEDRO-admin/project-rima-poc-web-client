@@ -5,12 +5,19 @@ import { AttributesTabComponent } from './attributes-tab/attributes-tab.componen
 import { HierarchyTabComponent } from './hierarchy-tab/hierarchy-tab.component';
 import { DocumentsTabComponent } from './documents-tab/documents-tab.component';
 import { ReferencePointComponent } from '../../reference/reference-point/reference-point.component';
+import { StatusComponent } from '../../status/status.component';
 
-export type PopupTab = 'attributes' | 'reference' | 'hierarchy' | 'documents';
+export type PopupTab = 'attributes' | 'reference' | 'hierarchy' | 'documents' | 'status';
 
 @Component({
   selector: 'rima-popup-content',
-  imports: [AttributesTabComponent, HierarchyTabComponent, DocumentsTabComponent, ReferencePointComponent],
+  imports: [
+    AttributesTabComponent,
+    HierarchyTabComponent,
+    DocumentsTabComponent,
+    ReferencePointComponent,
+    StatusComponent,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup-content.component.html',
   styleUrl: './popup-content.component.scss',
