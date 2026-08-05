@@ -1,20 +1,5 @@
 <div class="popup-content">
   <h3 class="popup-title">{{ title() }}</h3>
-  <div class="popup-tabs">
-    <button
-      class="popup-tab"
-      [class.popup-tab--active]="activeTab() === 'attributes'"
-      (click)="selectTab('attributes')"
-    >
-      Attributes
-    </button>
-    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
-      Hierarchy
-    </button>
-    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'documents'" (click)="selectTab('documents')">
-      Documents
-    </button>
-  </div>
 
   @switch (activeTab()) {
     @case ('attributes') {

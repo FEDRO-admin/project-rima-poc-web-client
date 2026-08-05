@@ -1,12 +1,14 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
-import { PopupContentComponent } from './content/popup-content.component';
+import { PopupContentComponent, type PopupTab } from './content/popup-content.component';
 import { ViewService } from '../view/view.service';
 import { EditService } from '../edit/edit.service';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
 import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import '@esri/calcite-components/dist/components/calcite-action';
+import '@esri/calcite-components/dist/components/calcite-action-bar';
 import { isLayerEditable } from '../layer/layer-capabilities';
 import { isLayerDeletable } from '../layer/layer-capabilities';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
@@ -22,6 +24,7 @@ import { HistoryStore } from '../history/history.store';
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
   protected readonly deleteStore = inject(DeleteStore);
+  protected readonly activeTab = signal<PopupTab>('attributes');
   private readonly historyStore = inject(HistoryStore);
   private readonly editService = inject(EditService);
   private readonly deleteService = inject(DeleteService);
@@ -67,6 +70,10 @@ export class PopupComponent {
 
   requestClose(): void {
     this.store.close();
+  }
+
+  selectTab(tab: PopupTab): void {
+    this.activeTab.set(tab);
   }
 
   zoomTo(): void {

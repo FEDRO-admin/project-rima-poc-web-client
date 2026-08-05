@@ -1,5 +1,27 @@
 @if (store.visible()) {
   <div class="popup-container" (keydown.escape)="onEscape()" tabindex="-1">
+    @if (store.showDetail()) {
+      <calcite-action-bar scale="s" class="popup-action-bar">
+        <calcite-action
+          icon="information"
+          text="Attributes"
+          [attr.active]="activeTab() === 'attributes' ? '' : null"
+          (click)="selectTab('attributes')"
+        ></calcite-action>
+        <calcite-action
+          icon="organization"
+          text="Hierarchy"
+          [attr.active]="activeTab() === 'hierarchy' ? '' : null"
+          (click)="selectTab('hierarchy')"
+        ></calcite-action>
+        <calcite-action
+          icon="attachment"
+          text="Documents"
+          [attr.active]="activeTab() === 'documents' ? '' : null"
+          (click)="selectTab('documents')"
+        ></calcite-action>
+      </calcite-action-bar>
+    }
     <div class="popup-card">
       <div class="popup-header">
         @if (store.showDetail()) {
@@ -46,7 +68,7 @@
       }
 
       @if (store.showDetail() && store.selectedGraphic()) {
-        <rima-popup-content [graphic]="store.selectedGraphic()!" />
+        <rima-popup-content [graphic]="store.selectedGraphic()!" [activeTab]="activeTab()" />
       }
 
       @if (deleteStore.confirmRequested()) {
