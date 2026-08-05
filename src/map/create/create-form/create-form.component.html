@@ -113,8 +113,20 @@
 
           <!-- Reference Points -->
           <div class="create-section">
-            <rima-reference-point-list type="von" [disabled]="viewStore.busy() || createStore.adjusting()" />
-            <rima-reference-point-list type="bis" [disabled]="viewStore.busy() || createStore.adjusting()" />
+            <rima-reference-point
+              #vonRef
+              mode="edit"
+              type="von"
+              [layer]="createStore.layer()"
+              [disabled]="viewStore.busy() || createStore.adjusting()"
+            />
+            <rima-reference-point
+              #bisRef
+              mode="edit"
+              type="bis"
+              [layer]="createStore.layer()"
+              [disabled]="viewStore.busy() || createStore.adjusting()"
+            />
           </div>
 
           <!-- Actions -->

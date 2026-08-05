@@ -1,4 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, signal, viewChild } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { EditStore } from '../edit.store';
 import { EditService } from '../edit.service';
@@ -9,14 +9,13 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { ReferencePointListComponent } from '../../reference/reference-point-list/reference-point-list.component';
-import { ReferencePointStore } from '../../reference/reference-point.store';
+import { ReferencePointComponent } from '../../reference/reference-point/reference-point.component';
 
 type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-edit-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointListComponent],
+  imports: [ConfirmDialogComponent, AttributeFormComponent, ReferencePointComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './edit-form.component.html',
   styleUrl: './edit-form.component.scss',
@@ -25,9 +24,13 @@ export class EditFormComponent implements OnDestroy {
   protected readonly store = inject(EditStore);
   protected readonly viewStore = inject(ViewStore);
   private readonly editService = inject(EditService);
-  protected readonly refPointStore = inject(ReferencePointStore);
+
+  private readonly vonRef = viewChild<ReferencePointComponent>('vonRef');
+  private readonly bisRef = viewChild<ReferencePointComponent>('bisRef');
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
+  protected readonly vonPendingChanges = signal(false);
+  protected readonly bisPendingChanges = signal(false);
 
   ngOnDestroy(): void {
     this.store.reset();
@@ -53,7 +56,7 @@ export class EditFormComponent implements OnDestroy {
   });
 
   protected readonly canSave = computed(() => {
-    const dirty = this.store.isDirty() || this.refPointStore.hasPendingChanges();
+    const dirty = this.store.isDirty() || this.vonPendingChanges() || this.bisPendingChanges();
     return dirty && !this.viewStore.saving();
   });
 
@@ -116,9 +119,24 @@ export class EditFormComponent implements OnDestroy {
     if (!confirmed) return;
 
     if (action === 'save') {
-      await this.editService.save();
+      await this.performSave();
     } else if (action === 'cancel' || action === 'close') {
       this.editService.cancel();
     }
+  }
+
+  private async performSave(): Promise<void> {
+    const graphic = this.store.graphic();
+    if (!graphic) return;
+
+    const parentId = graphic.attributes.id;
+    const layer = graphic.layer as FeatureLayer;
+
+    if (parentId) {
+      await this.vonRef()?.save(parentId, layer.layerId);
+      await this.bisRef()?.save(parentId, layer.layerId);
+    }
+
+    await this.editService.save();
   }
 }

@@ -8,6 +8,9 @@
     >
       Attributes
     </button>
+    <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'reference'" (click)="selectTab('reference')">
+      Reference
+    </button>
     <button class="popup-tab" [class.popup-tab--active]="activeTab() === 'hierarchy'" (click)="selectTab('hierarchy')">
       Hierarchy
     </button>
@@ -20,8 +23,37 @@
     @case ('attributes') {
       <div class="popup-panel">
         <rima-attributes-tab [graphic]="graphic()" />
-        <rima-reference-point-view [graphic]="graphic()" type="von" />
-        <rima-reference-point-view [graphic]="graphic()" type="bis" />
+      </div>
+    }
+    @case ('reference') {
+      <div class="popup-panel">
+        <rima-reference-point
+          #vonRef
+          mode="edit"
+          type="von"
+          [graphic]="graphic()"
+          [disabled]="refSaving()"
+          (pendingChangesChange)="onVonPendingChange($event)"
+        />
+        <rima-reference-point
+          #bisRef
+          mode="edit"
+          type="bis"
+          [graphic]="graphic()"
+          [disabled]="refSaving()"
+          (pendingChangesChange)="onBisPendingChange($event)"
+        />
+        @if (refPendingChanges()) {
+          <div class="popup-panel-actions">
+            <button class="popup-save-btn" (click)="saveReferencePoints()" [disabled]="refSaving()">
+              @if (refSaving()) {
+                Saving...
+              } @else {
+                Save Reference Points
+              }
+            </button>
+          </div>
+        }
       </div>
     }
     @case ('hierarchy') {

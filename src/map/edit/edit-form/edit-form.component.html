@@ -82,8 +82,22 @@
 
       <!-- Reference Points -->
       <div class="edit-section">
-        <rima-reference-point-list type="von" [disabled]="viewStore.busy()" />
-        <rima-reference-point-list type="bis" [disabled]="viewStore.busy()" />
+        <rima-reference-point
+          #vonRef
+          mode="edit"
+          type="von"
+          [graphic]="store.graphic()"
+          [disabled]="viewStore.busy()"
+          (pendingChangesChange)="vonPendingChanges.set($event)"
+        />
+        <rima-reference-point
+          #bisRef
+          mode="edit"
+          type="bis"
+          [graphic]="store.graphic()"
+          [disabled]="viewStore.busy()"
+          (pendingChangesChange)="bisPendingChanges.set($event)"
+        />
       </div>
 
       <!-- Actions -->
