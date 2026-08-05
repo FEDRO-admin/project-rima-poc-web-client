@@ -24,12 +24,7 @@ export type PopupTab = 'attributes' | 'reference' | 'hierarchy' | 'documents' | 
 })
 export class PopupContentComponent {
   readonly graphic = input.required<Graphic>();
-
-  readonly activeTab = signal<PopupTab>('attributes');
-  readonly refPendingChanges = signal(false);
-  readonly refSaving = signal(false);
-  private vonPending = false;
-  private bisPending = false;
+  readonly activeTab = input.required<PopupTab>();
 
   private readonly vonRef = viewChild<ReferencePointComponent>('vonRef');
   private readonly bisRef = viewChild<ReferencePointComponent>('bisRef');
@@ -39,30 +34,30 @@ export class PopupContentComponent {
     return graphic.layer?.title ?? 'Feature';
   });
 
-  selectTab(tab: PopupTab): void {
-    this.activeTab.set(tab);
+  private readonly vonPending = signal(false);
+  private readonly bisPending = signal(false);
+  readonly refPendingChanges = computed(() => this.vonPending() || this.bisPending());
+  readonly refSaving = signal(false);
+
+  onVonPendingChange(pending: boolean): void {
+    this.vonPending.set(pending);
   }
 
-  protected onVonPendingChange(pending: boolean): void {
-    this.vonPending = pending;
-    this.refPendingChanges.set(this.vonPending || this.bisPending);
+  onBisPendingChange(pending: boolean): void {
+    this.bisPending.set(pending);
   }
 
-  protected onBisPendingChange(pending: boolean): void {
-    this.bisPending = pending;
-    this.refPendingChanges.set(this.vonPending || this.bisPending);
-  }
-
-  protected async saveReferencePoints(): Promise<void> {
+  async saveReferencePoints(): Promise<void> {
     const graphic = this.graphic();
-    const parentId = graphic.attributes.id;
-    const layer = graphic.layer;
-    if (!parentId || !(layer instanceof FeatureLayer)) return;
+    const parentId = graphic.attributes?.id;
+    const parentLayerId = (graphic.layer as FeatureLayer)?.layerId;
+    if (parentId == null || parentLayerId == null) return;
 
     this.refSaving.set(true);
     try {
-      await this.vonRef()?.save(parentId, layer.layerId);
-      await this.bisRef()?.save(parentId, layer.layerId);
+      const von = this.vonRef();
+      const bis = this.bisRef();
+      await Promise.all([von?.save(parentId, parentLayerId), bis?.save(parentId, parentLayerId)]);
     } finally {
       this.refSaving.set(false);
     }
