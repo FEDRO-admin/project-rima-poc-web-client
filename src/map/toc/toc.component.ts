@@ -2,7 +2,6 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracke
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { ViewService } from '../view/view.service';
 import { CreateStore } from '../create/create.store';
-import { HistoryPickerComponent } from '../history/history-picker/history-picker.component';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
@@ -12,7 +11,6 @@ import { HistoryStore } from '../history/history.store';
 
 @Component({
   selector: 'rima-toc',
-  imports: [HistoryPickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './toc.component.html',
   styleUrl: './toc.component.scss',
