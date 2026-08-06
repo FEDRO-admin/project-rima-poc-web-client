@@ -171,38 +171,26 @@
               }
             </span>
           </div>
-          <div class="document-item__actions">
+          <rima-action-bar class="document-item__actions">
             @if (isViewable(doc)) {
-              <button class="document-item__btn" title="Anzeigen" (click)="openDocument(doc)">
-                <calcite-icon icon="view-visible" scale="s"></calcite-icon>
-              </button>
+              <rima-action-bar-button icon="view-visible" label="Anzeigen" (triggered)="openDocument(doc)" />
             }
-            <button class="document-item__btn" title="Herunterladen" (click)="downloadDocument(doc)">
-              <calcite-icon icon="download" scale="s"></calcite-icon>
-            </button>
-            <button class="document-item__btn" title="Details" (click)="toggleDetails(doc.objectId)">
-              <calcite-icon
-                [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
-                scale="s"
-              ></calcite-icon>
-            </button>
+            <rima-action-bar-button icon="download" label="Herunterladen" (triggered)="downloadDocument(doc)" />
+            <rima-action-bar-button
+              [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
+              label="Details"
+              (triggered)="toggleDetails(doc.objectId)"
+            />
             @if (!viewStore.historic()) {
-              <button
-                class="document-item__btn document-item__btn--edit"
-                title="Bearbeiten"
-                (click)="openEditForm(doc)"
-              >
-                <calcite-icon icon="pencil" scale="s"></calcite-icon>
-              </button>
-              <button
-                class="document-item__btn document-item__btn--delete"
-                title="Löschen"
-                (click)="requestDelete(doc)"
-              >
-                <calcite-icon icon="trash" scale="s"></calcite-icon>
-              </button>
+              <rima-action-bar-button icon="pencil" label="Bearbeiten" (triggered)="openEditForm(doc)" />
+              <rima-action-bar-button
+                icon="trash"
+                label="Löschen"
+                variant="destructive"
+                (triggered)="requestDelete(doc)"
+              />
             }
-          </div>
+          </rima-action-bar>
         </div>
         @if (expandedDocId() === doc.objectId) {
           <div class="document-item__details">

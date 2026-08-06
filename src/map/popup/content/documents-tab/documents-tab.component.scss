@@ -109,40 +109,28 @@
   }
 
   &__actions {
-    display: flex;
-    gap: 4px;
     flex-shrink: 0;
     margin-left: 8px;
-  }
 
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #555;
-    cursor: pointer;
-    transition:
-      background-color 0.2s,
-      color 0.2s;
+    ::ng-deep {
+      .action-bar-btn {
+        width: 28px;
+        height: 28px;
+        padding: 0;
 
-    &:hover {
-      background: #f0f0f0;
-      color: #333;
-    }
+        &:hover {
+          background: #f0f0f0;
+          color: #333;
+        }
 
-    &--delete:hover {
-      background: #fdecea;
-      color: #d32f2f;
-    }
+        &--destructive:hover {
+          background: #fdecea;
+        }
+      }
 
-    &--edit:hover {
-      background: #e8f4fd;
-      color: #007ac2;
+      .action-bar-btn-label {
+        display: none;
+      }
     }
   }
 
