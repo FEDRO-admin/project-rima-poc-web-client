@@ -4,11 +4,9 @@
   font-family: 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-.popup-title {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+.popup-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .popup-panel {

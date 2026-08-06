@@ -26,9 +26,9 @@ export class ViewEffects {
 
   private closePopupOnLock(): void {
     effect(() => {
-      const locked = this.viewStore.locked();
+      const mode = this.viewStore.interactionMode();
       untracked(() => {
-        if (locked) {
+        if (mode === 'editing' || mode === 'creating') {
           this.popupStore.close();
         }
       });

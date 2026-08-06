@@ -54,28 +54,6 @@
   margin: 0;
 }
 
-.documents-actions {
-  padding: 8px 0;
-}
-
-.documents-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1px solid #007ac2;
-  border-radius: 4px;
-  background: #007ac2;
-  color: #fff;
-  font-size: 0.813rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: #005a8c;
-  }
-}
-
 .documents-list {
   display: flex;
   flex-direction: column;

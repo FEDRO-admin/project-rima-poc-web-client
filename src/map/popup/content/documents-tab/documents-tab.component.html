@@ -1,3 +1,8 @@
+@if (!viewStore.historic() && !showUploadForm()) {
+  <rima-action-bar>
+    <rima-action-bar-button icon="plus" label="Add" variant="primary" (triggered)="openUploadForm()" />
+  </rima-action-bar>
+}
 @if (documentsStore.isLoading()) {
   <div class="documents-loading">
     <calcite-loader scale="m"></calcite-loader>
@@ -10,15 +15,6 @@
 
 @if (documentsStore.isEmpty()) {
   <p class="documents-empty">Keine Dokumente vorhanden.</p>
-}
-
-@if (!viewStore.historic() && !showUploadForm()) {
-  <div class="documents-actions">
-    <button class="documents-add-btn" (click)="openUploadForm()">
-      <calcite-icon icon="plus" scale="s"></calcite-icon>
-      Dokument hinzufügen
-    </button>
-  </div>
 }
 
 @if (uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing') {

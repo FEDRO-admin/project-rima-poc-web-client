@@ -1,19 +1,13 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent, type PopupTab } from './content/popup-content.component';
-import { ViewService } from '../view/view.service';
-import { ViewStore } from '../view/view.store';
-import { EditService } from '../edit/edit.service';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
 import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-bar';
-import { isLayerEditable } from '../layer/layer-capabilities';
-import { isLayerDeletable } from '../layer/layer-capabilities';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
-import { HistoryStore } from '../history/history.store';
 
 @Component({
   selector: 'rima-popup',
@@ -24,39 +18,19 @@ import { HistoryStore } from '../history/history.store';
 })
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
-  private readonly viewStore = inject(ViewStore);
   protected readonly deleteStore = inject(DeleteStore);
   protected readonly activeTab = signal<PopupTab>('attributes');
-  private readonly historyStore = inject(HistoryStore);
-  private readonly editService = inject(EditService);
   private readonly deleteService = inject(DeleteService);
-  private readonly viewService = inject(ViewService);
 
-  protected isEditable(): boolean {
-    if (this.viewStore.locked() || this.viewStore.historic()) return false;
-    const graphic = this.store.selectedGraphic();
-    return graphic ? isLayerEditable(graphic) : false;
-  }
+  private static readonly TAB_LABELS: Record<PopupTab, string> = {
+    attributes: 'Attributes',
+    reference: 'Reference Points',
+    status: 'Zustand',
+    hierarchy: 'Hierarchy',
+    documents: 'Documents',
+  };
 
-  protected isDeletable(): boolean {
-    if (this.viewStore.locked() || this.viewStore.historic()) return false;
-    const graphic = this.store.selectedGraphic();
-    return graphic ? isLayerDeletable(graphic) : false;
-  }
-
-  protected startEdit(): void {
-    const graphic = this.store.selectedGraphic();
-    if (graphic) {
-      this.editService.activate(graphic);
-    }
-  }
-
-  protected startDelete(): void {
-    const graphic = this.store.selectedGraphic();
-    if (graphic) {
-      this.deleteService.requestDelete(graphic);
-    }
-  }
+  protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
 
   protected async onDeleteConfirm(confirmed: boolean): Promise<void> {
     if (confirmed) {
@@ -76,13 +50,6 @@ export class PopupComponent {
 
   selectTab(tab: PopupTab): void {
     this.activeTab.set(tab);
-  }
-
-  zoomTo(): void {
-    const graphic = this.store.selectedGraphic();
-    const view = this.viewService.activeView();
-    if (!graphic?.geometry || !view) return;
-    view.goTo({ target: graphic.geometry, zoom: 15 });
   }
 
   getFeatureLabel(graphic: Graphic): string {

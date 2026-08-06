@@ -33,13 +33,20 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: -4px -4px 8px;
+  margin: -4px -4px 0;
   padding: 2px;
   flex-shrink: 0;
 }
 
 .popup-header-spacer {
   flex: 1;
+}
+
+.popup-header-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
 }
 
 .popup-header-btn {

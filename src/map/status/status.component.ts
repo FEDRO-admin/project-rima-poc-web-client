@@ -8,12 +8,14 @@ import { AttributeFormComponent } from '../shared/attribute-form/attribute-form.
 import { AttributeValue } from '../shared/attribute-value-conversion';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { ViewStore } from '../view/view.store';
+import { ActionBarComponent } from '../../shared/action-bar/action-bar.component';
+import { ActionBarButtonComponent } from '../../shared/action-bar/action-bar-button.component';
 
 type StatusMode = 'view' | 'edit';
 
 @Component({
   selector: 'rima-status',
-  imports: [AttributeFormComponent, ConfirmDialogComponent],
+  imports: [AttributeFormComponent, ConfirmDialogComponent, ActionBarComponent, ActionBarButtonComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [StatusComponentStore, StatusComponentService],
   templateUrl: './status.component.html',

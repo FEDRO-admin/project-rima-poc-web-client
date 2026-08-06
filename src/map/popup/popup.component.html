@@ -36,25 +36,13 @@
     }
     <div class="popup-card">
       <div class="popup-header">
-        @if (store.showDetail()) {
-          @if (store.graphics().length > 1) {
-            <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
-              <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
-            </button>
-          }
-          <button class="popup-header-btn" (click)="zoomTo()" aria-label="Zoom to feature">
-            <calcite-icon icon="zoom-to-object" scale="s"></calcite-icon>
+        @if (store.showDetail() && store.graphics().length > 1) {
+          <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
+            <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
           </button>
-          @if (isEditable()) {
-            <button class="popup-header-btn" (click)="startEdit()" aria-label="Edit feature">
-              <calcite-icon icon="pencil" scale="s"></calcite-icon>
-            </button>
-          }
-          @if (isDeletable()) {
-            <button class="popup-header-btn" (click)="startDelete()" aria-label="Delete feature">
-              <calcite-icon icon="trash" scale="s"></calcite-icon>
-            </button>
-          }
+        }
+        @if (store.showDetail()) {
+          <h3 class="popup-header-title">{{ activeTabLabel() }}</h3>
         }
         <span class="popup-header-spacer"></span>
         <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>

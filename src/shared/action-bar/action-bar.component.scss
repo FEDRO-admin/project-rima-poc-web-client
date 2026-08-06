@@ -1,0 +1,13 @@
+:host {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}

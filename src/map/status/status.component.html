@@ -1,12 +1,25 @@
 @if (store.available()) {
+  @if (!viewStore.historic() && store.showForm() && mode() === 'view') {
+    <rima-action-bar>
+      <rima-action-bar-button icon="pencil" label="Edit" (triggered)="startEdit()" />
+      <rima-action-bar-button icon="trash" label="Delete" variant="destructive" (triggered)="requestDelete()" />
+    </rima-action-bar>
+  }
+  @if (!viewStore.historic() && store.showCreateButton()) {
+    <rima-action-bar>
+      <rima-action-bar-button
+        icon="plus"
+        label="Add"
+        variant="primary"
+        [disabled]="store.saving()"
+        (triggered)="createStatus()"
+      />
+    </rima-action-bar>
+  }
   <div class="status-section">
-    <div class="status-header">
-      <calcite-icon icon="clipboard-check" scale="s"></calcite-icon>
-      <span>Zustand</span>
-      @if (store.deleted()) {
-        <span class="status-badge status-badge--deleted">Deleted</span>
-      }
-    </div>
+    @if (store.deleted()) {
+      <span class="status-badge status-badge--deleted">Deleted</span>
+    }
 
     @if (store.loading()) {
       <div class="status-loading">Loading status...</div>
@@ -28,18 +41,6 @@
           </tr>
         }
       </table>
-      @if (!viewStore.historic()) {
-        <div class="status-actions">
-          <button class="status-btn status-btn--edit" (click)="startEdit()">
-            <calcite-icon icon="pencil" scale="s"></calcite-icon>
-            Edit Status
-          </button>
-          <button class="status-btn status-btn--delete" (click)="requestDelete()">
-            <calcite-icon icon="trash" scale="s"></calcite-icon>
-            Delete Status
-          </button>
-        </div>
-      }
     } @else if (store.showForm() && mode() === 'edit') {
       @if (service.getZustandsklasse(); as klasse) {
         <div class="status-klasse-badge" [style.background-color]="service.getZustandsklasseColor()">
@@ -69,11 +70,6 @@
           Cancel
         </button>
       </div>
-    } @else if (store.showCreateButton() && !viewStore.historic()) {
-      <button class="status-btn status-btn--create" (click)="createStatus()" [disabled]="store.saving()">
-        <calcite-icon icon="plus" scale="s"></calcite-icon>
-        Create Status
-      </button>
     }
 
     @if (store.hasPendingChanges() && !viewStore.historic()) {

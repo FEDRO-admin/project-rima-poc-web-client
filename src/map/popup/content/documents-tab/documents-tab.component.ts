@@ -22,6 +22,8 @@ import {
 } from '../../../documents/documents-errors';
 import { ViewStore } from '../../../view/view.store';
 import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
+import { ActionBarComponent } from '../../../../shared/action-bar/action-bar.component';
+import { ActionBarButtonComponent } from '../../../../shared/action-bar/action-bar-button.component';
 import { DatePipe } from '@angular/common';
 
 interface UploadFormModel {
@@ -56,7 +58,7 @@ interface EditFormModel {
 
 @Component({
   selector: 'rima-documents-tab',
-  imports: [ConfirmDialogComponent, DatePipe],
+  imports: [ConfirmDialogComponent, DatePipe, ActionBarComponent, ActionBarButtonComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './documents-tab.component.html',
   styleUrl: './documents-tab.component.scss',

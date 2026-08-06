@@ -1,3 +1,12 @@
+<rima-action-bar>
+  <rima-action-bar-button icon="zoom-to-object" label="Zoom" (triggered)="zoomTo()" />
+  @if (isEditable()) {
+    <rima-action-bar-button icon="pencil" label="Edit" (triggered)="startEdit()" />
+  }
+  @if (isDeletable()) {
+    <rima-action-bar-button icon="trash" label="Delete" variant="destructive" (triggered)="startDelete()" />
+  }
+</rima-action-bar>
 @if (fields().length === 0) {
   <p class="attributes-placeholder">No attributes available.</p>
 } @else {

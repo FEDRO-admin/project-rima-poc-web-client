@@ -1,4 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
 import { HierarchyTabComponent } from './hierarchy-tab/hierarchy-tab.component';
@@ -28,9 +28,4 @@ export class PopupContentComponent {
 
   protected readonly viewStore = inject(ViewStore);
   readonly refMode = computed<'edit' | 'view'>(() => (this.viewStore.historic() ? 'view' : 'edit'));
-
-  readonly title = computed<string>(() => {
-    const graphic = this.graphic();
-    return graphic.layer?.title ?? 'Feature';
-  });
 }
