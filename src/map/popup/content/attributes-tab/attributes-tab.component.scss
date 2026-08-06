@@ -2,6 +2,12 @@
   display: block;
 }
 
+:host ::ng-deep rima-action-bar {
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .attributes-edit-btn {
   display: inline-flex;
   align-items: center;
