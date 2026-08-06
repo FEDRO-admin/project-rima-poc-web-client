@@ -72,13 +72,10 @@
       }
 
       @if (deleteStore.confirmRequested()) {
-        <rima-confirm-dialog
-          title="Delete Feature"
-          message="Are you sure you want to delete this feature? This action cannot be undone."
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          (confirmed)="onDeleteConfirm($event)"
-        />
+        <rima-dialog-actions message="Are you sure you want to delete this feature? This action cannot be undone.">
+          <rima-dialog-action label="Cancel" (triggered)="cancelDelete()" />
+          <rima-dialog-action label="Delete" variant="destructive" (triggered)="confirmDelete()" />
+        </rima-dialog-actions>
       }
     </div>
   </div>

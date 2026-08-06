@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-button';
@@ -21,7 +21,8 @@ import {
   DocumentUploadError,
 } from '../../../documents/documents-errors';
 import { ViewStore } from '../../../view/view.store';
-import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
+import { DialogActionsComponent } from '../../../../shared/dialog-actions/dialog-actions.component';
+import { DialogActionComponent } from '../../../../shared/dialog-actions/dialog-action.component';
 import { ActionBarComponent } from '../../../../shared/action-bar/action-bar.component';
 import { ActionBarButtonComponent } from '../../../../shared/action-bar/action-bar-button.component';
 import { DatePipe } from '@angular/common';
@@ -56,9 +57,11 @@ interface EditFormModel {
   access: DocumentAccessLevel;
 }
 
+type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit' | 'delete';
+
 @Component({
   selector: 'rima-documents-tab',
-  imports: [ConfirmDialogComponent, DatePipe, ActionBarComponent, ActionBarButtonComponent],
+  imports: [DialogActionsComponent, DialogActionComponent, DatePipe, ActionBarComponent, ActionBarButtonComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './documents-tab.component.html',
   styleUrl: './documents-tab.component.scss',
@@ -93,6 +96,24 @@ export class DocumentsTabComponent {
     access: 'org',
   });
   protected readonly editError = signal<string | undefined>(undefined);
+
+  protected readonly confirmAction = signal<DocumentsConfirmAction | undefined>(undefined);
+  protected readonly confirmMessage = computed(() => {
+    switch (this.confirmAction()) {
+      case 'upload':
+        return 'Dokument hochladen?';
+      case 'save':
+        return 'Änderungen speichern?';
+      case 'cancel-upload':
+      case 'cancel-edit':
+        return 'Änderungen verwerfen?';
+      case 'delete':
+        return `Möchten Sie das Dokument "${this.documentToDelete()?.titel || this.documentToDelete()?.name}" wirklich löschen?`;
+      case undefined:
+        return undefined;
+    }
+  });
+  protected readonly formActive = computed(() => this.showUploadForm() || !!this.editingDocument());
 
   constructor() {
     effect(() => {
@@ -130,23 +151,79 @@ export class DocumentsTabComponent {
 
   protected requestDelete(record: DocumentRecord): void {
     this.documentToDelete.set(record);
+    this.confirmAction.set('delete');
   }
 
   protected toggleDetails(objectId: number): void {
     this.expandedDocId.set(this.expandedDocId() === objectId ? undefined : objectId);
   }
 
-  protected async handleDeleteConfirmation(confirmed: boolean): Promise<void> {
+  protected requestUpload(): void {
+    this.confirmAction.set('upload');
+  }
+
+  protected requestSave(): void {
+    this.confirmAction.set('save');
+  }
+
+  protected requestCancelUpload(): void {
+    this.confirmAction.set('cancel-upload');
+  }
+
+  protected requestCancelEdit(): void {
+    this.confirmAction.set('cancel-edit');
+  }
+
+  protected dismissConfirm(): void {
+    if (this.confirmAction() === 'delete') {
+      this.documentToDelete.set(undefined);
+    }
+    this.confirmAction.set(undefined);
+  }
+
+  protected onConfirmPrimary(): void {
+    const action = this.confirmAction();
+    this.confirmAction.set(undefined);
+    switch (action) {
+      case 'upload':
+        this.submitUpload();
+        break;
+      case 'save':
+        this.submitEdit();
+        break;
+      case 'cancel-upload':
+        this.performCancelUpload();
+        break;
+      case 'cancel-edit':
+        this.performCancelEdit();
+        break;
+      case 'delete':
+        this.performDelete();
+        break;
+      case undefined:
+        break;
+    }
+  }
+
+  private async performDelete(): Promise<void> {
     const record = this.documentToDelete();
     this.documentToDelete.set(undefined);
-
-    if (!confirmed || !record) return;
-
+    if (!record) return;
     try {
       await this.documentsService.deleteDocument(record, this.graphic());
     } catch {
       // Error handled by service via store
     }
+  }
+
+  private performCancelUpload(): void {
+    this.showUploadForm.set(false);
+    this.resetUploadForm();
+  }
+
+  private performCancelEdit(): void {
+    this.editingDocument.set(undefined);
+    this.editError.set(undefined);
   }
 
   protected openUploadForm(): void {
@@ -156,8 +233,7 @@ export class DocumentsTabComponent {
   }
 
   protected cancelUpload(): void {
-    this.showUploadForm.set(false);
-    this.resetUploadForm();
+    this.requestCancelUpload();
   }
 
   protected onFileSelected(event: Event): void {
@@ -175,7 +251,7 @@ export class DocumentsTabComponent {
     }));
   }
 
-  protected async submitUpload(): Promise<void> {
+  private async submitUpload(): Promise<void> {
     const form = this.uploadForm();
     if (!form.file) return;
 
@@ -238,8 +314,7 @@ export class DocumentsTabComponent {
   }
 
   protected cancelEdit(): void {
-    this.editingDocument.set(undefined);
-    this.editError.set(undefined);
+    this.requestCancelEdit();
   }
 
   protected onEditFileSelected(event: Event): void {
@@ -252,7 +327,7 @@ export class DocumentsTabComponent {
     this.editForm.update((f) => ({ ...f, [field]: value }));
   }
 
-  protected async submitEdit(): Promise<void> {
+  private async submitEdit(): Promise<void> {
     const record = this.editingDocument();
     if (!record) return;
 

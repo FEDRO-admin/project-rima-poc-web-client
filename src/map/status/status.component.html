@@ -54,9 +54,23 @@
         idPrefix="status"
         (fieldChange)="onFieldChange($event)"
       />
-      <div class="status-actions">
-        <button class="status-btn status-btn--cancel" (click)="cancelEdit()" [disabled]="store.saving()">Cancel</button>
-      </div>
+      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+        @if (confirmAction() === 'save') {
+          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+        } @else if (confirmAction() === 'cancel') {
+          <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+        } @else {
+          <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
+          <rima-dialog-action
+            [label]="store.saving() ? 'Saving...' : 'Save Status'"
+            variant="primary"
+            [disabled]="!store.hasPendingChanges() || store.saving()"
+            (triggered)="requestSave()"
+          />
+        }
+      </rima-dialog-actions>
     } @else if (store.showCreateForm()) {
       <rima-attribute-form
         [fields]="service.getFields()"
@@ -65,33 +79,48 @@
         idPrefix="status-new"
         (fieldChange)="onFieldChange($event)"
       />
-      <div class="status-actions">
-        <button class="status-btn status-btn--cancel" (click)="cancelCreate()" [disabled]="store.saving()">
-          Cancel
-        </button>
-      </div>
+      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+        @if (confirmAction() === 'save') {
+          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+        } @else if (confirmAction() === 'cancel') {
+          <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+        } @else {
+          <rima-dialog-action label="Cancel" (triggered)="requestCancelCreate()" />
+          <rima-dialog-action
+            [label]="store.saving() ? 'Saving...' : 'Save Status'"
+            variant="primary"
+            [disabled]="!store.hasPendingChanges() || store.saving()"
+            (triggered)="requestSave()"
+          />
+        }
+      </rima-dialog-actions>
     }
 
-    @if (store.hasPendingChanges() && !viewStore.historic()) {
-      <div class="status-save-actions">
-        <button class="status-btn status-btn--save" (click)="save()" [disabled]="store.saving()">
-          @if (store.saving()) {
-            Saving...
-          } @else {
-            Save Status
-          }
-        </button>
-      </div>
+    @if (store.deleted() && store.hasPendingChanges() && !viewStore.historic()) {
+      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+        @if (confirmAction() === 'save') {
+          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+        } @else {
+          <rima-dialog-action
+            [label]="store.saving() ? 'Saving...' : 'Save Status'"
+            variant="primary"
+            [disabled]="store.saving()"
+            (triggered)="requestSave()"
+          />
+        }
+      </rima-dialog-actions>
     }
   </div>
 
   @if (confirmingDelete()) {
-    <rima-confirm-dialog
-      title="Delete Status"
+    <rima-dialog-actions
       message="Are you sure you want to delete the status record? This will be applied when you save."
-      confirmLabel="Delete"
-      cancelLabel="Cancel"
-      (confirmed)="onDeleteConfirm($event)"
-    />
+    >
+      <rima-dialog-action label="Cancel" (triggered)="cancelDeleteConfirm()" />
+      <rima-dialog-action label="Delete" variant="destructive" (triggered)="onDeleteConfirm()" />
+    </rima-dialog-actions>
   }
 }

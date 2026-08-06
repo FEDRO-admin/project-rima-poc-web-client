@@ -81,38 +81,23 @@
       </div>
 
       <!-- Actions -->
-      <div class="edit-form-actions">
-        <button class="edit-btn edit-btn--cancel" (click)="requestCancel()" [disabled]="viewStore.saving()">
-          Cancel
-        </button>
-        <button class="edit-btn edit-btn--save" (click)="requestSave()" [disabled]="!canSave()">
-          @if (viewStore.saving()) {
-            Saving...
-          } @else {
-            Save
-          }
-        </button>
-      </div>
+      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+        @if (confirmAction() === 'save') {
+          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+        } @else if (confirmAction() === 'cancel' || confirmAction() === 'close') {
+          <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+          <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+        } @else {
+          <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
+          <rima-dialog-action
+            [label]="viewStore.saving() ? 'Saving...' : 'Save'"
+            variant="primary"
+            [disabled]="!canSave()"
+            (triggered)="requestSave()"
+          />
+        }
+      </rima-dialog-actions>
     </div>
-
-    @if (confirmAction() === 'save') {
-      <rima-confirm-dialog
-        title="Save Changes"
-        message="Are you sure you want to save the changes to this feature?"
-        confirmLabel="Save"
-        cancelLabel="Cancel"
-        (confirmed)="onConfirm($event)"
-      />
-    }
-
-    @if (confirmAction() === 'cancel' || confirmAction() === 'close') {
-      <rima-confirm-dialog
-        title="Discard Changes"
-        message="You have unsaved changes. Are you sure you want to discard them?"
-        confirmLabel="Discard"
-        cancelLabel="Keep Editing"
-        (confirmed)="onConfirm($event)"
-      />
-    }
   </div>
 }

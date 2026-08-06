@@ -5,7 +5,8 @@ import { EditService } from '../edit.service';
 import { ViewStore } from '../../view/view.store';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
-import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
+import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
@@ -14,7 +15,7 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-edit-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent],
+  imports: [DialogActionsComponent, DialogActionComponent, AttributeFormComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './edit-form.component.html',
   styleUrl: './edit-form.component.scss',
@@ -51,6 +52,14 @@ export class EditFormComponent implements OnDestroy {
 
   protected readonly canSave = computed(() => {
     return this.store.isDirty() && !this.viewStore.saving();
+  });
+
+  protected readonly confirmMessage = computed(() => {
+    const action = this.confirmAction();
+    if (action === 'save') return 'Are you sure you want to save the changes to this feature?';
+    if (action === 'cancel' || action === 'close')
+      return 'You have unsaved changes. Are you sure you want to discard them?';
+    return undefined;
   });
 
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
@@ -105,16 +114,18 @@ export class EditFormComponent implements OnDestroy {
     this.requestClose();
   }
 
-  protected async onConfirm(confirmed: boolean): Promise<void> {
+  protected async onConfirmPrimary(): Promise<void> {
     const action = this.confirmAction();
     this.confirmAction.set(null);
-
-    if (!confirmed) return;
 
     if (action === 'save') {
       await this.editService.save();
     } else if (action === 'cancel' || action === 'close') {
       this.editService.cancel();
     }
+  }
+
+  protected dismissConfirm(): void {
+    this.confirmAction.set(null);
   }
 }

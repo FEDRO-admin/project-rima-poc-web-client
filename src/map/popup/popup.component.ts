@@ -7,11 +7,12 @@ import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-bar';
-import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
+import { DialogActionsComponent } from '../../shared/dialog-actions/dialog-actions.component';
+import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action.component';
 
 @Component({
   selector: 'rima-popup',
-  imports: [PopupContentComponent, ConfirmDialogComponent],
+  imports: [PopupContentComponent, DialogActionsComponent, DialogActionComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
@@ -32,12 +33,12 @@ export class PopupComponent {
 
   protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
 
-  protected async onDeleteConfirm(confirmed: boolean): Promise<void> {
-    if (confirmed) {
-      await this.deleteService.confirmDelete();
-    } else {
-      this.deleteService.cancelDelete();
-    }
+  protected async confirmDelete(): Promise<void> {
+    await this.deleteService.confirmDelete();
+  }
+
+  protected cancelDelete(): void {
+    this.deleteService.cancelDelete();
   }
 
   onEscape(): void {

@@ -299,45 +299,4 @@
       margin: 0;
     }
   }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  &__btn {
-    padding: 6px 14px;
-    border-radius: 4px;
-    font-size: 0.813rem;
-    cursor: pointer;
-    border: 1px solid #ccc;
-    transition: background-color 0.2s;
-
-    &--cancel {
-      background: #fff;
-      color: #333;
-
-      &:hover {
-        background: #f0f0f0;
-      }
-    }
-
-    &--submit {
-      background: #007ac2;
-      color: #fff;
-      border-color: #007ac2;
-
-      &:hover {
-        background: #005a8c;
-      }
-
-      &:disabled {
-        background: #b0b0b0;
-        border-color: #b0b0b0;
-        cursor: not-allowed;
-      }
-    }
-  }
 }

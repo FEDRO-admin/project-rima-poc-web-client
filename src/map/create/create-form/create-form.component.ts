@@ -6,7 +6,8 @@ import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
 import { resolveCreatableFields } from '../create-attribute.service';
 import { DrawingToolOption, getDrawingToolsForGeometryType } from '../create-config';
-import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
+import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { CreateService } from '../create.service';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
@@ -16,7 +17,7 @@ type ConfirmAction = 'save' | 'cancel' | 'close' | null;
 
 @Component({
   selector: 'rima-create-form',
-  imports: [ConfirmDialogComponent, AttributeFormComponent],
+  imports: [DialogActionsComponent, DialogActionComponent, AttributeFormComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -52,6 +53,14 @@ export class CreateFormComponent implements OnDestroy {
     const hasGeometry = this.createStore.geometry() != null;
     const notSaving = !this.viewStore.saving();
     return hasGeometry && notSaving;
+  });
+
+  protected readonly confirmMessage = computed(() => {
+    const action = this.confirmAction();
+    if (action === 'save') return 'Are you sure you want to create this feature?';
+    if (action === 'cancel' || action === 'close')
+      return 'You have unsaved changes. Are you sure you want to discard them?';
+    return undefined;
   });
 
   protected onAttributeFieldChange(event: { fieldName: string; value: AttributeValue }): void {
@@ -112,17 +121,19 @@ export class CreateFormComponent implements OnDestroy {
     this.requestClose();
   }
 
-  protected async onConfirm(confirmed: boolean): Promise<void> {
+  protected async onConfirmPrimary(): Promise<void> {
     const action = this.confirmAction();
     this.confirmAction.set(null);
-
-    if (!confirmed) return;
 
     if (action === 'save') {
       await this.createService.saveAndOpenInPopup();
     } else if (action === 'cancel' || action === 'close') {
       this.close();
     }
+  }
+
+  protected dismissConfirm(): void {
+    this.confirmAction.set(null);
   }
 
   private close(): void {
