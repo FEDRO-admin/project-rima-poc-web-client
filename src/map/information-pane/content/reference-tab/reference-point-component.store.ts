@@ -3,7 +3,7 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 import type Point from '@arcgis/core/geometry/Point';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { ReferencePoint, AttributeValue } from './reference-point-types';
-import type { AttributeEditField } from '../shared/attribute-edit-field';
+import { AttributeEditField } from '../../../shared/attribute-edit-field';
 
 interface ReferencePointComponentState {
   points: ReferencePoint[];

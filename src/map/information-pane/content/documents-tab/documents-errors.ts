@@ -1,4 +1,4 @@
-import { RecoverableError } from '../../error-handling/base-error';
+import { RecoverableError } from '../../../../error-handling/base-error';
 
 export class DocumentQueryError extends RecoverableError {
   override readonly message = 'documents.error.query';

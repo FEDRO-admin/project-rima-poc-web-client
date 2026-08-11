@@ -1,73 +1,75 @@
 :host {
-  display: contents;
+  display: block;
 }
 
-.edit-container {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  width: min(22.5rem, 32vw);
-  align-self: stretch;
-  order: -1;
-  border-right: 1px solid color-mix(in srgb, #0079c1 35%, white);
-  background-color: color-mix(in srgb, #0079c1 6%, white);
-  overflow: hidden;
+:host ::ng-deep rima-action-bar {
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.edit-card {
-  position: relative;
-  padding: 12px 16px;
+.attributes-table {
   width: 100%;
-  flex: 1;
-  overflow-x: clip;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  border-collapse: collapse;
 
-.edit-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: -4px -4px 0;
-  padding: 2px;
-  flex-shrink: 0;
-}
-
-.edit-header-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-}
-
-.edit-header-spacer {
-  flex: 1;
-}
-
-.edit-header-btn {
-  background: none;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  color: #666;
-  padding: 2px 6px;
-  border-radius: 3px;
-
-  &:hover {
-    color: #333;
-    background-color: rgba(0, 0, 0, 0.06);
+  tr:nth-child(even) {
+    background-color: #f8f9fa;
   }
 }
 
-.edit-section {
+.attributes-key {
+  font-weight: 600;
+  padding: 4px 8px 4px 0;
+  white-space: nowrap;
+  vertical-align: top;
+  color: #555;
+}
+
+.attributes-value {
+  padding: 4px 0;
+  word-break: break-word;
+
+  &--null {
+    color: #999;
+    font-style: italic;
+  }
+}
+
+.attributes-placeholder {
+  color: #888;
+  font-style: italic;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.attributes-system-fields {
+  margin-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+
+  summary {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    padding: 4px 0;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}
+
+// Geometry editing controls
+
+.geometry-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
-.edit-section-header {
+.geometry-section-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -77,8 +79,6 @@
   padding-bottom: 4px;
   border-bottom: 1px solid #e0e0e0;
 }
-
-// Geometry controls
 
 .geometry-status {
   display: flex;

@@ -14,15 +14,15 @@ import { FormsModule } from '@angular/forms';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { ReferencePointComponentStore } from '../reference-point-component.store';
-import { ReferencePointComponentService } from '../reference-point-component.service';
-import { ViewStore } from '../../view/view.store';
-import { ReferencePointType, ReferencePoint, AttributeValue } from '../reference-point-types';
-import { REF_POINT_TYPE_CONFIGS } from '../reference-point-config';
-import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
-import { resolveFieldDisplayValue } from '../../layer/layer-attribute-domain-resolver';
-import { isImmutableField } from '../../layer/layer-attributes';
-import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
+import { ReferencePointComponentStore } from './reference-point-component.store';
+import { ReferencePointComponentService } from './reference-point-component.service';
+import { ReferencePointType, ReferencePoint, AttributeValue } from './reference-point-types';
+import { REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+import { AttributeFormComponent } from '../../../shared/attribute-form/attribute-form.component';
+import { ViewStore } from '../../../view/view.store';
+import { RIMA_SWITZERLAND_EXTENT } from '../../../map-constants';
+import { isImmutableField } from '../../../layer/layer-attributes';
+import { resolveFieldDisplayValue } from '../../../layer/layer-attribute-domain-resolver';
 
 interface FieldEntry {
   label: string;

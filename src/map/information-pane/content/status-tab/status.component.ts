@@ -4,13 +4,13 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { StatusComponentStore } from './status-component.store';
 import { StatusComponentService } from './status-component.service';
-import { AttributeFormComponent } from '../shared/attribute-form/attribute-form.component';
-import { AttributeValue } from '../shared/attribute-value-conversion';
-import { DialogActionsComponent } from '../../shared/dialog-actions/dialog-actions.component';
-import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action.component';
-import { ViewStore } from '../view/view.store';
-import { ActionBarComponent } from '../../shared/action-bar/action-bar.component';
-import { ActionBarButtonComponent } from '../../shared/action-bar/action-bar-button.component';
+import { AttributeFormComponent } from '../../../shared/attribute-form/attribute-form.component';
+import { AttributeValue } from '../../../shared/attribute-value-conversion';
+import { DialogActionsComponent } from '../../../../shared/dialog-actions/dialog-actions.component';
+import { DialogActionComponent } from '../../../../shared/dialog-actions/dialog-action.component';
+import { ViewStore } from '../../../view/view.store';
+import { ActionBarComponent } from '../../../../shared/action-bar/action-bar.component';
+import { ActionBarButtonComponent } from '../../../../shared/action-bar/action-bar-button.component';
 
 type StatusMode = 'view' | 'edit';
 type StatusConfirmAction = 'save' | 'cancel' | null;
@@ -65,6 +65,7 @@ export class StatusComponent {
   }
 
   protected startEdit(): void {
+    this.confirmingDelete.set(false);
     this.mode.set('edit');
   }
 

@@ -1,7 +1,7 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { DocumentsStore } from './documents.store';
 import { DocumentsService } from './documents.service';
-import { PopupStore } from '../popup/popup.store';
+import { PopupStore } from '../../popup.store';
 
 @Injectable({
   providedIn: 'root',

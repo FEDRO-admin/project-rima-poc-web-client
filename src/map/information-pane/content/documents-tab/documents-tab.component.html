@@ -137,7 +137,7 @@
     }
   </div>
 
-  <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+  <rima-dialog-actions [message]="confirmMessage()">
     @if (confirmAction() === 'upload') {
       <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
       <rima-dialog-action label="Hochladen" variant="primary" (triggered)="onConfirmPrimary()" />
@@ -244,7 +244,7 @@
 }
 
 @if (documentToDelete()) {
-  <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+  <rima-dialog-actions [message]="confirmMessage()">
     <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
     <rima-dialog-action label="Löschen" variant="destructive" (triggered)="onConfirmPrimary()" />
   </rima-dialog-actions>
@@ -285,7 +285,7 @@
       <select id="edit-typ" [value]="editForm().typ" (change)="updateEditForm('typ', $any($event.target).value)">
         <option value="" disabled>— Bitte wählen —</option>
         @for (typ of typDomain(); track typ) {
-          <option [value]="typ">{{ typ }}</option>
+          <option [value]="typ" [selected]="typ === editForm().typ">{{ typ }}</option>
         }
       </select>
     </div>
@@ -309,7 +309,7 @@
       >
         <option value="" disabled>— Bitte wählen —</option>
         @for (status of statusDomain(); track status) {
-          <option [value]="status">{{ status }}</option>
+          <option [value]="status" [selected]="status === editForm().status">{{ status }}</option>
         }
       </select>
     </div>
@@ -358,7 +358,7 @@
     }
   </div>
 
-  <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+  <rima-dialog-actions [message]="confirmMessage()">
     @if (confirmAction() === 'save') {
       <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
       <rima-dialog-action label="Speichern" variant="primary" (triggered)="onConfirmPrimary()" />

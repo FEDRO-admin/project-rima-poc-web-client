@@ -1,8 +1,8 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { HistoryStore } from './history.store';
 import { HistoryService } from './history.service';
-import { PopupStore } from '../popup/popup.store';
-import { PopupService } from '../popup/popup.service';
+import { PopupStore } from '../information-pane/popup.store';
+import { PopupService } from '../information-pane/popup.service';
 
 @Injectable({
   providedIn: 'root',

@@ -3,7 +3,7 @@ import type Portal from '@arcgis/core/portal/Portal';
 import PortalFolder from '@arcgis/core/portal/PortalFolder';
 import esriRequest from '@arcgis/core/request';
 import esriId from '@arcgis/core/identity/IdentityManager';
-import { PortalService } from '../portal/portal.service';
+import { PortalService } from '../../../portal/portal.service';
 import { DocumentSharingOptions } from './document-types';
 import { DOCUMENTS_PORTAL_FOLDER, DOCUMENTS_PORTAL_TYPE_MAP } from './documents-config';
 import { DocumentUploadError, DocumentUnsupportedFileTypeError } from './documents-errors';

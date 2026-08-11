@@ -15,11 +15,11 @@ import {
   queryRelatedPoints,
 } from './reference-point-resolution';
 import { applyPointEdits } from './reference-point-helpers';
-import { buildSnappingSources, cleanupSketchResources } from '../shared/sketch-utils';
-import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../map-constants';
-import { ViewStore } from '../view/view.store';
-import { ViewService } from '../view/view.service';
-import { HistoryStore } from '../history/history.store';
+import { ViewStore } from '../../../view/view.store';
+import { ViewService } from '../../../view/view.service';
+import { HistoryStore } from '../../../history/history.store';
+import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../../map-constants';
+import { buildSnappingSources, cleanupSketchResources } from '../../../shared/sketch-utils';
 
 @Injectable()
 export class ReferencePointComponentService implements OnDestroy {

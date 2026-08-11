@@ -1,11 +1,11 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { FeatureEditResult } from '@arcgis/core/editing/types';
-import { PopupStore } from '../popup/popup.store';
+import { PopupStore } from '../information-pane/popup.store';
 import { EditStore } from './edit.store';
 import { EditService } from './edit.service';
 import { ViewStore } from '../view/view.store';
-import { PopupService } from '../popup/popup.service';
+import { PopupService } from '../information-pane/popup.service';
 
 @Injectable({
   providedIn: 'root',

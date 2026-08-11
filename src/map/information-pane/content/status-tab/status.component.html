@@ -54,7 +54,7 @@
         idPrefix="status"
         (fieldChange)="onFieldChange($event)"
       />
-      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+      <rima-dialog-actions [message]="confirmMessage()">
         @if (confirmAction() === 'save') {
           <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
           <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
@@ -79,7 +79,7 @@
         idPrefix="status-new"
         (fieldChange)="onFieldChange($event)"
       />
-      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+      <rima-dialog-actions [message]="confirmMessage()">
         @if (confirmAction() === 'save') {
           <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
           <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
@@ -99,7 +99,7 @@
     }
 
     @if (store.deleted() && store.hasPendingChanges() && !viewStore.historic()) {
-      <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+      <rima-dialog-actions [message]="confirmMessage()">
         @if (confirmAction() === 'save') {
           <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
           <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />

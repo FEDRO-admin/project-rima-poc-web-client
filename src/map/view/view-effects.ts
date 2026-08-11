@@ -1,6 +1,6 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import { ViewStore } from './view.store';
-import { PopupStore } from '../popup/popup.store';
+import { PopupStore } from '../information-pane/popup.store';
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +28,7 @@ export class ViewEffects {
     effect(() => {
       const mode = this.viewStore.interactionMode();
       untracked(() => {
-        if (mode === 'editing' || mode === 'creating') {
+        if (mode === 'creating') {
           this.popupStore.close();
         }
       });

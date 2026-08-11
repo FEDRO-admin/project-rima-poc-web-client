@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Graphic from '@arcgis/core/Graphic';
 import { DeleteStore } from './delete.store';
-import { PopupStore } from '../popup/popup.store';
+import { PopupStore } from '../information-pane/popup.store';
 import { ViewStore } from '../view/view.store';
 import { DeleteFeatureError } from './delete-errors';
 

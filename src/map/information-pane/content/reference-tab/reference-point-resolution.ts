@@ -2,12 +2,13 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Point from '@arcgis/core/geometry/Point';
-import type { RimaView } from '../view/view.service';
-import { AttributeEditField } from '../shared/attribute-edit-field';
-import { isImmutableField } from '../layer/layer-attributes';
-import { buildEditAttributeField } from '../layer/layer-attribute-domain-resolver';
+
 import { ReferencePoint, ReferencePointType, generateClientId } from './reference-point-types';
 import { REF_POINT_AUTO_POPULATED_FIELDS, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+import { RimaView } from '../../../view/view.service';
+import { AttributeEditField } from '../../../shared/attribute-edit-field';
+import { isImmutableField } from '../../../layer/layer-attributes';
+import { buildEditAttributeField } from '../../../layer/layer-attribute-domain-resolver';
 
 export function findRelationshipId(layer: FeatureLayer, type: ReferencePointType): number | undefined {
   const config = REF_POINT_TYPE_CONFIGS[type];

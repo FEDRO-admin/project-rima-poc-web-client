@@ -1,8 +1,6 @@
-<div class="dialog-wrapper" [class.dialog-wrapper--bar]="!overlay()" [class.dialog-wrapper--overlay]="overlay()">
-  @if (message()) {
-    <p class="dialog-message">{{ message() }}</p>
-  }
-  <div class="dialog-buttons">
-    <ng-content />
-  </div>
+@if (message()) {
+  <p class="dialog-message">{{ message() }}</p>
+}
+<div class="dialog-buttons">
+  <ng-content />
 </div>

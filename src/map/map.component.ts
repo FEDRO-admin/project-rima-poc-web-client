@@ -4,9 +4,8 @@ import '@arcgis/map-components/dist/components/arcgis-scene';
 import { ViewService } from './view/view.service';
 import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { TocComponent } from './toc/toc.component';
-import { PopupComponent } from './popup/popup.component';
+import { PopupComponent } from './information-pane/popup.component';
 import { CreateFormComponent } from './create/create-form/create-form.component';
-import { EditFormComponent } from './edit/edit-form/edit-form.component';
 import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component';
 import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
@@ -15,14 +14,7 @@ import { HistoryPickerComponent } from './history/history-picker/history-picker.
 
 @Component({
   selector: 'rima-map',
-  imports: [
-    TocComponent,
-    PopupComponent,
-    CreateFormComponent,
-    EditFormComponent,
-    SceneToggleComponent,
-    HistoryPickerComponent,
-  ],
+  imports: [TocComponent, PopupComponent, CreateFormComponent, SceneToggleComponent, HistoryPickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

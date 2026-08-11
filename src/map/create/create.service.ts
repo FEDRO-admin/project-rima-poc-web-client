@@ -5,7 +5,7 @@ import { CreateStore } from './create.store';
 import { CreateGeometryService } from './create-geometry.service';
 import { CreateSaveError, CreateFormLoadError as SaveAndOpenPopupError } from './create-errors';
 import { isImmutableField } from '../layer/layer-attributes';
-import { PopupStore } from '../popup/popup.store';
+import { PopupStore } from '../information-pane/popup.store';
 import { ViewStore } from '../view/view.store';
 
 type AttributeValue = string | number | boolean | null;

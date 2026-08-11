@@ -6,7 +6,7 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import type Geometry from '@arcgis/core/geometry/Geometry';
 import type { RimaView } from '../view/view.service';
 import { EditStore } from './edit.store';
-import { PopupStore } from '../popup/popup.store';
+import { PopupService } from '../information-pane/popup.service';
 import { ViewStore } from '../view/view.store';
 import { ViewService } from '../view/view.service';
 import { EditSaveError } from './edit-errors';
@@ -23,7 +23,7 @@ type SketchTool = 'move' | 'reshape' | 'transform';
 export class EditService implements OnDestroy {
   private readonly store = inject(EditStore);
   private readonly viewStore = inject(ViewStore);
-  private readonly popupStore = inject(PopupStore);
+  private readonly popupService = inject(PopupService);
   private readonly viewService = inject(ViewService);
 
   private sketchViewModel: SketchViewModel | undefined;
@@ -44,7 +44,6 @@ export class EditService implements OnDestroy {
     this.cleanup();
     this.viewStore.setInteractionMode('editing');
     this.store.activate(graphic);
-    this.popupStore.close();
     this.showHighlight(graphic.geometry!);
   }
 
@@ -123,17 +122,7 @@ export class EditService implements OnDestroy {
       this.viewStore.setSaving(false);
       this.store.reset();
 
-      // Reopen popup with refreshed feature
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
-
-      const featureSet = await layer.queryFeatures(query);
-      const refreshed = featureSet.features[0];
-      if (refreshed) {
-        this.popupStore.open([refreshed]);
-      }
+      await this.popupService.refreshSelectedGraphic();
     } catch (error) {
       this.viewStore.setSaving(false);
       if (error instanceof EditSaveError) {
@@ -144,13 +133,7 @@ export class EditService implements OnDestroy {
   }
 
   cancel(): void {
-    const graphic = this.store.graphic();
     this.cleanup();
-
-    // Reopen popup with the original graphic
-    if (graphic) {
-      this.popupStore.open([graphic]);
-    }
   }
 
   cleanup(): void {

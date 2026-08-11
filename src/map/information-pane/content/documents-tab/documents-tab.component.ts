@@ -3,23 +3,18 @@ import type Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { DocumentsStore } from '../../../documents/documents.store';
-import { DocumentsService } from '../../../documents/documents.service';
-import { DocumentUploadService } from '../../../documents/document-upload.service';
-import {
-  DocumentAccessLevel,
-  DocumentEditPayload,
-  DocumentRecord,
-  DocumentUploadPayload,
-} from '../../../documents/document-types';
-import { DOCUMENTS_MAX_FILE_SIZE_MB } from '../../../documents/documents-config';
+import { DocumentsStore } from './documents.store';
+import { DocumentsService } from './documents.service';
+import { DocumentUploadService } from './document-upload.service';
+import { DocumentAccessLevel, DocumentEditPayload, DocumentRecord, DocumentUploadPayload } from './document-types';
+import { DOCUMENTS_MAX_FILE_SIZE_MB } from './documents-config';
 import {
   DocumentEditError,
   DocumentFileTooLargeError,
   DocumentRelationshipNotFoundError,
   DocumentUnsupportedFileTypeError,
   DocumentUploadError,
-} from '../../../documents/documents-errors';
+} from './documents-errors';
 import { ViewStore } from '../../../view/view.store';
 import { DialogActionsComponent } from '../../../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../../../shared/dialog-actions/dialog-action.component';

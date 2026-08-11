@@ -112,7 +112,7 @@
           </div>
 
           <!-- Actions -->
-          <rima-dialog-actions [message]="confirmMessage()" [sticky]="true">
+          <rima-dialog-actions [message]="confirmMessage()">
             @if (confirmAction() === 'save') {
               <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
               <rima-dialog-action label="Create" variant="primary" (triggered)="onConfirmPrimary()" />

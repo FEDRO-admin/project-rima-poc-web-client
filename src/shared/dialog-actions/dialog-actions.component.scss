@@ -1,67 +1,20 @@
 :host {
-  display: contents;
-}
-
-.dialog-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.dialog-wrapper--bar {
-  position: sticky;
-  bottom: 0;
-  background: #fff;
-  border-top: 1px solid #e0e0e0;
-  padding: 10px 16px;
-  margin: auto -16px 0;
-  align-items: center;
-  gap: 12px;
-  z-index: 5;
-}
-
-.dialog-wrapper--overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  flex-direction: column;
-  padding: 24px;
-
-  .dialog-message {
-    background: #fff;
-    border-radius: 6px 6px 0 0;
-    padding: 16px 20px 12px;
-    max-width: 280px;
-    width: 100%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-size: 13px;
-    margin-bottom: 0;
-  }
-
-  .dialog-buttons {
-    background: #fff;
-    border-radius: 0 0 6px 6px;
-    padding: 0 20px 16px;
-    max-width: 280px;
-    width: 100%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
+  display: block;
+  background: #f9f9f9;
+  border: 1px dashed #d0d0d0;
+  border-radius: 4px;
+  padding: 12px;
 }
 
 .dialog-message {
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 12px;
   color: #555;
   line-height: 1.4;
-  flex: 1;
 }
 
 .dialog-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  flex-shrink: 0;
 }

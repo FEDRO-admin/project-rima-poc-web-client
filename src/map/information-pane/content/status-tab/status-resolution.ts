@@ -1,10 +1,10 @@
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
-import type { RimaView } from '../view/view.service';
-import { AttributeEditField } from '../shared/attribute-edit-field';
-import { isImmutableField } from '../layer/layer-attributes';
-import { buildEditAttributeField } from '../layer/layer-attribute-domain-resolver';
+import type { RimaView } from '../../../view/view.service';
+import { AttributeEditField } from '../../../shared/attribute-edit-field';
+import { isImmutableField } from '../../../layer/layer-attributes';
+import { buildEditAttributeField } from '../../../layer/layer-attribute-domain-resolver';
 import { StatusRecord } from './status-types';
 import { STATUS_LAYER_ID, STATUS_AUTO_POPULATED_FIELDS } from './status-config';
 

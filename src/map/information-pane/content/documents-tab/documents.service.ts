@@ -4,9 +4,9 @@ import Layer from '@arcgis/core/layers/Layer';
 import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
-import { ViewService } from '../view/view.service';
-import { HistoryStore } from '../history/history.store';
-import { PortalService } from '../portal/portal.service';
+import { ViewService } from '../../../view/view.service';
+import { HistoryStore } from '../../../history/history.store';
+import { PortalService } from '../../../portal/portal.service';
 import { DocumentsStore } from './documents.store';
 import { DocumentUploadService } from './document-upload.service';
 import {

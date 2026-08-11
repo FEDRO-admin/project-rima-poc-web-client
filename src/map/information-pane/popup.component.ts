@@ -1,6 +1,6 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
-import { PopupContentComponent, type PopupTab } from './content/popup-content.component';
+import { PopupContentComponent, type PopupTab } from './popup-content.component';
 import { DeleteService } from '../delete/delete.service';
 import { DeleteStore } from '../delete/delete.store';
 import Graphic from '@arcgis/core/Graphic';

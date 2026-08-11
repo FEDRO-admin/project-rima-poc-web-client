@@ -1,0 +1,141 @@
+@if (editStore.active()) {
+  <!-- Edit Mode -->
+  @if (supportsGeometryUpdate()) {
+    <div class="geometry-section">
+      <div class="geometry-section-header">
+        <calcite-icon icon="polygon-vertices" scale="s"></calcite-icon>
+        <span>Geometry</span>
+      </div>
+
+      @if (viewStore.sketchActive()) {
+        <div class="geometry-status geometry-status--active">
+          <span>Editing geometry...</span>
+          <div class="geometry-tools">
+            <button class="geometry-tool-btn" (click)="undo()" [disabled]="!editStore.canUndo()" title="Undo">
+              <calcite-icon icon="undo" scale="s"></calcite-icon>
+            </button>
+            <button class="geometry-tool-btn" (click)="redo()" [disabled]="!editStore.canRedo()" title="Redo">
+              <calcite-icon icon="redo" scale="s"></calcite-icon>
+            </button>
+            <button
+              class="geometry-tool-btn geometry-tool-btn--confirm"
+              (click)="confirmGeometry()"
+              title="Confirm geometry"
+            >
+              <calcite-icon icon="check" scale="s"></calcite-icon>
+            </button>
+            <button class="geometry-tool-btn" (click)="discardGeometry()" title="Discard geometry changes">
+              <calcite-icon icon="reset" scale="s"></calcite-icon>
+            </button>
+          </div>
+        </div>
+      } @else if (editStore.editedGeometry()) {
+        <div class="geometry-status geometry-status--modified">
+          <calcite-icon icon="check-circle" scale="s"></calcite-icon>
+          <span>Geometry modified</span>
+          <button
+            class="geometry-edit-btn"
+            (click)="reenterSketch()"
+            [disabled]="viewStore.saving() || viewStore.sketchActive()"
+          >
+            <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+            Continue Editing
+          </button>
+        </div>
+      } @else {
+        <button
+          class="geometry-start-btn"
+          (click)="startGeometryEditing()"
+          [disabled]="viewStore.saving() || viewStore.sketchActive()"
+        >
+          <calcite-icon icon="vertex-edit" scale="s"></calcite-icon>
+          Edit Geometry
+        </button>
+      }
+    </div>
+  }
+
+  <rima-attribute-form
+    [fields]="editableFields()"
+    [values]="editStore.editedAttributes()"
+    [disabled]="viewStore.saving()"
+    idPrefix="edit"
+    (fieldChange)="onFieldChange($event)"
+  />
+
+  @if (immutableFields().length > 0) {
+    <details class="attributes-system-fields">
+      <summary>Immutable</summary>
+      <table class="attributes-table">
+        @for (field of immutableFields(); track field.label) {
+          <tr>
+            <td class="attributes-key">{{ field.label }}</td>
+            <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+              {{ field.value == null ? 'null' : field.value }}
+            </td>
+          </tr>
+        }
+      </table>
+    </details>
+  }
+
+  <rima-dialog-actions [message]="confirmMessage()">
+    @if (confirmAction() === 'save') {
+      <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+      <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+    } @else if (confirmAction() === 'cancel') {
+      <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+      <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+    } @else {
+      <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
+      <rima-dialog-action
+        [label]="viewStore.saving() ? 'Saving...' : 'Save'"
+        variant="primary"
+        [disabled]="!canSave()"
+        (triggered)="requestSave()"
+      />
+    }
+  </rima-dialog-actions>
+} @else {
+  <!-- View Mode -->
+  <rima-action-bar>
+    <rima-action-bar-button icon="zoom-to-object" label="Zoom" (triggered)="zoomTo()" />
+    @if (isEditable()) {
+      <rima-action-bar-button icon="pencil" label="Edit" (triggered)="startEdit()" />
+    }
+    @if (isDeletable()) {
+      <rima-action-bar-button icon="trash" label="Delete" variant="destructive" (triggered)="startDelete()" />
+    }
+  </rima-action-bar>
+
+  @if (fields().length === 0) {
+    <p class="attributes-placeholder">No attributes available.</p>
+  } @else {
+    <table class="attributes-table">
+      @for (field of fields(); track field.label) {
+        <tr>
+          <td class="attributes-key">{{ field.label }}</td>
+          <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+            {{ field.value == null ? 'null' : field.value }}
+          </td>
+        </tr>
+      }
+    </table>
+  }
+
+  @if (immutableFields().length > 0) {
+    <details class="attributes-system-fields">
+      <summary>Immutable</summary>
+      <table class="attributes-table">
+        @for (field of immutableFields(); track field.label) {
+          <tr>
+            <td class="attributes-key">{{ field.label }}</td>
+            <td class="attributes-value" [class.attributes-value--null]="field.value == null">
+              {{ field.value == null ? 'null' : field.value }}
+            </td>
+          </tr>
+        }
+      </table>
+    </details>
+  }
+}

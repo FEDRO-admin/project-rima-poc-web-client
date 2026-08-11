@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { ViewService } from '../view/view.service';
-import { HistoryStore } from '../history/history.store';
-import { ViewStore } from '../view/view.store';
+import { ViewService } from '../../../view/view.service';
+import { HistoryStore } from '../../../history/history.store';
+import { ViewStore } from '../../../view/view.store';
 import { StatusRecord, AttributeValue } from './status-types';
 import { StatusLoadError, StatusSaveError } from './status-errors';
 import {
@@ -18,10 +18,10 @@ import {
   queryStatusRecord,
   resolveStatusEditableFields,
 } from './status-resolution';
-import { AttributeEditField } from '../shared/attribute-edit-field';
+import { AttributeEditField } from '../../../shared/attribute-edit-field';
 import { StatusComponentStore, StatusFieldEntry } from './status-component.store';
-import { resolveFieldDisplayValue } from '../layer/layer-attribute-domain-resolver';
-import { isImmutableField } from '../layer/layer-attributes';
+import { resolveFieldDisplayValue } from '../../../layer/layer-attribute-domain-resolver';
+import { isImmutableField } from '../../../layer/layer-attributes';
 
 @Injectable()
 export class StatusComponentService {

@@ -7,6 +7,4 @@ import { Component, input } from '@angular/core';
 })
 export class DialogActionsComponent {
   readonly message = input<string>();
-  readonly overlay = input<boolean>(false);
-  readonly sticky = input<boolean>(false);
 }
