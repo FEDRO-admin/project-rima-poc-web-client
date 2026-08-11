@@ -1,11 +1,11 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
-import { AttributesTabComponent } from './content/attributes-tab/attributes-tab.component';
-import { HierarchyTabComponent } from './content/hierarchy-tab/hierarchy-tab.component';
-import { DocumentsTabComponent } from './content/documents-tab/documents-tab.component';
-import { StatusComponent } from './content/status-tab/status.component';
+import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
+import { HierarchyTabComponent } from './hierarchy-tab/hierarchy-tab.component';
+import { DocumentsTabComponent } from './documents-tab/documents-tab.component';
+import { StatusComponent } from './status-tab/status.component';
 import { ViewStore } from '../view/view.store';
-import { ReferencePointComponent } from './content/reference-tab/reference-point.component';
+import { ReferencePointComponent } from './reference-tab/reference-point.component';
 
 export type PopupTab = 'attributes' | 'reference' | 'hierarchy' | 'documents' | 'status';
 

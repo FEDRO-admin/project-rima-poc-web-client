@@ -1,82 +1,95 @@
-@if (store.visible()) {
+@if (store.visible() || editStore.isCreating()) {
   <div class="popup-container" (keydown.escape)="onEscape()" tabindex="-1">
-    @if (store.showDetail()) {
-      <calcite-action-bar scale="s" class="popup-action-bar">
-        <calcite-action
-          icon="information"
-          text="Attributes"
-          [attr.active]="activeTab() === 'attributes' ? '' : null"
-          (click)="selectTab('attributes')"
-        ></calcite-action>
-        <calcite-action
-          icon="pin"
-          text="Reference Points"
-          [attr.active]="activeTab() === 'reference' ? '' : null"
-          (click)="selectTab('reference')"
-        ></calcite-action>
-        <calcite-action
-          icon="check-circle"
-          text="Zustand"
-          [attr.active]="activeTab() === 'status' ? '' : null"
-          (click)="selectTab('status')"
-        ></calcite-action>
-        <calcite-action
-          icon="organization"
-          text="Hierarchy"
-          [attr.active]="activeTab() === 'hierarchy' ? '' : null"
-          (click)="selectTab('hierarchy')"
-        ></calcite-action>
-        <calcite-action
-          icon="attachment"
-          text="Documents"
-          [attr.active]="activeTab() === 'documents' ? '' : null"
-          (click)="selectTab('documents')"
-        ></calcite-action>
-      </calcite-action-bar>
-    }
-    <div class="popup-card">
-      <div class="popup-header">
-        @if (store.showDetail() && store.graphics().length > 1) {
-          <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
-            <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
-          </button>
-        }
-        @if (store.showDetail()) {
-          <h3 class="popup-header-title">{{ activeTabLabel() }}</h3>
-        }
-        <span class="popup-header-spacer"></span>
-        <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>
+    @if (editStore.isCreating()) {
+      <div class="popup-card">
+        <div class="popup-header">
+          <h3 class="popup-header-title">Create Feature</h3>
+          <span class="popup-header-spacer"></span>
+          <button class="popup-header-btn popup-close" (click)="cancelCreate()" aria-label="Close">✕</button>
+        </div>
+        <div class="popup-panel">
+          <rima-attributes-tab />
+        </div>
       </div>
-
-      @if (store.showList()) {
-        <h3 class="popup-list-title">Features ({{ store.graphics().length }})</h3>
-        <ul class="popup-feature-list">
-          @for (graphic of store.graphics(); track $index) {
-            <li>
-              <button
-                class="popup-feature-item"
-                (click)="store.selectFeature($index)"
-                (mouseenter)="store.hoverFeature($index)"
-                (mouseleave)="store.hoverFeature(undefined)"
-              >
-                <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
-                <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
-              </button>
-            </li>
+    } @else {
+      @if (store.showDetail()) {
+        <calcite-action-bar scale="s" class="popup-action-bar">
+          <calcite-action
+            icon="information"
+            text="Attributes"
+            [attr.active]="activeTab() === 'attributes' ? '' : null"
+            (click)="selectTab('attributes')"
+          ></calcite-action>
+          <calcite-action
+            icon="pin"
+            text="Reference Points"
+            [attr.active]="activeTab() === 'reference' ? '' : null"
+            (click)="selectTab('reference')"
+          ></calcite-action>
+          <calcite-action
+            icon="check-circle"
+            text="Zustand"
+            [attr.active]="activeTab() === 'status' ? '' : null"
+            (click)="selectTab('status')"
+          ></calcite-action>
+          <calcite-action
+            icon="organization"
+            text="Hierarchy"
+            [attr.active]="activeTab() === 'hierarchy' ? '' : null"
+            (click)="selectTab('hierarchy')"
+          ></calcite-action>
+          <calcite-action
+            icon="attachment"
+            text="Documents"
+            [attr.active]="activeTab() === 'documents' ? '' : null"
+            (click)="selectTab('documents')"
+          ></calcite-action>
+        </calcite-action-bar>
+      }
+      <div class="popup-card">
+        <div class="popup-header">
+          @if (store.showDetail() && store.graphics().length > 1) {
+            <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
+              <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+            </button>
           }
-        </ul>
-      }
+          @if (store.showDetail()) {
+            <h3 class="popup-header-title">{{ activeTabLabel() }}</h3>
+          }
+          <span class="popup-header-spacer"></span>
+          <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>
+        </div>
 
-      @if (store.showDetail() && store.selectedGraphic()) {
-        <rima-popup-content [graphic]="store.selectedGraphic()!" [activeTab]="activeTab()" />
-      }
+        @if (store.showList()) {
+          <h3 class="popup-list-title">Features ({{ store.graphics().length }})</h3>
+          <ul class="popup-feature-list">
+            @for (graphic of store.graphics(); track $index) {
+              <li>
+                <button
+                  class="popup-feature-item"
+                  (click)="store.selectFeature($index)"
+                  (mouseenter)="store.hoverFeature($index)"
+                  (mouseleave)="store.hoverFeature(undefined)"
+                >
+                  <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
+                  <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
 
-      @if (deleteStore.confirmRequested()) {
-        <rima-dialog-actions message="Are you sure you want to delete this feature? This action cannot be undone.">
-          <rima-dialog-action label="Cancel" (triggered)="cancelDelete()" />
-          <rima-dialog-action label="Delete" variant="destructive" (triggered)="confirmDelete()" />
-        </rima-dialog-actions>
-      }
-    </div>
+        @if (store.showDetail() && store.selectedGraphic()) {
+          <rima-popup-content [graphic]="store.selectedGraphic()!" [activeTab]="activeTab()" />
+        }
+
+        @if (deleteStore.confirmRequested()) {
+          <rima-dialog-actions message="Are you sure you want to delete this feature? This action cannot be undone.">
+            <rima-dialog-action label="Cancel" (triggered)="cancelDelete()" />
+            <rima-dialog-action label="Delete" variant="destructive" (triggered)="confirmDelete()" />
+          </rima-dialog-actions>
+        }
+      </div>
+    }
   </div>
 }

@@ -11,7 +11,6 @@ export class ViewEffects {
 
   constructor() {
     this.resetOnViewModeSwitch();
-    this.closePopupOnLock();
     this.resetOnHistoricDateChange();
   }
 
@@ -20,17 +19,6 @@ export class ViewEffects {
       this.viewStore.mode();
       untracked(() => {
         this.viewStore.setInteractionMode('idle');
-      });
-    });
-  }
-
-  private closePopupOnLock(): void {
-    effect(() => {
-      const mode = this.viewStore.interactionMode();
-      untracked(() => {
-        if (mode === 'creating') {
-          this.popupStore.close();
-        }
       });
     });
   }

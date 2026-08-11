@@ -2,7 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracke
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { ViewService } from '../view/view.service';
 import { ViewStore } from '../view/view.store';
-import { CreateStore } from '../create/create.store';
+import { AttributeEditService } from '../information-pane/attributes-tab/attribute-edit.service';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
@@ -18,7 +18,7 @@ import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 export class TocComponent {
   private readonly viewService = inject(ViewService);
   private readonly viewStore = inject(ViewStore);
-  private readonly createStore = inject(CreateStore);
+  private readonly editService = inject(AttributeEditService);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -85,7 +85,6 @@ export class TocComponent {
     if (!(layer instanceof FeatureLayer)) return;
 
     await layer.load();
-    this.viewStore.setInteractionMode('creating');
-    this.createStore.activate(layer);
+    this.editService.activateCreate(layer);
   }
 }

@@ -1,27 +1,32 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent, type PopupTab } from './popup-content.component';
-import { DeleteService } from '../delete/delete.service';
-import { DeleteStore } from '../delete/delete.store';
+import { AttributeDeleteService } from './attributes-tab/attribute-delete.service';
+import { AttributeDeleteStore } from './attributes-tab/attribute-delete.store';
+import { AttributeEditStore } from './attributes-tab/attribute-edit.store';
+import { AttributeEditService } from './attributes-tab/attribute-edit.service';
 import Graphic from '@arcgis/core/Graphic';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-bar';
 import { DialogActionsComponent } from '../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action.component';
+import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
 
 @Component({
   selector: 'rima-popup',
-  imports: [PopupContentComponent, DialogActionsComponent, DialogActionComponent],
+  imports: [PopupContentComponent, DialogActionsComponent, DialogActionComponent, AttributesTabComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
 })
 export class PopupComponent {
   protected readonly store = inject(PopupStore);
-  protected readonly deleteStore = inject(DeleteStore);
+  protected readonly deleteStore = inject(AttributeDeleteStore);
+  protected readonly editStore = inject(AttributeEditStore);
   protected readonly activeTab = signal<PopupTab>('attributes');
-  private readonly deleteService = inject(DeleteService);
+  private readonly deleteService = inject(AttributeDeleteService);
+  private readonly editService = inject(AttributeEditService);
 
   private static readonly TAB_LABELS: Record<PopupTab, string> = {
     attributes: 'Attributes',
@@ -39,6 +44,10 @@ export class PopupComponent {
 
   protected cancelDelete(): void {
     this.deleteService.cancelDelete();
+  }
+
+  protected cancelCreate(): void {
+    this.editService.cancel();
   }
 
   onEscape(): void {
