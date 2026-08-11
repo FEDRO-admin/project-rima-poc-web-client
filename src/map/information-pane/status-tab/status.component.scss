@@ -12,44 +12,87 @@
   padding: 8px 4px;
 }
 
-.status-badge {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 1px 6px;
-  border-radius: 3px;
-
-  &--deleted {
-    background: #fde8e8;
-    color: #c0392b;
-  }
-}
-
 .status-loading,
-.status-deleted-info {
+.status-empty {
   font-size: 11px;
   font-style: italic;
   padding: 4px 0;
-}
-
-.status-loading {
   color: #888;
 }
 
-.status-deleted-info {
-  color: #c0392b;
+.status-create-form {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: #fafbfc;
+}
+
+.status-create-header {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+
+  &--expanded {
+    border-color: #d1d5db;
+  }
+}
+
+.status-item-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+
+  &:hover {
+    background: #f0f1f2;
+  }
+}
+
+.status-item-date {
+  font-weight: 500;
+  color: #333;
+}
+
+.status-item-spacer {
+  flex: 1;
 }
 
 .status-klasse-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 8px;
+}
+
+.status-item-detail {
+  padding: 8px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .status-attributes-table {
@@ -79,6 +122,43 @@
   &--null {
     color: #999;
     font-style: italic;
+  }
+}
+
+.status-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.status-item-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  color: #333;
+
+  &:hover:not(:disabled) {
+    background: #f0f1f2;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--destructive {
+    color: #c0392b;
+    border-color: #e8c4c4;
+
+    &:hover:not(:disabled) {
+      background: #fde8e8;
+    }
   }
 }
 

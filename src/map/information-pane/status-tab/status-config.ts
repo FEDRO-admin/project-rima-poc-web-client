@@ -10,6 +10,8 @@ export const STATUS_AUTO_POPULATED_FIELDS: readonly string[] = [
   STATUS_OBJECT_TYPE_FIELD,
 ];
 
+export const BEWERTUNGSDATUM_FIELD = 'bewertungsdatum';
+
 export const ZUSTANDSKLASSE_COLORS: Record<number, string> = {
   1: '#2ecc71',
   2: '#a3d977',

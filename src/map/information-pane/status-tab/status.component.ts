@@ -4,6 +4,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { StatusComponentStore } from './status-component.store';
 import { StatusComponentService } from './status-component.service';
+import { StatusRecord } from './status-types';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
 import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
@@ -12,7 +13,6 @@ import { ViewStore } from '../../view/view.store';
 import { ActionBarComponent } from '../../../shared/action-bar/action-bar.component';
 import { ActionBarButtonComponent } from '../../../shared/action-bar/action-bar-button.component';
 
-type StatusMode = 'view' | 'edit';
 type StatusConfirmAction = 'save' | 'cancel' | null;
 
 @Component({
@@ -35,8 +35,7 @@ export class StatusComponent {
   protected readonly store = inject(StatusComponentStore);
   protected readonly service = inject(StatusComponentService);
   protected readonly viewStore = inject(ViewStore);
-  protected readonly confirmingDelete = signal(false);
-  protected readonly mode = signal<StatusMode>('view');
+  protected readonly confirmingDeleteId = signal<number | undefined>(undefined);
   protected readonly confirmAction = signal<StatusConfirmAction>(null);
 
   protected readonly confirmMessage = computed(() => {
@@ -54,23 +53,31 @@ export class StatusComponent {
     effect(() => {
       const graphic = this.graphic();
       untracked(() => {
-        this.mode.set('view');
+        this.confirmingDeleteId.set(undefined);
+        this.confirmAction.set(null);
         this.service.loadForGraphic(graphic);
       });
     });
   }
 
+  protected isExpanded(objectId: number | undefined): boolean {
+    if (objectId == null) return false;
+    return this.store.expandedObjectIds().includes(objectId);
+  }
+
+  protected toggleExpand(record: StatusRecord): void {
+    if (record.objectId != null) {
+      this.store.toggleExpanded(record.objectId);
+    }
+  }
+
+  protected startEdit(record: StatusRecord): void {
+    this.confirmingDeleteId.set(undefined);
+    this.store.startEdit(record);
+  }
+
   protected onFieldChange(event: { fieldName: string; value: AttributeValue }): void {
     this.store.updateField(event.fieldName, event.value);
-  }
-
-  protected startEdit(): void {
-    this.confirmingDelete.set(false);
-    this.mode.set('edit');
-  }
-
-  protected createStatus(): void {
-    this.store.markCreating();
   }
 
   protected requestSave(): void {
@@ -98,9 +105,13 @@ export class StatusComponent {
     this.confirmAction.set(null);
 
     if (action === 'save') {
-      await this.save();
+      if (this.store.creating()) {
+        await this.saveCreate();
+      } else {
+        await this.saveEdit();
+      }
     } else if (action === 'cancel') {
-      if (this.store.showCreateForm()) {
+      if (this.store.creating()) {
         this.cancelCreate();
       } else {
         this.cancelEdit();
@@ -112,35 +123,45 @@ export class StatusComponent {
     this.confirmAction.set(null);
   }
 
+  protected startCreate(): void {
+    this.store.markCreating();
+  }
+
+  protected requestDelete(objectId: number): void {
+    this.confirmingDeleteId.set(objectId);
+  }
+
+  protected async onDeleteConfirm(): Promise<void> {
+    const objectId = this.confirmingDeleteId();
+    this.confirmingDeleteId.set(undefined);
+    if (objectId == null) return;
+    await this.service.deleteRecord(this.graphic(), objectId);
+  }
+
+  protected cancelDeleteConfirm(): void {
+    this.confirmingDeleteId.set(undefined);
+  }
+
   private cancelEdit(): void {
     this.store.cancelEdit();
-    this.mode.set('view');
   }
 
   private cancelCreate(): void {
     this.store.cancelCreating();
   }
 
-  protected requestDelete(): void {
-    this.confirmingDelete.set(true);
+  private async saveEdit(): Promise<void> {
+    await this.service.saveRecord(this.graphic());
   }
 
-  protected onDeleteConfirm(): void {
-    this.confirmingDelete.set(false);
-    this.store.markDeleted();
-  }
-
-  protected cancelDeleteConfirm(): void {
-    this.confirmingDelete.set(false);
-  }
-
-  protected async save(): Promise<void> {
+  private async saveCreate(): Promise<void> {
     const graphic = this.graphic();
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
     const parentId = typeof graphic.attributes.id === 'string' ? graphic.attributes.id : undefined;
-    await this.service.save(graphic, parentId, layer.layerId);
-    this.mode.set('view');
+    if (!parentId) return;
+
+    await this.service.createRecord(graphic, parentId, layer.layerId);
   }
 }

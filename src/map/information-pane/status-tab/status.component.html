@@ -1,10 +1,4 @@
 @if (store.available()) {
-  @if (!viewStore.historic() && store.showForm() && mode() === 'view') {
-    <rima-action-bar>
-      <rima-action-bar-button icon="pencil" label="Edit" (triggered)="startEdit()" />
-      <rima-action-bar-button icon="trash" label="Delete" variant="destructive" (triggered)="requestDelete()" />
-    </rima-action-bar>
-  }
   @if (!viewStore.historic() && store.showCreateButton()) {
     <rima-action-bar>
       <rima-action-bar-button
@@ -12,115 +6,142 @@
         label="Add"
         variant="primary"
         [disabled]="store.saving()"
-        (triggered)="createStatus()"
+        (triggered)="startCreate()"
       />
     </rima-action-bar>
   }
-  <div class="status-section">
-    @if (store.deleted()) {
-      <span class="status-badge status-badge--deleted">Deleted</span>
-    }
 
+  <div class="status-section">
     @if (store.loading()) {
       <div class="status-loading">Loading status...</div>
-    } @else if (store.deleted()) {
-      <div class="status-deleted-info">Status record will be deleted when you save.</div>
-    } @else if (store.showForm() && mode() === 'view') {
-      @if (service.getZustandsklasse(); as klasse) {
-        <div class="status-klasse-badge" [style.background-color]="service.getZustandsklasseColor()">
-          {{ klasse }}
-        </div>
-      }
-      <table class="status-attributes-table">
-        @for (field of service.getDisplayFields(); track field.label) {
-          <tr>
-            <td class="status-attr-key">{{ field.label }}</td>
-            <td class="status-attr-value" [class.status-attr-value--null]="field.value == null">
-              {{ field.value == null ? 'null' : field.value }}
-            </td>
-          </tr>
-        }
-      </table>
-    } @else if (store.showForm() && mode() === 'edit') {
-      @if (service.getZustandsklasse(); as klasse) {
-        <div class="status-klasse-badge" [style.background-color]="service.getZustandsklasseColor()">
-          {{ klasse }}
-        </div>
-      }
-      <rima-attribute-form
-        [fields]="service.getFields()"
-        [values]="store.editedAttributes()"
-        [disabled]="store.saving()"
-        idPrefix="status"
-        (fieldChange)="onFieldChange($event)"
-      />
-      <rima-dialog-actions [message]="confirmMessage()">
-        @if (confirmAction() === 'save') {
-          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
-          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
-        } @else if (confirmAction() === 'cancel') {
-          <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
-          <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
-        } @else {
-          <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
-          <rima-dialog-action
-            [label]="store.saving() ? 'Saving...' : 'Save Status'"
-            variant="primary"
-            [disabled]="!store.hasPendingChanges() || store.saving()"
-            (triggered)="requestSave()"
-          />
-        }
-      </rima-dialog-actions>
-    } @else if (store.showCreateForm()) {
-      <rima-attribute-form
-        [fields]="service.getFields()"
-        [values]="store.editedAttributes()"
-        [disabled]="store.saving()"
-        idPrefix="status-new"
-        (fieldChange)="onFieldChange($event)"
-      />
-      <rima-dialog-actions [message]="confirmMessage()">
-        @if (confirmAction() === 'save') {
-          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
-          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
-        } @else if (confirmAction() === 'cancel') {
-          <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
-          <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
-        } @else {
-          <rima-dialog-action label="Cancel" (triggered)="requestCancelCreate()" />
-          <rima-dialog-action
-            [label]="store.saving() ? 'Saving...' : 'Save Status'"
-            variant="primary"
-            [disabled]="!store.hasPendingChanges() || store.saving()"
-            (triggered)="requestSave()"
-          />
-        }
-      </rima-dialog-actions>
-    }
-
-    @if (store.deleted() && store.hasPendingChanges() && !viewStore.historic()) {
-      <rima-dialog-actions [message]="confirmMessage()">
-        @if (confirmAction() === 'save') {
-          <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
-          <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
-        } @else {
-          <rima-dialog-action
-            [label]="store.saving() ? 'Saving...' : 'Save Status'"
-            variant="primary"
+    } @else {
+      @if (store.creating()) {
+        <div class="status-create-form">
+          <div class="status-create-header">New Status</div>
+          <rima-attribute-form
+            [fields]="service.getFields()"
+            [values]="store.editedAttributes()"
             [disabled]="store.saving()"
-            (triggered)="requestSave()"
+            idPrefix="status-new"
+            (fieldChange)="onFieldChange($event)"
           />
-        }
-      </rima-dialog-actions>
+          <rima-dialog-actions [message]="confirmMessage()">
+            @if (confirmAction() === 'save') {
+              <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+              <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+            } @else if (confirmAction() === 'cancel') {
+              <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+              <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+            } @else {
+              <rima-dialog-action label="Cancel" (triggered)="requestCancelCreate()" />
+              <rima-dialog-action
+                [label]="store.saving() ? 'Saving...' : 'Save Status'"
+                variant="primary"
+                [disabled]="!store.hasPendingChanges() || store.saving()"
+                (triggered)="requestSave()"
+              />
+            }
+          </rima-dialog-actions>
+        </div>
+      }
+
+      @if (store.hasRecords()) {
+        <div class="status-list">
+          @for (record of store.records(); track record.objectId) {
+            <div class="status-item" [class.status-item--expanded]="isExpanded(record.objectId)">
+              <button class="status-item-summary" (click)="toggleExpand(record)">
+                @if (service.getZustandsklasseForRecord(record); as klasse) {
+                  <div
+                    class="status-klasse-badge"
+                    [style.background-color]="service.getZustandsklasseColorForRecord(record)"
+                  >
+                    {{ klasse }}
+                  </div>
+                }
+                <span class="status-item-date">
+                  {{ service.getBewertungsdatumDisplay(record) ?? '–' }}
+                </span>
+                <span class="status-item-spacer"></span>
+                <calcite-icon
+                  [icon]="isExpanded(record.objectId) ? 'chevron-up' : 'chevron-down'"
+                  scale="s"
+                ></calcite-icon>
+              </button>
+
+              @if (isExpanded(record.objectId)) {
+                <div class="status-item-detail">
+                  @if (store.activeEditId() === record.objectId) {
+                    <rima-attribute-form
+                      [fields]="service.getFields()"
+                      [values]="store.editedAttributes()"
+                      [disabled]="store.saving()"
+                      [idPrefix]="'status-' + record.objectId"
+                      (fieldChange)="onFieldChange($event)"
+                    />
+                    <rima-dialog-actions [message]="confirmMessage()">
+                      @if (confirmAction() === 'save') {
+                        <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
+                        <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
+                      } @else if (confirmAction() === 'cancel') {
+                        <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
+                        <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
+                      } @else {
+                        <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
+                        <rima-dialog-action
+                          [label]="store.saving() ? 'Saving...' : 'Save Status'"
+                          variant="primary"
+                          [disabled]="!store.hasPendingChanges() || store.saving()"
+                          (triggered)="requestSave()"
+                        />
+                      }
+                    </rima-dialog-actions>
+                  } @else {
+                    <table class="status-attributes-table">
+                      @for (field of service.getDisplayFieldsForRecord(record); track field.label) {
+                        <tr>
+                          <td class="status-attr-key">{{ field.label }}</td>
+                          <td class="status-attr-value" [class.status-attr-value--null]="field.value == null">
+                            {{ field.value == null ? 'null' : field.value }}
+                          </td>
+                        </tr>
+                      }
+                    </table>
+                    @if (!viewStore.historic()) {
+                      <div class="status-item-actions">
+                        <button
+                          class="status-item-action-btn"
+                          [disabled]="store.saving() || store.isEditing()"
+                          (click)="startEdit(record)"
+                        >
+                          <calcite-icon icon="pencil" scale="s"></calcite-icon>
+                          Edit
+                        </button>
+                        <button
+                          class="status-item-action-btn status-item-action-btn--destructive"
+                          [disabled]="store.saving() || store.isEditing()"
+                          (click)="requestDelete(record.objectId!)"
+                        >
+                          <calcite-icon icon="trash" scale="s"></calcite-icon>
+                          Delete
+                        </button>
+                      </div>
+                    }
+
+                    @if (confirmingDeleteId() === record.objectId) {
+                      <rima-dialog-actions message="Are you sure you want to delete this status record?">
+                        <rima-dialog-action label="Cancel" (triggered)="cancelDeleteConfirm()" />
+                        <rima-dialog-action label="Delete" variant="destructive" (triggered)="onDeleteConfirm()" />
+                      </rima-dialog-actions>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @else if (!store.creating()) {
+        <div class="status-empty">No status records.</div>
+      }
     }
   </div>
-
-  @if (confirmingDelete()) {
-    <rima-dialog-actions
-      message="Are you sure you want to delete the status record? This will be applied when you save."
-    >
-      <rima-dialog-action label="Cancel" (triggered)="cancelDeleteConfirm()" />
-      <rima-dialog-action label="Delete" variant="destructive" (triggered)="onDeleteConfirm()" />
-    </rima-dialog-actions>
-  }
 }

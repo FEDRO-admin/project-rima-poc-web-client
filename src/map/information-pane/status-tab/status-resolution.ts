@@ -6,7 +6,7 @@ import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
 import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
 import { StatusRecord } from './status-types';
-import { STATUS_LAYER_ID, STATUS_AUTO_POPULATED_FIELDS } from './status-config';
+import { STATUS_LAYER_ID, STATUS_AUTO_POPULATED_FIELDS, BEWERTUNGSDATUM_FIELD } from './status-config';
 
 export function findStatusRelationshipId(layer: FeatureLayer): number | undefined {
   return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === STATUS_LAYER_ID)?.id;
@@ -29,15 +29,15 @@ export function resolveStatusEditableFields(layer: FeatureLayer): AttributeEditF
     .map((field) => buildEditAttributeField(field));
 }
 
-export async function queryStatusRecord(
+export async function queryStatusRecords(
   layer: FeatureLayer,
   graphic: Graphic,
   relationshipId: number,
   statusLayer: FeatureLayer,
   historicMoment?: Date,
-): Promise<StatusRecord | undefined> {
+): Promise<StatusRecord[]> {
   const objectId = graphic.attributes[layer.objectIdField];
-  if (objectId == null) return undefined;
+  if (objectId == null) return [];
 
   const query = new RelationshipQuery({
     objectIds: [objectId],
@@ -49,9 +49,10 @@ export async function queryStatusRecord(
 
   const result = await layer.queryRelatedFeatures(query);
   const featureSet = result[objectId];
-  if (!featureSet?.features?.length) return undefined;
+  if (!featureSet?.features?.length) return [];
 
-  return graphicToStatusRecord(featureSet.features[0], statusLayer);
+  const records = featureSet.features.map((feature: Graphic) => graphicToStatusRecord(feature, statusLayer));
+  return sortByBewertungsdatum(records);
 }
 
 function graphicToStatusRecord(graphic: Graphic, statusLayer: FeatureLayer): StatusRecord {
@@ -62,4 +63,15 @@ function graphicToStatusRecord(graphic: Graphic, statusLayer: FeatureLayer): Sta
     isNew: false,
     isModified: false,
   };
+}
+
+function sortByBewertungsdatum(records: StatusRecord[]): StatusRecord[] {
+  return records.sort((a, b) => {
+    const dateA = a.attributes[BEWERTUNGSDATUM_FIELD];
+    const dateB = b.attributes[BEWERTUNGSDATUM_FIELD];
+    if (dateA == null && dateB == null) return 0;
+    if (dateA == null) return 1;
+    if (dateB == null) return -1;
+    return dateA > dateB ? -1 : dateA < dateB ? 1 : 0;
+  });
 }

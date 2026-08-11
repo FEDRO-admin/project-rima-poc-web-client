@@ -11,11 +11,12 @@ import {
   STATUS_PARENT_CLASS_NAME_FIELD,
   STATUS_AUTO_POPULATED_FIELDS,
   ZUSTANDSKLASSE_COLORS,
+  BEWERTUNGSDATUM_FIELD,
 } from './status-config';
 import {
   findStatusRelationshipId,
   findStatusLayer,
-  queryStatusRecord,
+  queryStatusRecords,
   resolveStatusEditableFields,
 } from './status-resolution';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
@@ -59,8 +60,8 @@ export class StatusComponentService {
     this.store.setLoading(true);
 
     try {
-      const record = await this.loadStatus(layer, graphic, resolved.relationshipId, resolved.statusLayer);
-      this.store.setRecord(record);
+      const records = await this.loadStatusRecords(layer, graphic, resolved.relationshipId, resolved.statusLayer);
+      this.store.setRecords(records);
     } finally {
       this.store.setLoading(false);
     }
@@ -79,25 +80,34 @@ export class StatusComponentService {
     return resolveStatusEditableFields(statusLayer);
   }
 
-  getZustandsklasse(): number | undefined {
-    const rec = this.store.record();
-    if (!rec) return undefined;
-    const val = rec.attributes['zustandsklasse'];
+  getZustandsklasseForRecord(record: StatusRecord): number | undefined {
+    const val = record.attributes['zustandsklasse'];
     return typeof val === 'number' ? val : undefined;
   }
 
-  getZustandsklasseColor(): string | undefined {
-    const klasse = this.getZustandsklasse();
+  getZustandsklasseColorForRecord(record: StatusRecord): string | undefined {
+    const klasse = this.getZustandsklasseForRecord(record);
     if (klasse == null) return undefined;
     return ZUSTANDSKLASSE_COLORS[klasse];
   }
 
-  getDisplayFields(): StatusFieldEntry[] {
-    const rec = this.store.record();
+  getBewertungsdatumDisplay(record: StatusRecord): string | undefined {
     const layer = this.getStatusLayer();
-    if (!rec || !layer?.fields?.length) return [];
+    if (!layer?.fields?.length) return undefined;
 
-    const graphic = new Graphic({ attributes: rec.attributes, layer });
+    const field = layer.fields.find((f) => f.name.toLowerCase() === BEWERTUNGSDATUM_FIELD);
+    if (!field) return undefined;
+
+    const graphic = new Graphic({ attributes: record.attributes, layer });
+    const value = resolveFieldDisplayValue(graphic, field, record.attributes[field.name]);
+    return value != null ? String(value) : undefined;
+  }
+
+  getDisplayFieldsForRecord(record: StatusRecord): StatusFieldEntry[] {
+    const layer = this.getStatusLayer();
+    if (!layer?.fields?.length) return [];
+
+    const graphic = new Graphic({ attributes: record.attributes, layer });
     return layer.fields
       .filter(
         (field) =>
@@ -105,25 +115,77 @@ export class StatusComponentService {
       )
       .map((field) => ({
         label: field.alias || field.name,
-        value: resolveFieldDisplayValue(graphic, field, rec.attributes[field.name]),
+        value: resolveFieldDisplayValue(graphic, field, record.attributes[field.name]),
       }));
   }
 
-  async loadStatus(
+  async saveRecord(graphic: Graphic): Promise<void> {
+    const statusLayer = this.getStatusLayer();
+    if (!statusLayer) return;
+
+    const activeId = this.store.activeEditId();
+    const record = this.store.records().find((r) => r.objectId === activeId);
+    if (!record) return;
+
+    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
+    try {
+      await this.applyUpdate(statusLayer, record, this.store.editedAttributes());
+    } finally {
+      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
+    }
+
+    await this.loadForGraphic(graphic);
+  }
+
+  async deleteRecord(graphic: Graphic, objectId: number): Promise<void> {
+    const statusLayer = this.getStatusLayer();
+    if (!statusLayer) return;
+
+    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
+    try {
+      await this.applyDelete(statusLayer, objectId);
+    } finally {
+      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
+    }
+
+    await this.loadForGraphic(graphic);
+  }
+
+  async createRecord(graphic: Graphic, parentId: string, layerId: number): Promise<void> {
+    const statusLayer = this.getStatusLayer();
+    if (!statusLayer) return;
+
+    this.store.setSaving(true);
+    this.viewStore.setSaving(true);
+    try {
+      await this.applyCreate(statusLayer, parentId, String(layerId), this.store.editedAttributes());
+    } finally {
+      this.store.setSaving(false);
+      this.viewStore.setSaving(false);
+    }
+
+    await this.loadForGraphic(graphic);
+  }
+
+  private async loadStatusRecords(
     layer: FeatureLayer,
     graphic: Graphic,
     relationshipId: number,
     statusLayer: FeatureLayer,
-  ): Promise<StatusRecord | undefined> {
+  ): Promise<StatusRecord[]> {
     try {
       const historicMoment = this.historyStore.selectedDate() ?? undefined;
-      return await queryStatusRecord(layer, graphic, relationshipId, statusLayer, historicMoment);
+      return await queryStatusRecords(layer, graphic, relationshipId, statusLayer, historicMoment);
     } catch (error) {
       throw new StatusLoadError(error);
     }
   }
 
-  async saveStatus(
+  private async applyUpdate(
     statusLayer: FeatureLayer,
     record: StatusRecord,
     editedAttributes: Record<string, AttributeValue>,
@@ -147,7 +209,7 @@ export class StatusComponentService {
     }
   }
 
-  async createStatus(
+  private async applyCreate(
     statusLayer: FeatureLayer,
     parentId: string,
     parentClassName: string,
@@ -173,7 +235,7 @@ export class StatusComponentService {
     }
   }
 
-  async deleteStatus(statusLayer: FeatureLayer, objectId: number): Promise<void> {
+  private async applyDelete(statusLayer: FeatureLayer, objectId: number): Promise<void> {
     try {
       const deleteGraphic = new Graphic({
         attributes: { [statusLayer.objectIdField]: objectId },
@@ -188,36 +250,5 @@ export class StatusComponentService {
       if (error instanceof StatusSaveError) throw error;
       throw new StatusSaveError(error);
     }
-  }
-
-  async save(graphic: Graphic, parentId: string | undefined, layerId: number): Promise<void> {
-    const statusLayer = this.getStatusLayer();
-    if (!statusLayer) return;
-
-    this.store.setSaving(true);
-    this.viewStore.setSaving(true);
-    try {
-      if (this.store.deleted()) {
-        const record = this.store.record();
-        if (record?.objectId != null) {
-          await this.deleteStatus(statusLayer, record.objectId);
-        }
-      } else if (this.store.creating()) {
-        if (parentId) {
-          await this.createStatus(statusLayer, parentId, String(layerId), this.store.editedAttributes());
-        }
-      } else if (this.store.hasPendingChanges()) {
-        const record = this.store.record();
-        if (record) {
-          await this.saveStatus(statusLayer, record, this.store.editedAttributes());
-        }
-      }
-    } finally {
-      this.store.setSaving(false);
-      this.viewStore.setSaving(false);
-    }
-
-    // Reload always runs after a successful save; reset() (inside loadForGraphic) restores saving to false too.
-    await this.loadForGraphic(graphic);
   }
 }

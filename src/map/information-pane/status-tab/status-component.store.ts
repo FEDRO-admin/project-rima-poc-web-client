@@ -8,10 +8,11 @@ export interface StatusFieldEntry {
 }
 
 interface StatusState {
-  record: StatusRecord | undefined;
+  records: StatusRecord[];
+  activeEditId: number | undefined;
   originalAttributes: Record<string, AttributeValue>;
   editedAttributes: Record<string, AttributeValue>;
-  deleted: boolean;
+  expandedObjectIds: number[];
   creating: boolean;
   saving: boolean;
   loading: boolean;
@@ -19,10 +20,11 @@ interface StatusState {
 }
 
 const initialState: StatusState = {
-  record: undefined,
+  records: [],
+  activeEditId: undefined,
   originalAttributes: {},
   editedAttributes: {},
-  deleted: false,
+  expandedObjectIds: [],
   creating: false,
   saving: false,
   loading: false,
@@ -33,29 +35,29 @@ export const StatusComponentStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     hasPendingChanges: computed(() => {
-      if (store.deleted()) return true;
-      if (store.creating()) return true;
+      if (store.creating()) {
+        return Object.keys(store.editedAttributes()).length > 0;
+      }
+      if (store.activeEditId() == null) return false;
       const original = store.originalAttributes();
       const edited = store.editedAttributes();
       return Object.keys(edited).some((key) => edited[key] !== original[key]);
     }),
-    hasRecord: computed(() => store.record() != null),
+    hasRecords: computed(() => store.records().length > 0),
     available: computed(() => store.relationshipId() != null),
-    showForm: computed(() => store.record() != null && !store.deleted()),
-    showCreateForm: computed(() => store.creating()),
-    showCreateButton: computed(() => store.relationshipId() != null && store.record() == null && !store.creating()),
+    showCreateButton: computed(() => store.relationshipId() != null && !store.creating()),
+    isEditing: computed(() => store.activeEditId() != null),
   })),
   withMethods((store) => ({
     setup(relationshipId: number): void {
       patchState(store, { relationshipId });
     },
-    setRecord(record: StatusRecord | undefined): void {
-      const attributes = record?.attributes ?? {};
+    setRecords(records: StatusRecord[]): void {
       patchState(store, {
-        record,
-        originalAttributes: { ...attributes },
-        editedAttributes: { ...attributes },
-        deleted: false,
+        records,
+        activeEditId: undefined,
+        originalAttributes: {},
+        editedAttributes: {},
         creating: false,
       });
     },
@@ -65,20 +67,39 @@ export const StatusComponentStore = signalStore(
     setSaving(saving: boolean): void {
       patchState(store, { saving });
     },
+    toggleExpanded(objectId: number): void {
+      const ids = store.expandedObjectIds();
+      const updated = ids.includes(objectId) ? ids.filter((id) => id !== objectId) : [...ids, objectId];
+      patchState(store, { expandedObjectIds: updated });
+    },
+    startEdit(record: StatusRecord): void {
+      const attributes = { ...record.attributes };
+      const expandedObjectIds =
+        record.objectId != null
+          ? [...new Set([...store.expandedObjectIds(), record.objectId])]
+          : store.expandedObjectIds();
+      patchState(store, {
+        activeEditId: record.objectId,
+        originalAttributes: attributes,
+        editedAttributes: { ...attributes },
+        expandedObjectIds,
+      });
+    },
+    cancelEdit(): void {
+      patchState(store, {
+        activeEditId: undefined,
+        originalAttributes: {},
+        editedAttributes: {},
+      });
+    },
     updateField(fieldName: string, value: AttributeValue): void {
       patchState(store, { editedAttributes: { ...store.editedAttributes(), [fieldName]: value } });
     },
-    cancelEdit(): void {
-      patchState(store, { editedAttributes: { ...store.originalAttributes() } });
-    },
-    markDeleted(): void {
-      patchState(store, { deleted: true });
-    },
     markCreating(): void {
-      patchState(store, { creating: true, editedAttributes: {} });
+      patchState(store, { creating: true, activeEditId: undefined, editedAttributes: {}, originalAttributes: {} });
     },
     cancelCreating(): void {
-      patchState(store, { creating: false, editedAttributes: {} });
+      patchState(store, { creating: false, editedAttributes: {}, originalAttributes: {} });
     },
     reset(): void {
       patchState(store, initialState);
