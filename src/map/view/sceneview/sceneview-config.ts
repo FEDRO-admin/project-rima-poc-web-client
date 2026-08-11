@@ -1,3 +1,5 @@
+import { RIMA_BASEMAP_LAYER_ID, RIMA_ELEVATION_SERVICE_URL, RIMA_SCENEVIEW_WMS_URL } from '../../map-config';
+
 export interface SceneBasemapConfig {
   wmsUrl: string;
   sublayer: string;
@@ -15,12 +17,12 @@ export interface SceneConfig {
 
 export const RIMA_SCENEVIEW_CONFIG: SceneConfig = {
   basemap: {
-    wmsUrl: 'https://wms.geo.admin.ch/',
-    sublayer: 'ch.swisstopo.pixelkarte-farbe',
+    wmsUrl: RIMA_SCENEVIEW_WMS_URL,
+    sublayer: RIMA_BASEMAP_LAYER_ID,
     title: 'Swisstopo Pixelkarte',
   },
   elevation: {
-    url: 'https://tiles.arcgis.com/tiles/oPre3pOfRfefL8y0/arcgis/rest/services/elevation_suisse/ImageServer',
+    url: RIMA_ELEVATION_SERVICE_URL,
   },
 };
 

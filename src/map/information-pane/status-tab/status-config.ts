@@ -1,4 +1,6 @@
-export const STATUS_LAYER_ID = 30;
+import { STATUS_LAYER_ID } from '../../map-config';
+
+export { STATUS_LAYER_ID };
 
 export const STATUS_FK_PARENT_FIELD = 'fk_parent';
 export const STATUS_PARENT_CLASS_NAME_FIELD = 'parent_class_name';

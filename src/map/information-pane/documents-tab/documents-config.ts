@@ -1,11 +1,9 @@
+import { DOCUMENTS_LAYER_ID, DOCUMENTS_TABLE_NAME } from '../../map-config';
+
+export { DOCUMENTS_LAYER_ID, DOCUMENTS_TABLE_NAME };
+
 /** Portal folder name where uploaded documents are stored. */
 export const DOCUMENTS_PORTAL_FOLDER = 'rima-documents';
-
-/** Layer ID of the document table in the feature service. */
-export const DOCUMENTS_LAYER_ID = 18;
-
-/** Name of the document featureclass / related table. */
-export const DOCUMENTS_TABLE_NAME = 'd_object_document';
 
 /** Document types that can be viewed directly in the browser. */
 export const DOCUMENTS_VIEWABLE_TYPES = ['pdf', 'png'];

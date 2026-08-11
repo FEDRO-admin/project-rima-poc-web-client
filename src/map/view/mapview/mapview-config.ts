@@ -1,6 +1,9 @@
+import { RIMA_BASEMAP_LAYER_ID, RIMA_MAPVIEW_BASEMAP_WMTS_URL } from '../../map-config';
+
+export { RIMA_MAPVIEW_BASEMAP_WMTS_URL };
+
 // BASEMAP
-export const RIMA_MAPVIEW_BASEMAP_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';
-export const RIMA_MAPVIEW_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
+export const RIMA_MAPVIEW_BASEMAP_LAYER_ID = RIMA_BASEMAP_LAYER_ID;
 
 // LAYER FILTERING
 export const RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP = true;

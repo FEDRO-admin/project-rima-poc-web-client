@@ -1,4 +1,5 @@
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import { REF_POINT_BIS_LAYER_ID, REF_POINT_VON_LAYER_ID } from '../../map-config';
 import type { ReferencePointType } from './reference-point-types';
 
 /**
@@ -54,13 +55,13 @@ export interface ReferencePointTypeConfig {
 export const REF_POINT_TYPE_CONFIGS: Record<ReferencePointType, ReferencePointTypeConfig> = {
   von: {
     type: 'von',
-    layerId: 20,
+    layerId: REF_POINT_VON_LAYER_ID,
     symbol: REF_POINT_VON_SYMBOL,
     displayTitle: 'Von Punkte',
   },
   bis: {
     type: 'bis',
-    layerId: 21,
+    layerId: REF_POINT_BIS_LAYER_ID,
     symbol: REF_POINT_BIS_SYMBOL,
     displayTitle: 'Bis Punkte',
   },
