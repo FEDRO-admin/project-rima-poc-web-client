@@ -16,8 +16,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { ReferencePointComponentStore } from './reference-point-component.store';
 import { ReferencePointComponentService } from './reference-point-component.service';
-import { ReferencePointType, ReferencePoint, AttributeValue } from './reference-point-types';
-import { REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+import { ReferencePoint, AttributeValue } from './reference-point-types';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ViewStore } from '../../view/view.store';
 import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
@@ -39,7 +38,6 @@ interface FieldEntry {
 })
 export class ReferencePointComponent implements OnDestroy {
   readonly mode = input<'edit' | 'view'>('edit');
-  readonly type = input.required<ReferencePointType>();
   readonly graphic = input.required<Graphic>();
   readonly disabled = input<boolean>(false);
 
@@ -47,8 +45,9 @@ export class ReferencePointComponent implements OnDestroy {
   protected readonly viewStore = inject(ViewStore);
   private readonly service = inject(ReferencePointComponentService);
 
-  protected readonly displayTitle = computed(() => REF_POINT_TYPE_CONFIGS[this.type()].displayTitle);
   protected readonly saving = signal(false);
+  protected readonly addCardinalityError = signal('');
+  protected readonly editCardinalityError = signal('');
 
   protected readonly allHighlighted = computed(() => {
     const pts = this.componentStore.points();
@@ -93,12 +92,19 @@ export class ReferencePointComponent implements OnDestroy {
     return 'Point';
   }
 
+  protected getPointTypeBadge(point: ReferencePoint): string {
+    if (point.type === 'von') return 'Von';
+    if (point.type === 'bis') return 'Bis';
+    return '';
+  }
+
   // --- Edit mode ---
 
   protected startAdding(): void {
     this.coordinateX = '';
     this.coordinateY = '';
     this.coordinateError = '';
+    this.addCardinalityError.set('');
     this.useCoordinateInput = false;
     this.service.startAdding();
   }
@@ -133,49 +139,60 @@ export class ReferencePointComponent implements OnDestroy {
   }
 
   protected onAddingFieldChange(event: { fieldName: string; value: AttributeValue }): void {
+    this.addCardinalityError.set('');
     this.componentStore.updateAddingAttribute(event.fieldName, event.value);
   }
 
   protected confirmAdd(): void {
-    this.service.confirmAdd(this.type());
+    const success = this.service.confirmAdd();
+    if (!success) {
+      this.addCardinalityError.set('A reference point of this type already exists for this feature.');
+    }
   }
 
   protected cancelAdd(): void {
-    this.service.cancelAdd(this.type());
+    this.addCardinalityError.set('');
+    this.service.cancelAdd();
   }
 
   protected startEditing(clientId: string): void {
+    this.editCardinalityError.set('');
     this.service.startEditingPoint(clientId);
   }
 
   protected startEditingGeometry(clientId: string): void {
-    this.service.startEditingPointGeometry(clientId, this.type());
+    this.service.startEditingPointGeometry(clientId);
   }
 
   protected onEditFieldChange(clientId: string, event: { fieldName: string; value: AttributeValue }): void {
-    this.service.updatePointAttribute(clientId, event.fieldName, event.value);
+    const success = this.service.updatePointAttribute(clientId, event.fieldName, event.value);
+    if (!success) {
+      this.editCardinalityError.set('A reference point of this type already exists for this feature.');
+    } else {
+      this.editCardinalityError.set('');
+    }
   }
 
   protected confirmEdit(): void {
-    this.service.confirmEditPoint(this.type());
+    this.service.confirmEditPoint();
   }
 
   protected deletePoint(clientId: string): void {
-    this.service.deletePoint(clientId, this.type());
+    this.service.deletePoint(clientId);
   }
 
   protected toggleDisplay(): void {
-    this.service.toggleDisplay(this.type());
+    this.service.toggleDisplay();
   }
 
   // --- View mode ---
 
   protected toggleHighlight(point: ReferencePoint): void {
-    this.service.toggleHighlight(point, this.type());
+    this.service.toggleHighlight(point);
   }
 
   protected toggleAllHighlights(): void {
-    this.service.toggleAllHighlights(this.type());
+    this.service.toggleAllHighlights();
   }
 
   protected isHighlighted(clientId: string): boolean {
@@ -200,13 +217,12 @@ export class ReferencePointComponent implements OnDestroy {
   private loadOnGraphicChange(): void {
     effect(() => {
       const graphic = this.graphic();
-      const type = this.type();
       const mode = this.mode();
       untracked(() => {
         if (mode === 'view') {
-          this.service.resolveAndLoadForView(graphic, type);
+          this.service.resolveAndLoadForView(graphic);
         } else {
-          this.service.resolveAndLoad(graphic, type);
+          this.service.resolveAndLoad(graphic);
         }
       });
     });

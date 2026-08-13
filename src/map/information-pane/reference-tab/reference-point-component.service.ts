@@ -7,7 +7,7 @@ import Point from '@arcgis/core/geometry/Point';
 import { ReferencePointComponentStore } from './reference-point-component.store';
 import { ReferencePointSaveError, ReferencePointLoadError } from './reference-point-errors';
 import { ReferencePoint, ReferencePointType, AttributeValue, generateClientId } from './reference-point-types';
-import { REF_POINT_TYPE_CONFIGS, REF_POINT_ADDING_SYMBOL } from './reference-point-config';
+import { REF_POINT_SYMBOLS, REF_POINT_ADDING_SYMBOL } from './reference-point-config';
 import {
   findRelationshipId,
   findRelatedLayer,
@@ -15,6 +15,7 @@ import {
   queryRelatedPoints,
 } from './reference-point-resolution';
 import { applyPointEdits } from './reference-point-helpers';
+import { REF_POINT_TYPE_FIELD } from '../../map-config';
 import { ViewStore } from '../../view/view.store';
 import { ViewService } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
@@ -41,23 +42,23 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Resolution & Loading ---
 
-  resolveAndLoad(graphic: Graphic, type: ReferencePointType): void {
+  resolveAndLoad(graphic: Graphic): void {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.resolve(layer, type);
-    this.loadPoints(layer, graphic, type);
+    this.resolve(layer);
+    this.loadPoints(layer, graphic);
   }
 
-  resolveForCreate(layer: FeatureLayer, type: ReferencePointType): void {
-    this.resolve(layer, type);
+  resolveForCreate(layer: FeatureLayer): void {
+    this.resolve(layer);
   }
 
-  resolveAndLoadForView(graphic: Graphic, type: ReferencePointType): void {
+  resolveAndLoadForView(graphic: Graphic): void {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.resolve(layer, type);
+    this.resolve(layer);
     this.loadPointsForView(layer, graphic);
   }
 
@@ -115,30 +116,39 @@ export class ReferencePointComponentService implements OnDestroy {
     return true;
   }
 
-  confirmAdd(type: ReferencePointType): void {
+  confirmAdd(): boolean {
     const geometry = this.store.addingGeometry();
-    if (!geometry) return;
+    if (!geometry) return false;
+
+    const addingAttrs = this.store.addingAttributes();
+    const selectedType = addingAttrs[REF_POINT_TYPE_FIELD] as ReferencePointType | undefined;
+
+    // Cardinality check: max 1 von and max 1 bis
+    if (selectedType === 'von' && !this.store.canAddVon()) return false;
+    if (selectedType === 'bis' && !this.store.canAddBis()) return false;
 
     const newPoint: ReferencePoint = {
       clientId: generateClientId(),
+      type: selectedType,
       objectId: undefined,
       globalId: undefined,
       geometry,
-      attributes: { ...this.store.addingAttributes() },
+      attributes: { ...addingAttrs },
       isNew: true,
       isModified: false,
     };
 
     this.store.addPoint(newPoint);
     this.store.cancelAdding();
-    this.refreshDisplayLayer(type);
+    this.refreshDisplayLayer();
+    return true;
   }
 
-  cancelAdd(type: ReferencePointType): void {
+  cancelAdd(): void {
     this.cleanupSketch();
     this.viewStore.setSketchActive(false);
     this.store.cancelAdding();
-    this.refreshDisplayLayer(type);
+    this.refreshDisplayLayer();
   }
 
   // --- Editing ---
@@ -147,7 +157,7 @@ export class ReferencePointComponentService implements OnDestroy {
     this.store.setActiveEdit(clientId);
   }
 
-  startEditingPointGeometry(clientId: string, type: ReferencePointType): void {
+  startEditingPointGeometry(clientId: string): void {
     const point = this.store.points().find((p) => p.clientId === clientId);
     if (!point?.geometry) return;
 
@@ -188,7 +198,7 @@ export class ReferencePointComponentService implements OnDestroy {
       if (event.state === 'complete') {
         this.cleanupSketch();
         this.viewStore.setSketchActive(false);
-        this.refreshDisplayLayer(type);
+        this.refreshDisplayLayer();
       }
     });
 
@@ -196,26 +206,38 @@ export class ReferencePointComponentService implements OnDestroy {
     this.viewStore.setSketchActive(true);
   }
 
-  updatePointAttribute(clientId: string, fieldName: string, value: AttributeValue): void {
+  updatePointAttribute(clientId: string, fieldName: string, value: AttributeValue): boolean {
     const point = this.store.points().find((p) => p.clientId === clientId);
-    if (!point) return;
+    if (!point) return false;
 
-    this.store.updatePoint(clientId, {
+    const updates: Partial<ReferencePoint> = {
       attributes: { ...point.attributes, [fieldName]: value },
       isModified: !point.isNew,
-    });
+    };
+
+    if (fieldName === REF_POINT_TYPE_FIELD) {
+      const newType = value === 'von' || value === 'bis' ? value : undefined;
+      // Reject if another point already has this type
+      if (newType && this.store.points().some((p) => p.clientId !== clientId && p.type === newType)) {
+        return false;
+      }
+      updates.type = newType;
+    }
+
+    this.store.updatePoint(clientId, updates);
+    return true;
   }
 
-  confirmEditPoint(type: ReferencePointType): void {
+  confirmEditPoint(): void {
     this.cleanupSketch();
     this.viewStore.setSketchActive(false);
     this.store.setActiveEdit(undefined);
-    this.refreshDisplayLayer(type);
+    this.refreshDisplayLayer();
   }
 
-  deletePoint(clientId: string, type: ReferencePointType): void {
+  deletePoint(clientId: string): void {
     this.store.removePoint(clientId);
-    this.refreshDisplayLayer(type);
+    this.refreshDisplayLayer();
   }
 
   // --- Save ---
@@ -237,11 +259,12 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Highlight (view mode) ---
 
-  highlightPoint(point: ReferencePoint, type: ReferencePointType): void {
+  highlightPoint(point: ReferencePoint): void {
     this.ensureHighlightLayer();
+    const symbol = point.type ? REF_POINT_SYMBOLS[point.type] : REF_POINT_ADDING_SYMBOL;
     const graphic = new Graphic({
       geometry: point.geometry ?? undefined,
-      symbol: REF_POINT_TYPE_CONFIGS[type].symbol,
+      symbol,
     });
     this.highlightLayer!.add(graphic);
     this.highlightedGraphics.set(point.clientId, graphic);
@@ -257,15 +280,15 @@ export class ReferencePointComponentService implements OnDestroy {
     }
   }
 
-  toggleHighlight(point: ReferencePoint, type: ReferencePointType): void {
+  toggleHighlight(point: ReferencePoint): void {
     if (this.highlightedGraphics.has(point.clientId)) {
       this.unhighlightPoint(point.clientId);
     } else {
-      this.highlightPoint(point, type);
+      this.highlightPoint(point);
     }
   }
 
-  toggleAllHighlights(type: ReferencePointType): void {
+  toggleAllHighlights(): void {
     const points = this.store.points();
     const allHighlighted = points.length > 0 && points.every((p) => this.highlightedGraphics.has(p.clientId));
 
@@ -274,7 +297,7 @@ export class ReferencePointComponentService implements OnDestroy {
     } else {
       for (const point of points) {
         if (!this.highlightedGraphics.has(point.clientId)) {
-          this.highlightPoint(point, type);
+          this.highlightPoint(point);
         }
       }
     }
@@ -282,22 +305,22 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Display Layer (edit mode) ---
 
-  toggleDisplay(type: ReferencePointType): void {
+  toggleDisplay(): void {
     const visible = !this.store.displayVisible();
     this.store.setDisplayVisible(visible);
     if (visible) {
-      this.refreshDisplayLayer(type);
+      this.refreshDisplayLayer();
     } else {
       this.removeDisplayLayer();
     }
   }
 
-  togglePointVisibility(clientId: string, type: ReferencePointType): void {
+  togglePointVisibility(clientId: string): void {
     this.store.togglePointHidden(clientId);
-    this.refreshDisplayLayer(type);
+    this.refreshDisplayLayer();
   }
 
-  refreshDisplayLayer(type: ReferencePointType): void {
+  refreshDisplayLayer(): void {
     const view = this.viewService.activeView();
     if (!view?.map) return;
 
@@ -306,12 +329,14 @@ export class ReferencePointComponentService implements OnDestroy {
       return;
     }
 
-    const config = REF_POINT_TYPE_CONFIGS[type];
     const hiddenIds = this.store.hiddenPointIds();
     const graphics = this.store
       .points()
       .filter((p) => p.geometry && !hiddenIds.includes(p.clientId))
-      .map((p) => new Graphic({ geometry: p.geometry, symbol: config.symbol }));
+      .map((p) => {
+        const symbol = p.type ? REF_POINT_SYMBOLS[p.type] : REF_POINT_ADDING_SYMBOL;
+        return new Graphic({ geometry: p.geometry, symbol });
+      });
 
     if (this.store.isAdding()) {
       const addingGeometry = this.store.addingGeometry();
@@ -321,7 +346,7 @@ export class ReferencePointComponentService implements OnDestroy {
     }
 
     if (!this.displayLayer) {
-      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: config.displayTitle });
+      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Referenzpunkte' });
       view.map.add(this.displayLayer);
     }
 
@@ -339,15 +364,15 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Private ---
 
-  private resolve(layer: FeatureLayer, type: ReferencePointType): void {
+  private resolve(layer: FeatureLayer): void {
     const view = this.viewService.activeView();
-    const relationshipId = findRelationshipId(layer, type);
-    const relatedLayer = view && relationshipId != null ? findRelatedLayer(view, type) : undefined;
+    const relationshipId = findRelationshipId(layer);
+    const relatedLayer = view && relationshipId != null ? findRelatedLayer(view) : undefined;
     const fields = relatedLayer ? resolveEditableFields(relatedLayer) : [];
     this.store.setup(relationshipId, relatedLayer, fields);
   }
 
-  private async loadPoints(layer: FeatureLayer, graphic: Graphic, type: ReferencePointType): Promise<void> {
+  private async loadPoints(layer: FeatureLayer, graphic: Graphic): Promise<void> {
     const relationshipId = this.store.relationshipId();
     const relatedLayer = this.store.relatedLayer();
     if (relationshipId == null || !relatedLayer) return;
@@ -357,7 +382,7 @@ export class ReferencePointComponentService implements OnDestroy {
       const points = await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
       this.store.setPoints(points);
       this.store.setLoading(false);
-      this.refreshDisplayLayer(type);
+      this.refreshDisplayLayer();
     } catch (error) {
       this.store.setLoading(false);
       throw new ReferencePointLoadError(error);

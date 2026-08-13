@@ -8,6 +8,7 @@ export type AttributeValue = string | number | boolean | null;
 
 export interface ReferencePoint {
   clientId: string;
+  type: ReferencePointType | undefined;
   objectId: number | undefined;
   globalId: string | undefined;
   geometry: Point | undefined;

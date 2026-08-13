@@ -45,6 +45,14 @@ export const ReferencePointComponentStore = signalStore(
       () => store.points().some((p) => p.isNew || p.isModified) || store.deletedObjectIds().length > 0,
     ),
     isAdding: computed(() => store.addingActive()),
+    vonPoint: computed(() => store.points().find((p) => p.type === 'von')),
+    bisPoint: computed(() => store.points().find((p) => p.type === 'bis')),
+    canAddVon: computed(() => !store.points().some((p) => p.type === 'von')),
+    canAddBis: computed(() => !store.points().some((p) => p.type === 'bis')),
+    canAdd: computed(() => {
+      const pts = store.points();
+      return !pts.some((p) => p.type === 'von') || !pts.some((p) => p.type === 'bis');
+    }),
   })),
   withMethods((store) => ({
     setup(

@@ -4,7 +4,7 @@
       <div class="refpoint-section">
         <div class="refpoint-section-header">
           <calcite-icon icon="pin-plus" scale="s"></calcite-icon>
-          <span>{{ displayTitle() }}</span>
+          <span>Referenzpunkte</span>
           <span class="refpoint-count">({{ componentStore.points().length }})</span>
           <span class="refpoint-header-spacer"></span>
           <button
@@ -33,6 +33,14 @@
                 <div class="refpoint-item-row">
                   <calcite-icon icon="pin" scale="s"></calcite-icon>
                   <span class="refpoint-item-label">{{ getPointLabel(point) }}</span>
+                  @if (getPointTypeBadge(point); as badge) {
+                    <span
+                      class="refpoint-badge"
+                      [class.refpoint-badge--von]="point.type === 'von'"
+                      [class.refpoint-badge--bis]="point.type === 'bis'"
+                      >{{ badge }}</span
+                    >
+                  }
                   @if (point.isNew) {
                     <span class="refpoint-badge refpoint-badge--new">new</span>
                   }
@@ -81,6 +89,10 @@
                       [idPrefix]="'refpoint-edit-' + point.clientId"
                       (fieldChange)="onEditFieldChange(point.clientId, $event)"
                     />
+
+                    @if (editCardinalityError()) {
+                      <div class="refpoint-coord-error">{{ editCardinalityError() }}</div>
+                    }
 
                     <div class="refpoint-editor-actions">
                       <button class="refpoint-confirm-btn" (click)="confirmEdit()">Done</button>
@@ -170,6 +182,10 @@
               />
             }
 
+            @if (addCardinalityError()) {
+              <div class="refpoint-coord-error">{{ addCardinalityError() }}</div>
+            }
+
             <div class="refpoint-adding-actions">
               <button class="refpoint-cancel-btn" (click)="cancelAdd()">Cancel</button>
               <button class="refpoint-confirm-btn" (click)="confirmAdd()" [disabled]="!componentStore.addingGeometry()">
@@ -181,11 +197,14 @@
           <button
             class="refpoint-add-btn"
             (click)="startAdding()"
-            [disabled]="disabled() || viewStore.sketchActive() || componentStore.isAdding()"
+            [disabled]="disabled() || viewStore.sketchActive() || componentStore.isAdding() || !componentStore.canAdd()"
           >
             <calcite-icon icon="plus" scale="s"></calcite-icon>
             Add Point
           </button>
+          @if (!componentStore.canAdd()) {
+            <div class="refpoint-cardinality-hint">Both Von and Bis points already exist.</div>
+          }
         }
 
         @if (componentStore.hasPendingChanges()) {
@@ -206,7 +225,7 @@
       <div class="refpoint-view-section">
         <div class="refpoint-view-header">
           <calcite-icon icon="pin" scale="s"></calcite-icon>
-          <span>{{ displayTitle() }}</span>
+          <span>Referenzpunkte</span>
           <span class="refpoint-view-count">({{ componentStore.points().length }})</span>
           @if (componentStore.points().length > 0) {
             <span class="refpoint-view-header-spacer"></span>
@@ -231,6 +250,14 @@
                 <summary class="refpoint-view-item-row">
                   <calcite-icon icon="pin" scale="s"></calcite-icon>
                   <span class="refpoint-view-item-label">{{ getPointLabel(point) }}</span>
+                  @if (getPointTypeBadge(point); as badge) {
+                    <span
+                      class="refpoint-badge"
+                      [class.refpoint-badge--von]="point.type === 'von'"
+                      [class.refpoint-badge--bis]="point.type === 'bis'"
+                      >{{ badge }}</span
+                    >
+                  }
                   <span class="refpoint-view-item-spacer"></span>
                   <button
                     class="refpoint-view-action-btn"

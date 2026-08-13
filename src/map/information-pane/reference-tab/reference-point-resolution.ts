@@ -4,20 +4,19 @@ import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Point from '@arcgis/core/geometry/Point';
 
 import { ReferencePoint, ReferencePointType, generateClientId } from './reference-point-types';
-import { REF_POINT_AUTO_POPULATED_FIELDS, REF_POINT_TYPE_CONFIGS } from './reference-point-config';
+import { REF_POINT_AUTO_POPULATED_FIELDS, REFERENCE_POINT_TYPES } from './reference-point-config';
+import { REF_POINT_LAYER_ID, REF_POINT_TYPE_FIELD } from '../../map-config';
 import { RimaView } from '../../view/view.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
 import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
 
-export function findRelationshipId(layer: FeatureLayer, type: ReferencePointType): number | undefined {
-  const config = REF_POINT_TYPE_CONFIGS[type];
-  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === config.layerId)?.id;
+export function findRelationshipId(layer: FeatureLayer): number | undefined {
+  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === REF_POINT_LAYER_ID)?.id;
 }
 
-export function findRelatedLayer(view: RimaView, type: ReferencePointType): FeatureLayer | undefined {
-  const config = REF_POINT_TYPE_CONFIGS[type];
-  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === config.layerId) as
+export function findRelatedLayer(view: RimaView): FeatureLayer | undefined {
+  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === REF_POINT_LAYER_ID) as
     | FeatureLayer
     | undefined;
 }
@@ -58,9 +57,18 @@ export async function queryRelatedPoints(
   return featureSet.features.map((feature: Graphic) => graphicToReferencePoint(feature, relatedLayer));
 }
 
+function parsePointType(attributes: Record<string, unknown>): ReferencePointType | undefined {
+  const raw = attributes[REF_POINT_TYPE_FIELD];
+  if (typeof raw === 'string' && (REFERENCE_POINT_TYPES as readonly string[]).includes(raw)) {
+    return raw as ReferencePointType;
+  }
+  return undefined;
+}
+
 function graphicToReferencePoint(graphic: Graphic, relatedLayer: FeatureLayer): ReferencePoint {
   return {
     clientId: generateClientId(),
+    type: parsePointType(graphic.attributes),
     objectId: graphic.attributes[relatedLayer.objectIdField],
     globalId: graphic.attributes.globalid ?? undefined,
     geometry: graphic.geometry as Point | undefined,

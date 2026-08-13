@@ -81,6 +81,16 @@
   font-weight: 500;
   text-transform: uppercase;
 
+  &--von {
+    background: #e0f0ff;
+    color: #0079c1;
+  }
+
+  &--bis {
+    background: #fde8e4;
+    color: #c14000;
+  }
+
   &--new {
     background: #e6f4ea;
     color: #1e7e34;
@@ -363,6 +373,13 @@
   padding-top: 8px;
   border-top: 1px solid #e0e0e0;
   margin-top: 8px;
+}
+
+.refpoint-cardinality-hint {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  padding: 2px 0;
 }
 
 .refpoint-save-btn {

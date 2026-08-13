@@ -13,10 +13,12 @@ export const RIMA_ELEVATION_SERVICE_URL =
   'https://tiles.arcgis.com/tiles/oPre3pOfRfefL8y0/arcgis/rest/services/elevation_suisse/ImageServer';
 
 // FEATURE LAYER IDs
-export const DOCUMENTS_LAYER_ID = 18;
-export const REF_POINT_VON_LAYER_ID = 20;
-export const REF_POINT_BIS_LAYER_ID = 21;
-export const STATUS_LAYER_ID = 30;
+export const DOCUMENTS_LAYER_ID = 1;
+export const REF_POINT_LAYER_ID = 28;
+export const STATUS_LAYER_ID = 20;
+
+// REFERENCE POINT SCHEMA
+export const REF_POINT_TYPE_FIELD = 'punkt_type';
 
 // FEATURE CLASS NAMES
 export const DOCUMENTS_TABLE_NAME = 'd_object_document';
