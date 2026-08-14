@@ -45,55 +45,12 @@
       <span class="upload-form__hint">Max. {{ maxFileSizeMB }} MB</span>
     </div>
 
-    <div class="upload-form__field">
-      <label for="doc-titel">Titel</label>
-      <input
-        id="doc-titel"
-        type="text"
-        [value]="uploadForm().titel"
-        (input)="updateForm('titel', $any($event.target).value)"
-      />
-    </div>
-
-    <div class="upload-form__field">
-      <label for="doc-beschreibung">Beschreibung</label>
-      <textarea
-        id="doc-beschreibung"
-        rows="3"
-        [value]="uploadForm().beschreibung"
-        (input)="updateForm('beschreibung', $any($event.target).value)"
-      ></textarea>
-    </div>
-
-    <div class="upload-form__field">
-      <label for="doc-typ">Typ</label>
-      <select id="doc-typ" [value]="uploadForm().typ" (change)="updateForm('typ', $any($event.target).value)">
-        <option value="" disabled>— Bitte wählen —</option>
-        @for (typ of typDomain(); track typ) {
-          <option [value]="typ">{{ typ }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="upload-form__field">
-      <label for="doc-version">Version</label>
-      <input
-        id="doc-version"
-        type="text"
-        [value]="uploadForm().version"
-        (input)="updateForm('version', $any($event.target).value)"
-      />
-    </div>
-
-    <div class="upload-form__field">
-      <label for="doc-status">Status</label>
-      <select id="doc-status" [value]="uploadForm().status" (change)="updateForm('status', $any($event.target).value)">
-        <option value="" disabled>— Bitte wählen —</option>
-        @for (status of statusDomain(); track status) {
-          <option [value]="status">{{ status }}</option>
-        }
-      </select>
-    </div>
+    <rima-attribute-form
+      [fields]="documentsService.resolveEditableFields()"
+      [values]="uploadAttributes()"
+      idPrefix="doc-upload"
+      (fieldChange)="onUploadFieldChange($event)"
+    />
 
     <div class="upload-form__sharing">
       <span class="upload-form__sharing-label">Freigabe</span>
@@ -104,8 +61,8 @@
             type="radio"
             name="sharing-access"
             value="private"
-            [checked]="uploadForm().access === 'private'"
-            (change)="updateForm('access', 'private')"
+            [checked]="uploadAccess() === 'private'"
+            (change)="uploadAccess.set('private')"
           />
           Besitzer
         </label>
@@ -114,8 +71,8 @@
             type="radio"
             name="sharing-access"
             value="org"
-            [checked]="uploadForm().access === 'org'"
-            (change)="updateForm('access', 'org')"
+            [checked]="uploadAccess() === 'org'"
+            (change)="uploadAccess.set('org')"
           />
           Organisation
         </label>
@@ -124,8 +81,8 @@
             type="radio"
             name="sharing-access"
             value="public"
-            [checked]="uploadForm().access === 'public'"
-            (change)="updateForm('access', 'public')"
+            [checked]="uploadAccess() === 'public'"
+            (change)="uploadAccess.set('public')"
           />
           Öffentlich
         </label>
@@ -150,8 +107,8 @@
         label="Hochladen"
         variant="primary"
         [disabled]="
-          !uploadForm().file ||
-          !uploadForm().titel ||
+          !uploadFile() ||
+          !uploadAttributes()['titel'] ||
           uploadProgress().state === 'uploading' ||
           uploadProgress().state === 'sharing'
         "
@@ -167,14 +124,14 @@
       <div class="document-item">
         <div class="document-item__header">
           <div class="document-item__info">
-            <span class="document-item__title">{{ doc.titel || doc.name }}</span>
+            <span class="document-item__title">{{ getDocTitle(doc) }}</span>
             <span class="document-item__meta">
-              {{ doc.typ }}
-              @if (doc.groesse) {
-                · {{ formatFileSize(doc.groesse) }}
+              {{ doc.attributes['typ'] }}
+              @if (doc.attributes['groesse']) {
+                · {{ formatFileSize(+doc.attributes['groesse']!) }}
               }
-              @if (doc.letzteAenderung) {
-                · {{ doc.letzteAenderung | date: 'dd.MM.yyyy' }}
+              @if (doc.attributes['letzte_aenderung']) {
+                · {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
               }
             </span>
           </div>
@@ -201,34 +158,20 @@
         </div>
         @if (expandedDocId() === doc.objectId) {
           <div class="document-item__details">
-            @if (doc.beschreibung) {
+            @for (field of documentsService.resolveEditableFields(); track field.name) {
+              @if (doc.attributes[field.name] != null && doc.attributes[field.name] !== '') {
+                <div class="document-item__detail">
+                  <span class="document-item__detail-label">{{ field.alias }}</span>
+                  <span class="document-item__detail-value">{{ doc.attributes[field.name] }}</span>
+                </div>
+              }
+            }
+            @if (doc.attributes['name']) {
               <div class="document-item__detail">
-                <span class="document-item__detail-label">Beschreibung</span>
-                <span class="document-item__detail-value">{{ doc.beschreibung }}</span>
+                <span class="document-item__detail-label">Dateiname</span>
+                <span class="document-item__detail-value">{{ doc.attributes['name'] }}</span>
               </div>
             }
-            @if (doc.autor) {
-              <div class="document-item__detail">
-                <span class="document-item__detail-label">Autor</span>
-                <span class="document-item__detail-value">{{ doc.autor }}</span>
-              </div>
-            }
-            @if (doc.version) {
-              <div class="document-item__detail">
-                <span class="document-item__detail-label">Version</span>
-                <span class="document-item__detail-value">{{ doc.version }}</span>
-              </div>
-            }
-            @if (doc.status) {
-              <div class="document-item__detail">
-                <span class="document-item__detail-label">Status</span>
-                <span class="document-item__detail-value">{{ doc.status }}</span>
-              </div>
-            }
-            <div class="document-item__detail">
-              <span class="document-item__detail-label">Dateiname</span>
-              <span class="document-item__detail-value">{{ doc.name }}</span>
-            </div>
           </div>
         }
       </div>
@@ -257,64 +200,19 @@
     <div class="upload-form__field">
       <label for="edit-file">Datei ersetzen (optional)</label>
       <input id="edit-file" type="file" (change)="onEditFileSelected($event)" />
-      <span class="upload-form__hint">Aktuelle Datei: {{ editDoc.name }} · Max. {{ maxFileSizeMB }} MB</span>
-    </div>
-
-    <div class="upload-form__field">
-      <label for="edit-titel">Titel</label>
-      <input
-        id="edit-titel"
-        type="text"
-        [value]="editForm().titel"
-        (input)="updateEditForm('titel', $any($event.target).value)"
-      />
-    </div>
-
-    <div class="upload-form__field">
-      <label for="edit-beschreibung">Beschreibung</label>
-      <textarea
-        id="edit-beschreibung"
-        rows="3"
-        [value]="editForm().beschreibung"
-        (input)="updateEditForm('beschreibung', $any($event.target).value)"
-      ></textarea>
-    </div>
-
-    <div class="upload-form__field">
-      <label for="edit-typ">Typ</label>
-      <select id="edit-typ" [value]="editForm().typ" (change)="updateEditForm('typ', $any($event.target).value)">
-        <option value="" disabled>— Bitte wählen —</option>
-        @for (typ of typDomain(); track typ) {
-          <option [value]="typ" [selected]="typ === editForm().typ">{{ typ }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="upload-form__field">
-      <label for="edit-version">Version</label>
-      <input
-        id="edit-version"
-        type="text"
-        [value]="editForm().version"
-        (input)="updateEditForm('version', $any($event.target).value)"
-      />
-    </div>
-
-    <div class="upload-form__field">
-      <label for="edit-status">Status</label>
-      <select
-        id="edit-status"
-        [value]="editForm().status"
-        (change)="updateEditForm('status', $any($event.target).value)"
+      <span class="upload-form__hint"
+        >Aktuelle Datei: {{ editDoc.attributes['name'] }} · Max. {{ maxFileSizeMB }} MB</span
       >
-        <option value="" disabled>— Bitte wählen —</option>
-        @for (status of statusDomain(); track status) {
-          <option [value]="status" [selected]="status === editForm().status">{{ status }}</option>
-        }
-      </select>
     </div>
 
-    @if (editForm().file) {
+    <rima-attribute-form
+      [fields]="documentsService.resolveEditableFields()"
+      [values]="editAttributes()"
+      idPrefix="doc-edit"
+      (fieldChange)="onEditFieldChange($event)"
+    />
+
+    @if (editFile()) {
       <div class="upload-form__sharing">
         <span class="upload-form__sharing-label">Freigabe (neue Datei)</span>
 
@@ -324,8 +222,8 @@
               type="radio"
               name="edit-sharing-access"
               value="private"
-              [checked]="editForm().access === 'private'"
-              (change)="updateEditForm('access', 'private')"
+              [checked]="editAccess() === 'private'"
+              (change)="editAccess.set('private')"
             />
             Besitzer
           </label>
@@ -334,8 +232,8 @@
               type="radio"
               name="edit-sharing-access"
               value="org"
-              [checked]="editForm().access === 'org'"
-              (change)="updateEditForm('access', 'org')"
+              [checked]="editAccess() === 'org'"
+              (change)="editAccess.set('org')"
             />
             Organisation
           </label>
@@ -344,8 +242,8 @@
               type="radio"
               name="edit-sharing-access"
               value="public"
-              [checked]="editForm().access === 'public'"
-              (change)="updateEditForm('access', 'public')"
+              [checked]="editAccess() === 'public'"
+              (change)="editAccess.set('public')"
             />
             Öffentlich
           </label>
@@ -370,7 +268,9 @@
       <rima-dialog-action
         label="Speichern"
         variant="primary"
-        [disabled]="!editForm().titel || uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing'"
+        [disabled]="
+          !editAttributes()['titel'] || uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing'
+        "
         (triggered)="requestSave()"
       />
     }

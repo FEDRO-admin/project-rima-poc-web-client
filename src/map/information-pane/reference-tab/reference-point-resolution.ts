@@ -5,18 +5,18 @@ import type Point from '@arcgis/core/geometry/Point';
 
 import { ReferencePoint, ReferencePointType, generateClientId } from './reference-point-types';
 import { REF_POINT_AUTO_POPULATED_FIELDS, REFERENCE_POINT_TYPES } from './reference-point-config';
-import { REF_POINT_LAYER_ID, REF_POINT_TYPE_FIELD } from '../../map-config';
+import { REF_POINT_TYPE_FIELD } from '../../map-config';
 import { RimaView } from '../../view/view.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
 import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
 
-export function findRelationshipId(layer: FeatureLayer): number | undefined {
-  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === REF_POINT_LAYER_ID)?.id;
+export function findRelationshipId(layer: FeatureLayer, layerId: number): number | undefined {
+  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === layerId)?.id;
 }
 
-export function findRelatedLayer(view: RimaView): FeatureLayer | undefined {
-  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === REF_POINT_LAYER_ID) as
+export function findRelatedLayer(view: RimaView, layerId: number): FeatureLayer | undefined {
+  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === layerId) as
     | FeatureLayer
     | undefined;
 }

@@ -22,6 +22,8 @@ import {
   MapViewLayerAddError,
 } from './mapview-errors';
 import { LayerService } from '../../layer/layer.service';
+import { LayerIdResolver } from '../../layer/layer-id-resolver';
+import { RIMA_ROOT_CATEGORY } from '../../map-config';
 import type { WebmapDataJson } from '../../layer/layer-types';
 
 @Injectable({
@@ -31,6 +33,7 @@ export class MapViewService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
   private readonly layerService = inject(LayerService);
+  private readonly layerIdResolver = inject(LayerIdResolver);
 
   private _mapView: MapView | undefined;
 
@@ -44,7 +47,10 @@ export class MapViewService {
     this.addBasemap();
     await view.when();
 
-    const layers = await this.loadWebMapLayers();
+    const [layers] = await Promise.all([
+      this.loadWebMapLayers(),
+      this.layerIdResolver.loadFromPortalCategory(RIMA_ROOT_CATEGORY),
+    ]);
     this.addLayersToMap(layers);
   }
 

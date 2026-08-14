@@ -8,7 +8,7 @@ export async function applyPointEdits(
   points: ReferencePoint[],
   deletedObjectIds: number[],
   parentId: string,
-  parentLayerId: number,
+  parentLayerName: string,
 ): Promise<void> {
   if (deletedObjectIds.length > 0) {
     const deleteGraphics = deletedObjectIds.map((oid) => new Graphic({ attributes: { [layer.objectIdField]: oid } }));
@@ -25,7 +25,7 @@ export async function applyPointEdits(
       const attributes: Record<string, AttributeValue> = {
         ...p.attributes,
         [REF_POINT_FK_PARENT_FIELD]: parentId,
-        [REF_POINT_PARENT_CLASS_NAME_FIELD]: parentLayerId,
+        [REF_POINT_PARENT_CLASS_NAME_FIELD]: parentLayerName,
       };
       return new Graphic({ attributes, geometry: p.geometry });
     });

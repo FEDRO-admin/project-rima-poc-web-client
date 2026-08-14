@@ -9,14 +9,13 @@ import { HistoryStore } from '../../history/history.store';
 import { PortalService } from '../../portal/portal.service';
 import { DocumentsStore } from './documents.store';
 import { DocumentUploadService } from './document-upload.service';
+import { DocumentEditPayload, DocumentRecord, DocumentUploadPayload } from './document-types';
 import {
-  DocumentEditPayload,
-  DocumentRecord,
-  DocumentUploadPayload,
-  mapDocumentRecordToAttributes,
-  mapGraphicToDocumentRecord,
-} from './document-types';
-import { DOCUMENTS_LAYER_ID, DOCUMENTS_MAX_FILE_SIZE_MB, DOCUMENTS_VIEWABLE_TYPES } from './documents-config';
+  DOCUMENT_AUTO_POPULATED_FIELDS,
+  DOCUMENTS_LAYER_NAME,
+  DOCUMENTS_MAX_FILE_SIZE_MB,
+  DOCUMENTS_VIEWABLE_TYPES,
+} from './documents-config';
 import {
   DocumentDeleteError,
   DocumentEditError,
@@ -25,6 +24,11 @@ import {
   DocumentRelationshipNotFoundError,
   DocumentUploadError,
 } from './documents-errors';
+import { AttributeEditField } from '../../shared/attribute-edit-field';
+import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
+import { isImmutableField } from '../../layer/layer-attributes';
+import { LayerIdResolver } from '../../layer/layer-id-resolver';
+import type { AttributeValue } from '../../shared/attribute-value-conversion';
 
 @Injectable({
   providedIn: 'root',
@@ -35,6 +39,7 @@ export class DocumentsService {
   private readonly portalService = inject(PortalService);
   private readonly documentsStore = inject(DocumentsStore);
   private readonly uploadService = inject(DocumentUploadService);
+  private readonly layerIdResolver = inject(LayerIdResolver);
 
   async loadDocuments(graphic: Graphic): Promise<void> {
     const layer = graphic.layer as FeatureLayer;
@@ -72,9 +77,10 @@ export class DocumentsService {
       const documentLayer = this.findDocumentLayer();
       const objectIdField = documentLayer?.objectIdField ?? 'objectid';
 
-      const documents: DocumentRecord[] = featureSet.features.map((f: Graphic) =>
-        mapGraphicToDocumentRecord(f, objectIdField),
-      );
+      const documents: DocumentRecord[] = featureSet.features.map((f: Graphic) => ({
+        objectId: f.attributes[objectIdField],
+        attributes: { ...f.attributes },
+      }));
 
       this.documentsStore.setDocuments(documents);
     } catch (error) {
@@ -104,35 +110,26 @@ export class DocumentsService {
       const portal = await this.portalService.getPortal();
       const user = portal.user!;
       const parentKeyValue = this.getParentKeyValue(graphic, relationship);
+      const titel = (payload.editableAttributes['titel'] as string) ?? '';
 
-      const downloadUrl = await this.uploadService.uploadFile(
-        payload.file,
-        payload.titel,
-        payload.sharing,
-        parentKeyValue,
-      );
-      const geometry = undefined; // for now, clarify in thursday meeting if geom is needed.
+      const downloadUrl = await this.uploadService.uploadFile(payload.file, titel, payload.sharing, parentKeyValue);
 
-      const documentRecord: DocumentRecord = {
-        objectId: 0,
+      /* eslint-disable @typescript-eslint/naming-convention -- Feature service attribute names must match the backend schema. */
+      const attributes: Record<string, AttributeValue> = {
+        ...payload.editableAttributes,
         id: crypto.randomUUID(),
-        name: payload.file.name,
-        fkParent: parentKeyValue,
-        parentClassName: layer.title ?? '',
-        titel: payload.titel,
-        beschreibung: payload.beschreibung,
-        autor: user.fullName ?? user.username ?? '',
-        typ: payload.typ,
+        fk_parent: parentKeyValue,
+        parent_class_name: this.layerIdResolver.resolveName(layer.layerId),
         pfad: downloadUrl,
-        status: payload.status,
-        letzteAenderung: new Date(),
-        version: payload.version,
+        name: payload.file.name,
         groesse: payload.file.size,
-        anzahlSeiten: null,
+        autor: user.fullName ?? user.username ?? '',
+        letzte_aenderung: Date.now(),
+        anzahl_seiten: null,
       };
+      /* eslint-enable @typescript-eslint/naming-convention -- Re-enable after feature service attributes. */
 
-      const attributes = mapDocumentRecordToAttributes(documentRecord, documentLayer.objectIdField);
-      const newGraphic = new Graphic({ attributes, geometry });
+      const newGraphic = new Graphic({ attributes });
       const editResult = await documentLayer.applyEdits({ addFeatures: [newGraphic] });
 
       if (editResult.addFeatureResults[0]?.error) {
@@ -140,7 +137,10 @@ export class DocumentsService {
       }
 
       const newObjectId = editResult.addFeatureResults[0]?.objectId ?? 0;
-      this.documentsStore.addDocument({ ...documentRecord, objectId: newObjectId });
+      this.documentsStore.addDocument({
+        objectId: newObjectId,
+        attributes: { ...attributes, [documentLayer.objectIdField]: newObjectId },
+      });
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
         throw error;
@@ -202,44 +202,49 @@ export class DocumentsService {
     }
 
     try {
-      let newPfad = record.pfad;
-      let newGroesse = record.groesse;
-      let newName = record.name;
+      let fileAttributes: Record<string, AttributeValue> = {};
 
       if (payload.file && payload.sharing) {
-        newPfad = await this.uploadService.replaceFile(
-          record.pfad,
+        const currentPfad = (record.attributes['pfad'] as string) ?? '';
+        const titel = (payload.editableAttributes['titel'] as string) ?? '';
+        const fkParent = (record.attributes['fk_parent'] as string) ?? '';
+
+        const newPfad = await this.uploadService.replaceFile(
+          currentPfad,
           payload.file,
-          payload.titel,
+          titel,
           payload.sharing,
-          record.fkParent,
+          fkParent,
         );
-        newGroesse = payload.file.size;
-        newName = payload.file.name;
+        fileAttributes = {
+          pfad: newPfad,
+          groesse: payload.file.size,
+          name: payload.file.name,
+        };
       }
 
-      const updatedRecord: DocumentRecord = {
-        ...record,
-        titel: payload.titel,
-        beschreibung: payload.beschreibung,
-        typ: payload.typ,
-        status: payload.status,
-        version: payload.version,
-        pfad: newPfad,
-        groesse: newGroesse,
-        name: newName,
-        letzteAenderung: new Date(),
+      /* eslint-disable @typescript-eslint/naming-convention -- Feature service attribute names must match the backend schema. */
+      const updatedAttributes: Record<string, AttributeValue> = {
+        ...record.attributes,
+        ...payload.editableAttributes,
+        ...fileAttributes,
+        letzte_aenderung: Date.now(),
       };
+      /* eslint-enable @typescript-eslint/naming-convention -- Re-enable after feature service attributes. */
 
-      const attributes = mapDocumentRecordToAttributes(updatedRecord, documentLayer.objectIdField);
-      const updateGraphic = new Graphic({ attributes });
+      const updateGraphic = new Graphic({
+        attributes: { [documentLayer.objectIdField]: record.objectId, ...updatedAttributes },
+      });
       const editResult = await documentLayer.applyEdits({ updateFeatures: [updateGraphic] });
 
       if (editResult.updateFeatureResults[0]?.error) {
         throw new DocumentEditError();
       }
 
-      this.documentsStore.updateDocument(updatedRecord);
+      this.documentsStore.updateDocument({
+        objectId: record.objectId,
+        attributes: updatedAttributes,
+      });
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
         throw error;
@@ -251,11 +256,12 @@ export class DocumentsService {
   }
 
   getDownloadUrl(record: DocumentRecord): string {
-    return this.uploadService.getAuthenticatedUrl(record.pfad);
+    return this.uploadService.getAuthenticatedUrl((record.attributes['pfad'] as string) ?? '');
   }
 
   isViewable(record: DocumentRecord): boolean {
-    return DOCUMENTS_VIEWABLE_TYPES.some((type) => type.toLowerCase() === record.typ.toLowerCase());
+    const typ = (record.attributes['typ'] as string) ?? '';
+    return DOCUMENTS_VIEWABLE_TYPES.some((t) => t.toLowerCase() === typ.toLowerCase());
   }
 
   formatFileSize(bytes: number): string {
@@ -266,26 +272,28 @@ export class DocumentsService {
     return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
   }
 
-  async getFieldDomainValues(fieldName: string): Promise<string[]> {
+  resolveEditableFields(): AttributeEditField[] {
     const layer = this.findDocumentLayer();
-    if (!layer) return [];
+    if (!layer?.fields?.length) return [];
 
-    await layer.load();
-
-    const field = layer.fields.find((f) => f.name === fieldName);
-    if (!field?.domain || field.domain.type !== 'coded-value') return [];
-
-    return field.domain.codedValues.map((cv) => cv.code as string);
+    return layer.fields
+      .filter(
+        (field) =>
+          !isImmutableField(field.name, layer) && !DOCUMENT_AUTO_POPULATED_FIELDS.includes(field.name.toLowerCase()),
+      )
+      .map((field) => buildEditAttributeField(field));
   }
 
   private findDocumentRelationship(layer: FeatureLayer): Relationship | undefined {
     if (!layer.relationships) return undefined;
 
-    return layer.relationships.find((rel) => rel.relatedTableId === DOCUMENTS_LAYER_ID);
+    return layer.relationships.find(
+      (rel) => rel.role === 'origin' && rel.relatedTableId === this.layerIdResolver.resolveId(DOCUMENTS_LAYER_NAME),
+    );
   }
 
   private findDocumentLayer(): FeatureLayer | undefined {
-    return this.findLayerById(DOCUMENTS_LAYER_ID);
+    return this.findLayerById(this.layerIdResolver.resolveId(DOCUMENTS_LAYER_NAME));
   }
 
   private findLayerById(relatedTableId: number): FeatureLayer | undefined {

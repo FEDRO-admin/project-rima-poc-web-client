@@ -15,12 +15,13 @@ import {
   queryRelatedPoints,
 } from './reference-point-resolution';
 import { applyPointEdits } from './reference-point-helpers';
-import { REF_POINT_TYPE_FIELD } from '../../map-config';
+import { REF_POINT_TYPE_FIELD, REF_POINT_LAYER_NAME } from '../../map-config';
 import { ViewStore } from '../../view/view.store';
 import { ViewService } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
+import { LayerIdResolver } from '../../layer/layer-id-resolver';
 
 @Injectable()
 export class ReferencePointComponentService implements OnDestroy {
@@ -28,6 +29,7 @@ export class ReferencePointComponentService implements OnDestroy {
   private readonly viewStore = inject(ViewStore);
   private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
+  private readonly layerIdResolver = inject(LayerIdResolver);
 
   private displayLayer: GraphicsLayer | undefined;
   private highlightLayer: GraphicsLayer | undefined;
@@ -246,9 +248,16 @@ export class ReferencePointComponentService implements OnDestroy {
     const relatedLayer = this.store.relatedLayer();
     if (!relatedLayer) return;
 
+    const parentLayerName = this.layerIdResolver.resolveName(parentLayerId);
     this.viewStore.setSaving(true);
     try {
-      await applyPointEdits(relatedLayer, this.store.points(), this.store.deletedObjectIds(), parentId, parentLayerId);
+      await applyPointEdits(
+        relatedLayer,
+        this.store.points(),
+        this.store.deletedObjectIds(),
+        parentId,
+        parentLayerName,
+      );
       this.store.markSaved();
       this.viewStore.setSaving(false);
     } catch (error) {
@@ -366,8 +375,9 @@ export class ReferencePointComponentService implements OnDestroy {
 
   private resolve(layer: FeatureLayer): void {
     const view = this.viewService.activeView();
-    const relationshipId = findRelationshipId(layer);
-    const relatedLayer = view && relationshipId != null ? findRelatedLayer(view) : undefined;
+    const refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
+    const relationshipId = findRelationshipId(layer, refPointLayerId);
+    const relatedLayer = view && relationshipId != null ? findRelatedLayer(view, refPointLayerId) : undefined;
     const fields = relatedLayer ? resolveEditableFields(relatedLayer) : [];
     this.store.setup(relationshipId, relatedLayer, fields);
   }

@@ -6,14 +6,14 @@ import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
 import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
 import { StatusRecord } from './status-types';
-import { STATUS_LAYER_ID, STATUS_AUTO_POPULATED_FIELDS, BEWERTUNGSDATUM_FIELD } from './status-config';
+import { STATUS_AUTO_POPULATED_FIELDS, BEWERTUNGSDATUM_FIELD } from './status-config';
 
-export function findStatusRelationshipId(layer: FeatureLayer): number | undefined {
-  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === STATUS_LAYER_ID)?.id;
+export function findStatusRelationshipId(layer: FeatureLayer, layerId: number): number | undefined {
+  return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === layerId)?.id;
 }
 
-export function findStatusLayer(view: RimaView): FeatureLayer | undefined {
-  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === STATUS_LAYER_ID) as
+export function findStatusLayer(view: RimaView, layerId: number): FeatureLayer | undefined {
+  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === layerId) as
     | FeatureLayer
     | undefined;
 }

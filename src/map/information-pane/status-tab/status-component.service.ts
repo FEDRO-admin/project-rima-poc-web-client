@@ -12,6 +12,7 @@ import {
   STATUS_AUTO_POPULATED_FIELDS,
   ZUSTANDSKLASSE_COLORS,
   BEWERTUNGSDATUM_FIELD,
+  STATUS_LAYER_NAME,
 } from './status-config';
 import {
   findStatusRelationshipId,
@@ -23,6 +24,7 @@ import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { StatusComponentStore, StatusFieldEntry } from './status-component.store';
 import { resolveFieldDisplayValue } from '../../layer/layer-attribute-domain-resolver';
 import { isImmutableField } from '../../layer/layer-attributes';
+import { LayerIdResolver } from '../../layer/layer-id-resolver';
 
 @Injectable()
 export class StatusComponentService {
@@ -30,6 +32,7 @@ export class StatusComponentService {
   private readonly historyStore = inject(HistoryStore);
   private readonly viewStore = inject(ViewStore);
   private readonly store = inject(StatusComponentStore);
+  private readonly layerIdResolver = inject(LayerIdResolver);
 
   resolveForView(
     layer: FeatureLayer,
@@ -37,10 +40,10 @@ export class StatusComponentService {
     const view = this.viewService.activeView();
     if (!view) return undefined;
 
-    const relationshipId = findStatusRelationshipId(layer);
+    const relationshipId = findStatusRelationshipId(layer, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
     if (relationshipId == null) return undefined;
 
-    const statusLayer = findStatusLayer(view);
+    const statusLayer = findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
     if (!statusLayer) return undefined;
 
     const fields = resolveStatusEditableFields(statusLayer);
@@ -71,7 +74,7 @@ export class StatusComponentService {
     if (this.store.relationshipId() == null) return undefined;
     const view = this.viewService.activeView();
     if (!view) return undefined;
-    return findStatusLayer(view);
+    return findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
   }
 
   getFields(): AttributeEditField[] {
@@ -159,10 +162,11 @@ export class StatusComponentService {
     const statusLayer = this.getStatusLayer();
     if (!statusLayer) return;
 
+    const parentLayerName = this.layerIdResolver.resolveName(layerId);
     this.store.setSaving(true);
     this.viewStore.setSaving(true);
     try {
-      await this.applyCreate(statusLayer, parentId, String(layerId), this.store.editedAttributes());
+      await this.applyCreate(statusLayer, parentId, parentLayerName, this.store.editedAttributes());
     } finally {
       this.store.setSaving(false);
       this.viewStore.setSaving(false);

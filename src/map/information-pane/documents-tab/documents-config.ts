@@ -1,6 +1,19 @@
-import { DOCUMENTS_LAYER_ID, DOCUMENTS_TABLE_NAME } from '../../map-config';
+import { DOCUMENTS_LAYER_NAME } from '../../map-config';
 
-export { DOCUMENTS_LAYER_ID, DOCUMENTS_TABLE_NAME };
+export { DOCUMENTS_LAYER_NAME };
+
+// Fields set programmatically by the service — excluded from the edit form
+export const DOCUMENT_AUTO_POPULATED_FIELDS: readonly string[] = [
+  'id',
+  'fk_parent',
+  'parent_class_name',
+  'pfad',
+  'name',
+  'groesse',
+  'autor',
+  'letzte_aenderung',
+  'anzahl_seiten',
+];
 
 /** Portal folder name where uploaded documents are stored. */
 export const DOCUMENTS_PORTAL_FOLDER = 'rima-documents';

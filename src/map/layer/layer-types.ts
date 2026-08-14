@@ -52,3 +52,16 @@ export type WebmapOperationalLayerJson =
 export interface WebmapDataJson {
   operationalLayers?: WebmapOperationalLayerJson[];
 }
+
+export interface FeatureServerLayerJson {
+  name: string;
+  id: number;
+  type: string;
+  parentLayerId: number;
+  geometryType?: string;
+}
+
+export interface FeatureServerMetadataJson {
+  layers: FeatureServerLayerJson[];
+  tables: FeatureServerLayerJson[];
+}
