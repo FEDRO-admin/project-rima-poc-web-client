@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type ArcGISMap from '@arcgis/core/Map';
 import SceneView from '@arcgis/core/views/SceneView';
-import Layer from '@arcgis/core/layers/Layer';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import Ground from '@arcgis/core/Ground';
 import ElevationLayer from '@arcgis/core/layers/ElevationLayer';
@@ -38,15 +37,11 @@ export class SceneViewService {
 
   async add3DLayers(map: ArcGISMap): Promise<void> {
     try {
-      const groupLayer = await this.sceneViewLayerService.load3DGroupLayer();
-      map.layers.add(groupLayer);
+      const layers = await this.sceneViewLayerService.loadSceneLayers();
+      map.layers.addMany(layers);
     } catch {
       // Scene layer load failure is non-fatal — 3D view still usable without extra layers
     }
-  }
-
-  isSceneLayer(layer: Layer): boolean {
-    return this.sceneViewLayerService.isSceneLayer(layer);
   }
 
   private registerSceneView(sceneView: SceneView): void {

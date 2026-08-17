@@ -26,4 +26,4 @@ export const RIMA_SCENEVIEW_CONFIG: SceneConfig = {
   },
 };
 
-export const RIMA_SCENEVIEW_3D_CATEGORY = '3D';
+export const RIMA_SCENEVIEW_HIDDEN_CATEGORY = 'HIDDEN';

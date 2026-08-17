@@ -1,5 +1,4 @@
 import { inject, Injectable, signal, Signal } from '@angular/core';
-import type ArcGISMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
 import Layer from '@arcgis/core/layers/Layer';
@@ -35,7 +34,6 @@ export class ViewService {
     const sceneView = this.sceneViewInitService.getSceneView();
     if (!mapView?.map || !sceneView?.map) return;
 
-    this.transferLayers(mapView.map, sceneView.map);
     this.viewStore.setMode('scene');
     this.writableActiveView.set(sceneView);
 
@@ -56,7 +54,6 @@ export class ViewService {
     const sceneView = this.sceneViewInitService.getSceneView();
     if (!mapView?.map || !sceneView?.map) return;
 
-    this.transferSharedLayers(sceneView.map, mapView.map);
     this.viewStore.setMode('map');
     this.writableActiveView.set(mapView);
 
@@ -75,17 +72,5 @@ export class ViewService {
     const view = this.writableActiveView();
     if (!view?.map) return;
     view.map.layers.removeAll();
-  }
-
-  private transferLayers(source: ArcGISMap, target: ArcGISMap): void {
-    const layers = source.layers.toArray();
-    source.layers.removeAll();
-    target.layers.addMany(layers);
-  }
-
-  private transferSharedLayers(source: ArcGISMap, target: ArcGISMap): void {
-    const sharedLayers = source.layers.toArray().filter((layer) => !this.sceneViewInitService.isSceneLayer(layer));
-    source.layers.removeMany(sharedLayers);
-    target.layers.addMany(sharedLayers);
   }
 }
