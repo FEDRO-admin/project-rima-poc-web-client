@@ -22,17 +22,12 @@ export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditF
 }
 
 export function resolveFieldDisplayValue(
-  graphic: Graphic,
+  _graphic: Graphic,
   field: Field,
   value: string | number | boolean | null | undefined,
 ): string | number | boolean | null {
   if (value == null) {
     return null;
-  }
-
-  const layer = graphic.layer;
-  if (!(layer instanceof FeatureLayer)) {
-    return value;
   }
 
   if (isCodedValueDomain(field.domain)) {

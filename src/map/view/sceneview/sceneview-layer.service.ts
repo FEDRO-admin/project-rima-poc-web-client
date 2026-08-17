@@ -3,6 +3,7 @@ import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import Layer from '@arcgis/core/layers/Layer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import SceneLayer from '@arcgis/core/layers/SceneLayer';
 import WebScene from '@arcgis/core/WebScene';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
@@ -98,9 +99,20 @@ export class SceneViewLayerService {
       const layers = webScene.layers.toArray();
       webScene.layers.removeAll();
 
+      this.configureSceneLayers(layers);
       return [new GroupLayer({ title: item.title ?? '', layers })];
     } catch {
       return [];
+    }
+  }
+
+  private configureSceneLayers(layers: Layer[]): void {
+    for (const layer of layers) {
+      if (layer instanceof SceneLayer) {
+        layer.outFields = ['*'];
+      } else if (layer instanceof GroupLayer) {
+        this.configureSceneLayers(layer.layers.toArray());
+      }
     }
   }
 

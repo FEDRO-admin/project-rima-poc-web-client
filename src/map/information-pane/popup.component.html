@@ -12,7 +12,7 @@
         </div>
       </div>
     } @else {
-      @if (store.showDetail()) {
+      @if (store.showDetail() && isFeatureLayerSelected()) {
         <calcite-action-bar scale="s" class="popup-action-bar">
           <calcite-action
             icon="information"

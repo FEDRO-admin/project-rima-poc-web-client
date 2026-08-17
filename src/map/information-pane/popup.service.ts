@@ -2,11 +2,21 @@ import { inject, Injectable, OnDestroy } from '@angular/core';
 import { ViewService } from '../view/view.service';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import SceneLayer from '@arcgis/core/layers/SceneLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import { PopupHighlightError, PopupRefreshError } from './popup-errors';
 import { PopupStore } from './popup.store';
 import { ViewStore } from '../view/view.store';
 import { GraphicHit } from '@arcgis/core/views/types';
 import { type RimaView } from '../view/view.service';
+
+const HITTESTABLE_LAYER_TYPES = new Set(['feature', 'scene', 'building-scene']);
+
+interface QueryableLayer {
+  objectIdField: string;
+  createQuery(): { objectIds?: number[]; outFields?: string[]; returnGeometry?: boolean };
+  queryFeatures(query: ReturnType<QueryableLayer['createQuery']>): Promise<{ features: Graphic[] }>;
+}
 
 interface Handle {
   remove(): void;
@@ -31,10 +41,11 @@ export class PopupService implements OnDestroy {
 
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
     const view = this.viewService.activeView();
-    if (!view || !(graphic.layer instanceof FeatureLayer)) return;
+    const layer = graphic.layer;
+    if (!view || !layer || !('whenLayerView' in view)) return;
 
     try {
-      const layerView = await view.whenLayerView(graphic.layer);
+      const layerView = await view.whenLayerView(layer as FeatureLayer | SceneLayer);
       const handle = layerView.highlight(graphic);
 
       if (type === 'hover') {
@@ -69,7 +80,7 @@ export class PopupService implements OnDestroy {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer)) return;
+    if (!this.isQueryableLayer(layer)) return;
 
     try {
       const objectId = graphic.attributes[layer.objectIdField];
@@ -111,7 +122,7 @@ export class PopupService implements OnDestroy {
     }
 
     const response = await view.hitTest(event, {
-      include: view.map.allLayers.filter((layer) => layer.type === 'feature').toArray() as FeatureLayer[],
+      include: view.map.allLayers.filter((layer) => HITTESTABLE_LAYER_TYPES.has(layer.type)).toArray() as Layer[],
     });
 
     const graphics = response.results
@@ -119,9 +130,46 @@ export class PopupService implements OnDestroy {
       .map((result) => result.graphic);
 
     if (graphics.length > 0) {
-      this.popupStore.open(graphics);
+      const enriched = await this.enrichGraphicAttributes(graphics);
+      this.popupStore.open(enriched);
     } else {
       this.popupStore.close();
     }
+  }
+
+  // SceneLayer/BuildingComponentSublayer hitTest only returns binary-cached attributes.
+  // Query the associated feature service to get all attributes.
+  private async enrichGraphicAttributes(graphics: Graphic[]): Promise<Graphic[]> {
+    return Promise.all(
+      graphics.map(async (graphic) => {
+        const layer = graphic.layer;
+        if (layer instanceof FeatureLayer) return graphic;
+        if (!this.isQueryableLayer(layer)) return graphic;
+
+        try {
+          const objectId = graphic.attributes?.[layer.objectIdField];
+          if (objectId == null) return graphic;
+
+          const query = layer.createQuery();
+          query.objectIds = [objectId];
+          query.outFields = ['*'];
+          query.returnGeometry = true;
+
+          const result = await layer.queryFeatures(query);
+          return result.features[0] ?? graphic;
+        } catch {
+          return graphic;
+        }
+      }),
+    );
+  }
+
+  private isQueryableLayer(layer: unknown): layer is QueryableLayer {
+    return (
+      layer != null &&
+      typeof (layer as QueryableLayer).objectIdField === 'string' &&
+      typeof (layer as QueryableLayer).createQuery === 'function' &&
+      typeof (layer as QueryableLayer).queryFeatures === 'function'
+    );
   }
 }

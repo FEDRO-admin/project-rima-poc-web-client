@@ -6,6 +6,7 @@ import { AttributeDeleteStore } from './attributes-tab/attribute-delete.store';
 import { AttributeEditStore } from './attributes-tab/attribute-edit.store';
 import { AttributeEditService } from './attributes-tab/attribute-edit.service';
 import Graphic from '@arcgis/core/Graphic';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-bar';
@@ -37,6 +38,11 @@ export class PopupComponent {
   };
 
   protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
+
+  protected readonly isFeatureLayerSelected = computed(() => {
+    const graphic = this.store.selectedGraphic();
+    return graphic?.layer instanceof FeatureLayer;
+  });
 
   protected async confirmDelete(): Promise<void> {
     await this.deleteService.confirmDelete();

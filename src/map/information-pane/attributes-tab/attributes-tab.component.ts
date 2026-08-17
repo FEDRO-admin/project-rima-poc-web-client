@@ -3,7 +3,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import { isImmutableField } from '../../layer/layer-attributes';
+import { hasFieldMetadata, isImmutableField } from '../../layer/layer-attributes';
 import { resolveFieldDisplayValue, resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { isLayerEditable, isLayerDeletable } from '../../layer/layer-capabilities';
 import { ViewStore } from '../../view/view.store';
@@ -71,7 +71,7 @@ export class AttributesTabComponent {
     const layer = graphic.layer;
     const attrs: Record<string, string | number | boolean | null> = graphic.attributes ?? {};
 
-    if (layer instanceof FeatureLayer && layer.fields?.length) {
+    if (hasFieldMetadata(layer)) {
       return layer.fields
         .filter((field) => !isImmutableField(field.name, layer))
         .map((field) => ({
@@ -89,7 +89,7 @@ export class AttributesTabComponent {
     const layer = graphic.layer;
     const attrs: Record<string, string | number | boolean | null> = graphic.attributes ?? {};
 
-    if (layer instanceof FeatureLayer && layer.fields?.length) {
+    if (hasFieldMetadata(layer)) {
       return layer.fields
         .filter((field) => isImmutableField(field.name, layer))
         .map((field) => ({
