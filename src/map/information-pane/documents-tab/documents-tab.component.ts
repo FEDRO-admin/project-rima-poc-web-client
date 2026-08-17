@@ -103,16 +103,8 @@ export class DocumentsTabComponent {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  protected downloadDocument(record: DocumentRecord): void {
-    const url = this.documentsService.getDownloadUrl(record);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = (record.attributes['name'] as string) || this.getDocTitle(record);
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  protected async downloadDocument(record: DocumentRecord): Promise<void> {
+    await this.documentsService.downloadDocument(record);
   }
 
   protected isViewable(record: DocumentRecord): boolean {

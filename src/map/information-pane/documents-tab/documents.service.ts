@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import esriRequest from '@arcgis/core/request';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import Graphic from '@arcgis/core/Graphic';
@@ -253,6 +254,22 @@ export class DocumentsService {
     } finally {
       this.uploadService.resetProgress();
     }
+  }
+
+  async downloadDocument(record: DocumentRecord): Promise<void> {
+    const pfad = (record.attributes['pfad'] as string) ?? '';
+    const name = (record.attributes['name'] as string) || '';
+    // 'native' lets esriRequest handle auth but skips all body processing
+    const response = await esriRequest(pfad, { responseType: 'native' });
+    const blob = await (response.data as Response).blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   }
 
   getDownloadUrl(record: DocumentRecord): string {
