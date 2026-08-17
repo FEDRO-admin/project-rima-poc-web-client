@@ -257,11 +257,10 @@ export class DocumentsService {
   }
 
   async downloadDocument(record: DocumentRecord): Promise<void> {
-    const pfad = (record.attributes['pfad'] as string) ?? '';
+    const url = this.getDownloadUrl(record);
     const name = (record.attributes['name'] as string) || '';
-    // 'native' lets esriRequest handle auth but skips all body processing
-    const response = await esriRequest(pfad, { responseType: 'native' });
-    const blob = await (response.data as Response).blob();
+    const response = await esriRequest(url, { responseType: 'blob' });
+    const blob = response.data as Blob;
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
