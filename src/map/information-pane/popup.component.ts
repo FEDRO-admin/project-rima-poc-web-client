@@ -37,6 +37,12 @@ export class PopupComponent {
     documents: 'Documents',
   };
 
+  protected readonly activeGraphicTitle = computed(() => {
+    const graphic = this.store.selectedGraphic();
+    if (!graphic) return this.activeTabLabel();
+    return this.getFeatureTitle(graphic);
+  });
+
   protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
 
   protected readonly isFeatureLayerSelected = computed(() => {
@@ -72,5 +78,11 @@ export class PopupComponent {
     const attrs = graphic.attributes;
     if (!attrs) return 'Feature';
     return attrs.OBJECTID ?? attrs.FID ?? attrs.ID ?? Object.values(attrs)[0] ?? 'Feature';
+  }
+
+  getFeatureTitle(graphic: Graphic): string {
+    const attrs = graphic.attributes;
+    if (!attrs) return 'Feature';
+    return attrs.id ?? attrs.name ?? attrs.objectid ?? Object.values(attrs)[0] ?? 'Feature';
   }
 }

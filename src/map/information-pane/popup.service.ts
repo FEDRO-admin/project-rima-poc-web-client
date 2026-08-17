@@ -42,10 +42,10 @@ export class PopupService implements OnDestroy {
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
     const view = this.viewService.activeView();
     const layer = graphic.layer;
-    if (!view || !layer || !('whenLayerView' in view)) return;
+    if (!view || !(layer instanceof FeatureLayer || layer instanceof SceneLayer)) return;
 
     try {
-      const layerView = await view.whenLayerView(layer as FeatureLayer | SceneLayer);
+      const layerView = await view.whenLayerView(layer);
       const handle = layerView.highlight(graphic);
 
       if (type === 'hover') {
@@ -80,7 +80,7 @@ export class PopupService implements OnDestroy {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!this.isQueryableLayer(layer)) return;
+    if (!(layer instanceof FeatureLayer) && !(layer instanceof SceneLayer)) return;
 
     try {
       const objectId = graphic.attributes[layer.objectIdField];
@@ -130,21 +130,20 @@ export class PopupService implements OnDestroy {
       .map((result) => result.graphic);
 
     if (graphics.length > 0) {
-      const enriched = await this.enrichGraphicAttributes(graphics);
+      const enriched = await this.enrichSceneLayerGraphics(graphics);
       this.popupStore.open(enriched);
     } else {
       this.popupStore.close();
     }
   }
 
-  // SceneLayer/BuildingComponentSublayer hitTest only returns binary-cached attributes.
+  // SceneLayer hitTest only returns binary-cached attributes (often just OBJECTID).
   // Query the associated feature service to get all attributes.
-  private async enrichGraphicAttributes(graphics: Graphic[]): Promise<Graphic[]> {
+  private async enrichSceneLayerGraphics(graphics: Graphic[]): Promise<Graphic[]> {
     return Promise.all(
       graphics.map(async (graphic) => {
         const layer = graphic.layer;
-        if (layer instanceof FeatureLayer) return graphic;
-        if (!this.isQueryableLayer(layer)) return graphic;
+        if (!(layer instanceof SceneLayer)) return graphic;
 
         try {
           const objectId = graphic.attributes?.[layer.objectIdField];
@@ -161,15 +160,6 @@ export class PopupService implements OnDestroy {
           return graphic;
         }
       }),
-    );
-  }
-
-  private isQueryableLayer(layer: unknown): layer is QueryableLayer {
-    return (
-      layer != null &&
-      typeof (layer as QueryableLayer).objectIdField === 'string' &&
-      typeof (layer as QueryableLayer).createQuery === 'function' &&
-      typeof (layer as QueryableLayer).queryFeatures === 'function'
     );
   }
 }
