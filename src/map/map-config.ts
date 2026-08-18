@@ -6,8 +6,10 @@ export const RIMA_SOE_BASE_URL =
   'https://rima-poc.astra.admin.ch/arcgis/rest/services/soe_placeholder/MapServer/exts/RimaSoe';
 
 // BASEMAP SERVICES
+// todo: change to portal webmaps
 export const RIMA_MAPVIEW_BASEMAP_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';
 export const RIMA_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
+
 export const RIMA_SCENEVIEW_WMS_URL = 'https://wms.geo.admin.ch/';
 export const RIMA_ELEVATION_SERVICE_URL =
   'https://tiles.arcgis.com/tiles/oPre3pOfRfefL8y0/arcgis/rest/services/elevation_suisse/ImageServer';

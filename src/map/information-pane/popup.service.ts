@@ -12,10 +12,8 @@ import { type RimaView } from '../view/view.service';
 
 const HITTESTABLE_LAYER_TYPES = new Set(['feature', 'scene', 'building-scene']);
 
-interface QueryableLayer {
-  objectIdField: string;
-  createQuery(): { objectIds?: number[]; outFields?: string[]; returnGeometry?: boolean };
-  queryFeatures(query: ReturnType<QueryableLayer['createQuery']>): Promise<{ features: Graphic[] }>;
+interface HighlightableLayerView {
+  highlight(target: Graphic): { remove(): void };
 }
 
 interface Handle {
@@ -42,10 +40,12 @@ export class PopupService implements OnDestroy {
   public async highlightGraphic(graphic: Graphic, type: 'hover' | 'selection'): Promise<void> {
     const view = this.viewService.activeView();
     const layer = graphic.layer;
-    if (!view || !(layer instanceof FeatureLayer || layer instanceof SceneLayer)) return;
+    if (!view || !layer) return;
 
     try {
-      const layerView = await view.whenLayerView(layer);
+      const layerView = (await view.whenLayerView(layer as FeatureLayer)) as HighlightableLayerView;
+      if (typeof layerView.highlight !== 'function') return;
+
       const handle = layerView.highlight(graphic);
 
       if (type === 'hover') {
@@ -80,7 +80,7 @@ export class PopupService implements OnDestroy {
     if (!graphic) return;
 
     const layer = graphic.layer;
-    if (!(layer instanceof FeatureLayer) && !(layer instanceof SceneLayer)) return;
+    if (!this.isQueryableLayer(layer)) return;
 
     try {
       const objectId = graphic.attributes[layer.objectIdField];
@@ -130,22 +130,23 @@ export class PopupService implements OnDestroy {
       .map((result) => result.graphic);
 
     if (graphics.length > 0) {
-      const enriched = await this.enrichSceneLayerGraphics(graphics);
+      const enriched = await this.enrichGraphicAttributes(graphics);
       this.popupStore.open(enriched);
     } else {
       this.popupStore.close();
     }
   }
 
-  // SceneLayer hitTest only returns binary-cached attributes (often just OBJECTID).
-  // Query the associated feature service to get all attributes.
-  private async enrichSceneLayerGraphics(graphics: Graphic[]): Promise<Graphic[]> {
+  // Scene/BuildingComponent layers return only cached attributes on hitTest.
+  // Query the associated service to get all attributes when possible.
+  private async enrichGraphicAttributes(graphics: Graphic[]): Promise<Graphic[]> {
     return Promise.all(
       graphics.map(async (graphic) => {
-        const layer = graphic.layer;
-        if (!(layer instanceof SceneLayer)) return graphic;
+        if (graphic.layer instanceof FeatureLayer) return graphic;
+        if (!this.isQueryableLayer(graphic.layer)) return graphic;
 
         try {
+          const layer = graphic.layer;
           const objectId = graphic.attributes?.[layer.objectIdField];
           if (objectId == null) return graphic;
 
@@ -160,6 +161,15 @@ export class PopupService implements OnDestroy {
           return graphic;
         }
       }),
+    );
+  }
+
+  private isQueryableLayer(layer: unknown): layer is SceneLayer {
+    return (
+      layer != null &&
+      typeof (layer as SceneLayer).objectIdField === 'string' &&
+      typeof (layer as SceneLayer).createQuery === 'function' &&
+      typeof (layer as SceneLayer).queryFeatures === 'function'
     );
   }
 }

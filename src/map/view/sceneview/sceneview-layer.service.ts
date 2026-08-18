@@ -4,6 +4,7 @@ import PortalItem from '@arcgis/core/portal/PortalItem';
 import Layer from '@arcgis/core/layers/Layer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import SceneLayer from '@arcgis/core/layers/SceneLayer';
+import BuildingSceneLayer from '@arcgis/core/layers/BuildingSceneLayer';
 import WebScene from '@arcgis/core/WebScene';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
@@ -110,6 +111,12 @@ export class SceneViewLayerService {
     for (const layer of layers) {
       if (layer instanceof SceneLayer) {
         layer.outFields = ['*'];
+      } else if (layer instanceof BuildingSceneLayer) {
+        layer.allSublayers.forEach((sublayer) => {
+          if ('outFields' in sublayer) {
+            (sublayer as unknown as { outFields: string[] }).outFields = ['*'];
+          }
+        });
       } else if (layer instanceof GroupLayer) {
         this.configureSceneLayers(layer.layers.toArray());
       }
