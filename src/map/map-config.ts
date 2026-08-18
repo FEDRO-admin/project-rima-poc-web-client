@@ -5,9 +5,7 @@ export const RIMA_PORTAL_URL = 'https://rima-poc.astra.admin.ch/arcgis';
 export const RIMA_SOE_BASE_URL =
   'https://rima-poc.astra.admin.ch/arcgis/rest/services/soe_placeholder/MapServer/exts/RimaSoe';
 
-// BASEMAP SERVICES
-// todo: change to portal webmaps
-export const RIMA_MAPVIEW_BASEMAP_WMTS_URL = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml';
+// BASEMAP
 export const RIMA_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
 
 export const RIMA_SCENEVIEW_WMS_URL = 'https://wms.geo.admin.ch/';
@@ -21,6 +19,7 @@ export const STATUS_LAYER_NAME = 'zustand';
 
 // PORTAL CATEGORIES
 export const RIMA_ROOT_CATEGORY = 'ROOT';
+export const RIMA_BASEMAP_CATEGORY = 'BASEMAP';
 
 // REFERENCE POINT SCHEMA
 export const REF_POINT_TYPE_FIELD = 'punkt_type';

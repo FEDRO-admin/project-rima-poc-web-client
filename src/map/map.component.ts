@@ -6,6 +6,7 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { TocComponent } from './toc/toc.component';
 import { PopupComponent } from './information-pane/popup.component';
 import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component';
+import { BasemapGalleryComponent } from './view/mapview/basemap-gallery/basemap-gallery.component';
 import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
 import { SceneViewService } from './view/sceneview/sceneview.service';
@@ -13,7 +14,7 @@ import { HistoryPickerComponent } from './history/history-picker/history-picker.
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent, SceneToggleComponent, HistoryPickerComponent],
+  imports: [TocComponent, PopupComponent, SceneToggleComponent, BasemapGalleryComponent, HistoryPickerComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

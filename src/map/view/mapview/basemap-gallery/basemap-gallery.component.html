@@ -1,0 +1,16 @@
+@if (viewStore.mode() === 'map') {
+  <button
+    class="basemap-toggle"
+    (click)="toggle()"
+    [attr.aria-label]="open() ? 'Close basemap gallery' : 'Open basemap gallery'"
+    [class.active]="open()"
+  >
+    <calcite-icon icon="basemap" scale="s"></calcite-icon>
+  </button>
+
+  @if (open()) {
+    <div class="basemap-panel">
+      <arcgis-basemap-gallery #gallery></arcgis-basemap-gallery>
+    </div>
+  }
+}

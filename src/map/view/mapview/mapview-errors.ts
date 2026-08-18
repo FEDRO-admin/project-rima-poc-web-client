@@ -22,3 +22,11 @@ export class MapViewLanguageCategoryMissingError extends FatalError {
     this.translationArguments = { language };
   }
 }
+
+export class NoBasemapsFoundError extends FatalError {
+  public override message = 'No basemaps found in portal category BASEMAP';
+}
+
+export class BasemapLoadError extends FatalError {
+  public override message = 'Failed to load basemaps from portal';
+}

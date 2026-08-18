@@ -2,20 +2,14 @@ import { inject, Injectable } from '@angular/core';
 import MapView from '@arcgis/core/views/MapView';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Layer from '@arcgis/core/layers/Layer';
-import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
-import Basemap from '@arcgis/core/Basemap';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
 import { languageInfos } from '../../../i18n/language-info-config';
 import { MapViewAlreadyRegisteredError } from '../../map-errors';
-import {
-  RIMA_MAPVIEW_BASEMAP_WMTS_URL,
-  RIMA_MAPVIEW_BASEMAP_LAYER_ID,
-  RIMA_MAPVIEW_HIDDEN_CATEGORY,
-  RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP,
-} from './mapview-config';
+import { RIMA_MAPVIEW_HIDDEN_CATEGORY, RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP } from './mapview-config';
+import { BasemapService } from './basemap.service';
 import {
   MapViewInitialisationError,
   MapViewLanguageCategoryMissingError,
@@ -35,6 +29,7 @@ export class MapViewService {
   private readonly languageStore = inject(LanguageStore);
   private readonly layerService = inject(LayerService);
   private readonly layerIdResolver = inject(LayerIdResolver);
+  private readonly basemapService = inject(BasemapService);
 
   private _mapView: MapView | undefined;
 
@@ -45,7 +40,7 @@ export class MapViewService {
     }
 
     this.registerMapView(view);
-    this.addBasemap();
+    await this.applyDefaultBasemap();
     await view.when();
 
     const [layers] = await Promise.all([
@@ -64,20 +59,12 @@ export class MapViewService {
     this._mapView = mapView;
   }
 
-  private addBasemap(): void {
+  private async applyDefaultBasemap(): Promise<void> {
     const view = this._mapView;
     if (!view?.map) throw new Error('Map view not registered');
 
-    const swisstopoLayer = new WMTSLayer({
-      url: RIMA_MAPVIEW_BASEMAP_WMTS_URL,
-      activeLayer: { id: RIMA_MAPVIEW_BASEMAP_LAYER_ID },
-    });
-
-    view.map.basemap = new Basemap({
-      baseLayers: [swisstopoLayer],
-      title: 'Swisstopo Pixelkarte',
-      id: 'swisstopo',
-    });
+    const basemaps = await this.basemapService.loadBasemaps();
+    view.map.basemap = basemaps[0];
   }
 
   private addLayersToMap(layers: Layer[]): void {
