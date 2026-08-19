@@ -6,6 +6,7 @@ import { HierarchyEffects } from '../map/information-pane/hierarchy-tab/hierarch
 import { HistoryEffects } from '../map/history/history-effects';
 import { ViewEffects } from '../map/view/view-effects';
 import { DocumentsEffects } from '../map/information-pane/documents-tab/documents-effects';
+import { RbbsEffects } from '../map/rbbs/rbbs-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -23,5 +24,6 @@ export class AppEffectsService {
     inject(HistoryEffects);
     inject(DocumentsEffects);
     inject(ViewEffects);
+    inject(RbbsEffects);
   }
 }

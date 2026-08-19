@@ -1,0 +1,235 @@
+import { inject, Injectable } from '@angular/core';
+import Graphic from '@arcgis/core/Graphic';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import esriRequest from '@arcgis/core/request';
+import Point from '@arcgis/core/geometry/Point';
+import type Polygon from '@arcgis/core/geometry/Polygon';
+import type Polyline from '@arcgis/core/geometry/Polyline';
+
+import { ViewService } from '../view/view.service';
+import { LayerIdResolver } from '../layer/layer-id-resolver';
+import { REF_POINT_LAYER_NAME, REF_POINT_TYPE_FIELD } from '../map-config';
+import { RIMA_SPATIAL_REFERENCE_LV95_EPSG } from '../map-constants';
+import {
+  findRelationshipId,
+  findRelatedLayer,
+  queryRelatedPoints,
+} from '../information-pane/reference-tab/reference-point-resolution';
+import {
+  RBBS_TRANSFORM_URL,
+  RBBS_VON_FIELD,
+  RBBS_BIS_FIELD,
+  RBBS_KM_VON_FIELD,
+  RBBS_KM_BIS_FIELD,
+  RBBS_UH_ABSCHNITT_FIELD,
+} from './rbbs-config';
+import { RbbsCalculationError, RbbsSaveError } from './rbbs-errors';
+import type { XyToRbbsResult } from './rbbs-types';
+
+type AttributeValue = string | number | null;
+
+@Injectable({
+  providedIn: 'root',
+})
+export class RbbsService {
+  private readonly viewService = inject(ViewService);
+  private readonly layerIdResolver = inject(LayerIdResolver);
+
+  async calculateAndSave(layer: FeatureLayer, graphic: Graphic): Promise<void> {
+    try {
+      const coordinates = await this.resolveCoordinates(layer, graphic);
+      if (!coordinates) return;
+
+      const results = await this.callSoe(coordinates.vonPoint, coordinates.bisPoint);
+      if (!results || results.length < 2) return;
+
+      const attributes = this.mapToAttributes(results[0], results[1]);
+      await this.saveAttributes(layer, graphic, attributes);
+    } catch (error) {
+      if (error instanceof RbbsCalculationError || error instanceof RbbsSaveError) throw error;
+      throw new RbbsCalculationError(error);
+    }
+  }
+
+  private async resolveCoordinates(
+    layer: FeatureLayer,
+    graphic: Graphic,
+  ): Promise<{ vonPoint: Point; bisPoint: Point } | undefined> {
+    const view = this.viewService.activeView();
+    if (!view) return undefined;
+
+    const refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
+    const relationshipId = findRelationshipId(layer, refPointLayerId);
+    const relatedLayer = findRelatedLayer(view, refPointLayerId);
+
+    let vonPoint: Point | undefined;
+    let bisPoint: Point | undefined;
+
+    if (relationshipId != null && relatedLayer) {
+      const points = await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
+      const vonRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'von');
+      const bisRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'bis');
+
+      if (vonRef?.geometry) vonPoint = vonRef.geometry;
+      if (bisRef?.geometry) bisPoint = bisRef.geometry;
+    }
+
+    if (!vonPoint || !bisPoint) {
+      const vertices = this.extractVertices(graphic);
+      if (!vertices || vertices.length === 0) return undefined;
+
+      if (!vonPoint) vonPoint = this.findWestMost(vertices);
+      if (!bisPoint) bisPoint = this.findEastMost(vertices);
+    }
+
+    if (!vonPoint || !bisPoint) return undefined;
+    return { vonPoint, bisPoint };
+  }
+
+  private async callSoe(vonPoint: Point, bisPoint: Point): Promise<XyToRbbsResult[] | undefined> {
+    const requestPayload = JSON.stringify([vonPoint, bisPoint].map((point) => this.buildSoeRequestItem(point)));
+
+    const query: Record<string, string> = {};
+    query['f'] = 'json';
+    query['XyToRbbsRequestList'] = requestPayload;
+
+    const response = await esriRequest(RBBS_TRANSFORM_URL, {
+      query,
+      responseType: 'json',
+    });
+
+    const data = response.data as Record<string, unknown>;
+    if (data['status'] === 'error') {
+      // SOE returns error when no axis is found near the point — this is expected for some geometries
+      return undefined;
+    }
+
+    const rawResults = data['XyToRbbsResultList'] as Record<string, unknown>[];
+    if (!Array.isArray(rawResults)) return undefined;
+
+    return rawResults.map((raw) => this.parseResult(raw));
+  }
+
+  private parseResult(raw: Record<string, unknown>): XyToRbbsResult {
+    const rawPointRbbs = raw['PointRbbs'] as Record<string, unknown>;
+    const rawRefPtInfo = raw['RefPtInfo'] as Record<string, unknown>;
+    const rawAxisSegInfo = rawRefPtInfo['AxisSegmentInfo'] as Record<string, unknown>;
+    const rawAxisInfo = rawAxisSegInfo['AxisInfo'] as Record<string, unknown>;
+
+    return {
+      pointRbbs: {
+        refPtID: rawPointRbbs['RefPtID'] as string,
+        u: rawPointRbbs['U'] as number,
+        v: rawPointRbbs['V'] as number,
+      },
+      refPtInfo: {
+        refPtID: rawRefPtInfo['RefPtID'] as string,
+        name: (rawRefPtInfo['Name'] as string) ?? null,
+        axisSegmentInfo: {
+          axisSegmentID: rawAxisSegInfo['AxisSegmentID'] as string,
+          name: rawAxisSegInfo['Name'] as string,
+          axisInfo: {
+            axisID: rawAxisInfo['AxisID'] as string,
+            name: rawAxisInfo['Name'] as string,
+            typ: rawAxisInfo['Typ'] as string,
+            positionCode: rawAxisInfo['PositionCode'] as string,
+          },
+        },
+      },
+    };
+  }
+
+  private mapToAttributes(vonResult: XyToRbbsResult, bisResult: XyToRbbsResult): Record<string, AttributeValue> {
+    return {
+      [RBBS_VON_FIELD]: this.formatRbbsNotation(vonResult),
+      [RBBS_BIS_FIELD]: this.formatRbbsNotation(bisResult),
+      [RBBS_KM_VON_FIELD]: String(vonResult.pointRbbs.u),
+      [RBBS_KM_BIS_FIELD]: String(bisResult.pointRbbs.u),
+      [RBBS_UH_ABSCHNITT_FIELD]:
+        vonResult.refPtInfo.axisSegmentInfo.name ?? bisResult.refPtInfo.axisSegmentInfo.name ?? null,
+    };
+  }
+
+  private async saveAttributes(
+    layer: FeatureLayer,
+    graphic: Graphic,
+    values: Record<string, AttributeValue>,
+  ): Promise<void> {
+    const objectIdField = layer.objectIdField;
+    const objectId = graphic.attributes[objectIdField];
+
+    const updateGraphic = new Graphic({
+      attributes: { [objectIdField]: objectId, ...values },
+    });
+
+    const result = await layer.applyEdits({ updateFeatures: [updateGraphic] });
+    const updateResult = result.updateFeatureResults[0];
+
+    if (updateResult?.error) {
+      throw new RbbsSaveError(updateResult.error);
+    }
+
+    layer.refresh();
+  }
+
+  private formatRbbsNotation(result: XyToRbbsResult): string {
+    const axisName = result.refPtInfo.axisSegmentInfo.axisInfo.name;
+    const u = result.pointRbbs.u;
+    const v = result.pointRbbs.v;
+    const uSign = u >= 0 ? '+' : '';
+    const vSign = v >= 0 ? '+' : '';
+    return `${axisName} BP${uSign}${u} V${vSign}${v}`;
+  }
+
+  private extractVertices(graphic: Graphic): Point[] | undefined {
+    const geometry = graphic.geometry;
+    if (!geometry) return undefined;
+
+    if (geometry.type === 'point') {
+      return [geometry as Point];
+    }
+
+    const coords = this.getCoordinateRing(graphic);
+    if (!coords || coords.length === 0) return undefined;
+
+    return coords.map(
+      (coord) =>
+        new Point({
+          x: coord[0],
+          y: coord[1],
+          spatialReference: geometry.spatialReference,
+        }),
+    );
+  }
+
+  private getCoordinateRing(graphic: Graphic): number[][] | undefined {
+    const geometry = graphic.geometry;
+    if (geometry?.type === 'polygon') {
+      return (geometry as Polygon).rings[0];
+    }
+    if (geometry?.type === 'polyline') {
+      return (geometry as Polyline).paths[0];
+    }
+    return undefined;
+  }
+
+  // SOE expects PascalCase JSON keys per its REST contract
+  private buildSoeRequestItem(point: Point): Record<string, unknown> {
+    const pointXY: Record<string, unknown> = {};
+    pointXY['X'] = point.x;
+    pointXY['Y'] = point.y;
+    pointXY['SrId'] = RIMA_SPATIAL_REFERENCE_LV95_EPSG;
+
+    const item: Record<string, unknown> = {};
+    item['PointXY'] = pointXY;
+    return item;
+  }
+
+  private findWestMost(points: Point[]): Point {
+    return points.reduce((west, p) => (p.x < west.x ? p : west), points[0]);
+  }
+
+  private findEastMost(points: Point[]): Point {
+    return points.reduce((east, p) => (p.x > east.x ? p : east), points[0]);
+  }
+}
