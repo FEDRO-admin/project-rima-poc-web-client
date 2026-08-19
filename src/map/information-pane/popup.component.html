@@ -1,4 +1,4 @@
-@if (store.visible() || editStore.isCreating()) {
+@if (store.visible() || editStore.active()) {
   <div class="popup-container" (keydown.escape)="onEscape()" tabindex="-1">
     @if (editStore.isCreating()) {
       <div class="popup-card">

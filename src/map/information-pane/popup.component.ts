@@ -67,6 +67,10 @@ export class PopupComponent {
   }
 
   requestClose(): void {
+    if (this.editStore.active()) {
+      this.editService.cancel();
+      return;
+    }
     this.store.close();
   }
 
