@@ -5,10 +5,10 @@ import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import Ground from '@arcgis/core/Ground';
 import ElevationLayer from '@arcgis/core/layers/ElevationLayer';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
-import { RIMA_SCENEVIEW_CONFIG } from './sceneview-config';
+import { RIMA_ELEVATION_SERVICE_URL } from '../../map-config';
 import { SceneViewInitialisationError } from './sceneview-errors';
 import { SceneViewLayerService } from './sceneview-layer.service';
-import { BasemapService } from '../mapview/basemap.service';
+import { BasemapService } from '../basemap/basemap.service';
 
 @Injectable({
   providedIn: 'root',
@@ -56,17 +56,9 @@ export class SceneViewService {
     sceneView.spatialReference = new SpatialReference({ wkid: RIMA_SPATIAL_REFERENCE_LV95_EPSG });
     sceneView.clippingArea = RIMA_SWITZERLAND_EXTENT;
 
-    const basemaps = await this.basemapService.createFreshBasemaps();
-    sceneView.map.basemap = basemaps[0];
-
-    if (RIMA_SCENEVIEW_CONFIG.elevation.url) {
-      sceneView.map.ground = new Ground({
-        layers: [
-          new ElevationLayer({
-            url: RIMA_SCENEVIEW_CONFIG.elevation.url,
-          }),
-        ],
-      });
-    }
+    sceneView.map.basemap = await this.basemapService.getDefault3DBasemap();
+    sceneView.map.ground = new Ground({
+      layers: [new ElevationLayer({ url: RIMA_ELEVATION_SERVICE_URL })],
+    });
   }
 }

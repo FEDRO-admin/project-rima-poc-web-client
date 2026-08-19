@@ -6,7 +6,7 @@ import { RIMA_SWITZERLAND_EXTENT } from './map-constants';
 import { TocComponent } from './toc/toc.component';
 import { PopupComponent } from './information-pane/popup.component';
 import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component';
-import { BasemapGalleryComponent } from './view/mapview/basemap-gallery/basemap-gallery.component';
+import { BasemapGalleryComponent } from './view/basemap/basemap-gallery/basemap-gallery.component';
 import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
 import { SceneViewService } from './view/sceneview/sceneview.service';

@@ -9,7 +9,7 @@ import { LanguageStore } from '../../../i18n/language.store';
 import { languageInfos } from '../../../i18n/language-info-config';
 import { MapViewAlreadyRegisteredError } from '../../map-errors';
 import { RIMA_MAPVIEW_HIDDEN_CATEGORY, RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP } from './mapview-config';
-import { BasemapService } from './basemap.service';
+import { BasemapService } from '../basemap/basemap.service';
 import {
   MapViewInitialisationError,
   MapViewLanguageCategoryMissingError,
@@ -63,8 +63,7 @@ export class MapViewService {
     const view = this._mapView;
     if (!view?.map) throw new Error('Map view not registered');
 
-    const basemaps = await this.basemapService.createFreshBasemaps();
-    view.map.basemap = basemaps[0];
+    view.map.basemap = await this.basemapService.getDefault2DBasemap();
   }
 
   private addLayersToMap(layers: Layer[]): void {

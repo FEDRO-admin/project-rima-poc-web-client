@@ -10,9 +10,8 @@ import {
 } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-basemap-gallery';
 import '@esri/calcite-components/dist/components/calcite-icon';
-import LocalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource';
 import { BasemapService } from '../basemap.service';
-import { ViewService, RimaView } from '../../view.service';
+import { ViewService, type RimaView } from '../../view.service';
 
 @Component({
   selector: 'rima-basemap-gallery',
@@ -47,8 +46,7 @@ export class BasemapGalleryComponent {
   }
 
   private async updateGallerySource(el: HTMLArcgisBasemapGalleryElement, view: RimaView): Promise<void> {
-    const basemaps = await this.basemapService.createFreshBasemaps();
     el.view = view;
-    el.source = new LocalBasemapsSource({ basemaps });
+    el.source = await this.basemapService.createSource();
   }
 }
