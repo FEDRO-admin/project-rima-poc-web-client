@@ -63,7 +63,7 @@ export class MapViewService {
     const view = this._mapView;
     if (!view?.map) throw new Error('Map view not registered');
 
-    const basemaps = await this.basemapService.loadBasemaps();
+    const basemaps = await this.basemapService.createFreshBasemaps();
     view.map.basemap = basemaps[0];
   }
 

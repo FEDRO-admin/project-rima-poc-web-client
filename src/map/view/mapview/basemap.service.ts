@@ -1,4 +1,4 @@
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import Basemap from '@arcgis/core/Basemap';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
@@ -15,17 +15,28 @@ export class BasemapService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
 
-  public readonly basemaps: Signal<Basemap[]>;
-  private readonly writableBasemaps = signal<Basemap[]>([]);
+  private cachedItems: PortalItem[] | undefined;
+  private itemsLoadPromise: Promise<PortalItem[]> | undefined;
 
-  constructor() {
-    this.basemaps = this.writableBasemaps.asReadonly();
+  async createFreshBasemaps(): Promise<Basemap[]> {
+    const items = await this.getBasemapItems();
+    return items.map((item) => new Basemap({ portalItem: new PortalItem({ id: item.id, portal: item.portal }) }));
   }
 
-  async loadBasemaps(): Promise<Basemap[]> {
-    const cached = this.writableBasemaps();
-    if (cached.length > 0) return cached;
+  private async getBasemapItems(): Promise<PortalItem[]> {
+    if (this.cachedItems) return this.cachedItems;
+    if (this.itemsLoadPromise) return this.itemsLoadPromise;
 
+    this.itemsLoadPromise = this.queryBasemapItems();
+    try {
+      this.cachedItems = await this.itemsLoadPromise;
+      return this.cachedItems;
+    } finally {
+      this.itemsLoadPromise = undefined;
+    }
+  }
+
+  private async queryBasemapItems(): Promise<PortalItem[]> {
     try {
       const languageCategory = this.resolveLanguageCategory();
 
@@ -43,15 +54,7 @@ export class BasemapService {
         throw new NoBasemapsFoundError();
       }
 
-      const basemaps = items.map(
-        (item) =>
-          new Basemap({
-            portalItem: item,
-          }),
-      );
-
-      this.writableBasemaps.set(basemaps);
-      return basemaps;
+      return items;
     } catch (error) {
       if (error instanceof NoBasemapsFoundError) throw error;
       throw new BasemapLoadError(error);

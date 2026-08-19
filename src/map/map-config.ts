@@ -5,10 +5,7 @@ export const RIMA_PORTAL_URL = 'https://rima-poc.astra.admin.ch/arcgis';
 export const RIMA_SOE_BASE_URL =
   'https://rima-poc.astra.admin.ch/arcgis/rest/services/soe_placeholder/MapServer/exts/RimaSoe';
 
-// BASEMAP
-export const RIMA_BASEMAP_LAYER_ID = 'ch.swisstopo.pixelkarte-farbe';
-
-export const RIMA_SCENEVIEW_WMS_URL = 'https://wms.geo.admin.ch/';
+// ELEVATION
 export const RIMA_ELEVATION_SERVICE_URL =
   'https://tiles.arcgis.com/tiles/oPre3pOfRfefL8y0/arcgis/rest/services/elevation_suisse/ImageServer';
 

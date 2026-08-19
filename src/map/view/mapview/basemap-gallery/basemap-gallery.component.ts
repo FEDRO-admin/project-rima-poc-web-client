@@ -12,8 +12,7 @@ import '@arcgis/map-components/dist/components/arcgis-basemap-gallery';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import LocalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource';
 import { BasemapService } from '../basemap.service';
-import { ViewService } from '../../view.service';
-import { ViewStore } from '../../view.store';
+import { ViewService, RimaView } from '../../view.service';
 
 @Component({
   selector: 'rima-basemap-gallery',
@@ -25,7 +24,6 @@ import { ViewStore } from '../../view.store';
 export class BasemapGalleryComponent {
   private readonly basemapService = inject(BasemapService);
   private readonly viewService = inject(ViewService);
-  protected readonly viewStore = inject(ViewStore);
   protected readonly open = signal(false);
 
   private readonly galleryElement = viewChild<ElementRef<HTMLArcgisBasemapGalleryElement>>('gallery');
@@ -41,15 +39,16 @@ export class BasemapGalleryComponent {
   private wireGallery(): void {
     effect(() => {
       const el = this.galleryElement()?.nativeElement;
+      const view = this.viewService.activeView();
       untracked(() => {
-        if (!el) return;
-        const view = this.viewService.activeView();
-        const basemaps = this.basemapService.basemaps();
-        if (!view || basemaps.length === 0) return;
-
-        el.view = view;
-        el.source = new LocalBasemapsSource({ basemaps });
+        if (el && view) this.updateGallerySource(el, view);
       });
     });
+  }
+
+  private async updateGallerySource(el: HTMLArcgisBasemapGalleryElement, view: RimaView): Promise<void> {
+    const basemaps = await this.basemapService.createFreshBasemaps();
+    el.view = view;
+    el.source = new LocalBasemapsSource({ basemaps });
   }
 }
