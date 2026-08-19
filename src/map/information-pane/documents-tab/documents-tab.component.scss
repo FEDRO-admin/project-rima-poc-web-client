@@ -3,9 +3,8 @@
 }
 
 :host ::ng-deep rima-action-bar {
-  padding: 8px 0;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 4px 0;
+  margin-bottom: 4px;
 }
 
 .documents-loading {
@@ -82,16 +81,8 @@
 
   &__header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  &__info {
-    display: flex;
     flex-direction: column;
     gap: 2px;
-    min-width: 0;
-    flex: 1;
   }
 
   &__title {
@@ -109,10 +100,14 @@
   }
 
   &__actions {
-    flex-shrink: 0;
-    margin-left: 8px;
+    margin-top: 2px;
 
     ::ng-deep {
+      rima-action-bar {
+        padding: 0;
+        margin-bottom: 0;
+      }
+
       .action-bar-btn {
         width: 28px;
         height: 28px;
@@ -298,5 +293,38 @@
     input[type='checkbox'] {
       margin: 0;
     }
+  }
+}
+
+.geometry-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+
+  &__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+  }
+
+  &__status {
+    font-size: 0.813rem;
+    color: #007ac2;
+    font-style: italic;
+    margin: 0 0 8px;
+  }
+
+  &__coords {
+    font-size: 0.813rem;
+    color: #333;
+    margin: 0 0 8px;
+    font-family: monospace;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
   }
 }

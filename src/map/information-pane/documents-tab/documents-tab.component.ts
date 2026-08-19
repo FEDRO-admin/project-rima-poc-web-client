@@ -1,5 +1,6 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal, untracked } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
+import type Point from '@arcgis/core/geometry/Point';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-icon';
@@ -15,6 +16,8 @@ import {
   DocumentUnsupportedFileTypeError,
   DocumentUploadError,
 } from './documents-errors';
+import { DocumentGeometryStore } from './document-geometry.store';
+import { DocumentGeometryService } from './document-geometry.service';
 import { ViewStore } from '../../view/view.store';
 import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
@@ -22,7 +25,7 @@ import { ActionBarComponent } from '../../../shared/action-bar/action-bar.compon
 import { ActionBarButtonComponent } from '../../../shared/action-bar/action-bar-button.component';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 
 type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit' | 'delete';
 
@@ -32,11 +35,13 @@ type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit
     DialogActionsComponent,
     DialogActionComponent,
     DatePipe,
+    DecimalPipe,
     ActionBarComponent,
     ActionBarButtonComponent,
     AttributeFormComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  providers: [DocumentGeometryStore, DocumentGeometryService],
   templateUrl: './documents-tab.component.html',
   styleUrl: './documents-tab.component.scss',
 })
@@ -46,6 +51,8 @@ export class DocumentsTabComponent {
   protected readonly documentsStore = inject(DocumentsStore);
   protected readonly viewStore = inject(ViewStore);
   protected readonly documentsService = inject(DocumentsService);
+  protected readonly geometryStore = inject(DocumentGeometryStore);
+  protected readonly geometryService = inject(DocumentGeometryService);
   private readonly uploadService = inject(DocumentUploadService);
 
   protected readonly uploadProgress = this.uploadService.progress;
@@ -65,6 +72,10 @@ export class DocumentsTabComponent {
   protected readonly editAccess = signal<DocumentAccessLevel>('org');
   protected readonly editAttributes = signal<Record<string, AttributeValue>>({});
   protected readonly editError = signal<string | undefined>(undefined);
+
+  protected readonly uploadGeometry = signal<Point | undefined>(undefined);
+  protected readonly editGeometry = signal<Point | undefined>(undefined);
+  protected readonly editGeometryRemoved = signal(false);
 
   protected readonly confirmAction = signal<DocumentsConfirmAction | undefined>(undefined);
   protected readonly confirmMessage = computed(() => {
@@ -90,6 +101,19 @@ export class DocumentsTabComponent {
       if (graphic) {
         this.documentsStore.setGraphic(graphic);
       }
+    });
+
+    this.refreshDisplayOnLoad();
+  }
+
+  private refreshDisplayOnLoad(): void {
+    effect(() => {
+      const loadState = this.documentsStore.loadState();
+      untracked(() => {
+        if (loadState === 'loaded') {
+          this.geometryService.refreshDisplayLayer();
+        }
+      });
     });
   }
 
@@ -185,16 +209,21 @@ export class DocumentsTabComponent {
   private performCancelUpload(): void {
     this.showUploadForm.set(false);
     this.resetUploadForm();
+    this.geometryService.cancelPlacing();
   }
 
   private performCancelEdit(): void {
     this.editingDocument.set(undefined);
     this.editError.set(undefined);
+    this.editGeometry.set(undefined);
+    this.editGeometryRemoved.set(false);
+    this.geometryService.cancelPlacing();
   }
 
   protected openUploadForm(): void {
     this.showUploadForm.set(true);
     this.resetUploadForm();
+    this.geometryService.cancelPlacing();
   }
 
   protected cancelUpload(): void {
@@ -225,12 +254,14 @@ export class DocumentsTabComponent {
       file,
       sharing: { access: this.uploadAccess() },
       editableAttributes: this.uploadAttributes(),
+      geometry: this.geometryStore.placedGeometry(),
     };
 
     try {
       await this.documentsService.uploadDocument(this.graphic(), payload);
       this.showUploadForm.set(false);
       this.resetUploadForm();
+      this.geometryService.refreshDisplayLayer();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
         this.uploadError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
@@ -252,6 +283,8 @@ export class DocumentsTabComponent {
     this.uploadAccess.set('org');
     this.uploadAttributes.set({});
     this.uploadError.set(undefined);
+    this.uploadGeometry.set(undefined);
+    this.geometryStore.setPlacedGeometry(undefined);
   }
 
   protected openEditForm(record: DocumentRecord): void {
@@ -260,6 +293,9 @@ export class DocumentsTabComponent {
     this.editFile.set(undefined);
     this.editAccess.set('org');
     this.editError.set(undefined);
+    this.editGeometry.set(record.geometry);
+    this.editGeometryRemoved.set(false);
+    this.geometryStore.setPlacedGeometry(undefined);
   }
 
   protected cancelEdit(): void {
@@ -282,15 +318,21 @@ export class DocumentsTabComponent {
 
     this.editError.set(undefined);
 
+    const resolvedGeometry = this.resolveEditGeometry(record);
     const payload: DocumentEditPayload = {
       editableAttributes: this.editAttributes(),
       file: this.editFile(),
       sharing: this.editFile() ? { access: this.editAccess() } : undefined,
+      geometry: resolvedGeometry,
     };
 
     try {
       await this.documentsService.editDocument(record, payload);
       this.editingDocument.set(undefined);
+      this.editGeometry.set(undefined);
+      this.editGeometryRemoved.set(false);
+      this.geometryStore.setPlacedGeometry(undefined);
+      this.geometryService.refreshDisplayLayer();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
         this.editError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
@@ -303,5 +345,48 @@ export class DocumentsTabComponent {
         this.editError.set('Fehler beim Bearbeiten des Dokuments.');
       }
     }
+  }
+
+  private resolveEditGeometry(record: DocumentRecord): Point | undefined {
+    const placed = this.geometryStore.placedGeometry();
+    if (placed) return placed;
+    if (this.editGeometryRemoved()) return undefined;
+    return record.geometry;
+  }
+
+  protected startUploadPlacing(): void {
+    this.geometryService.startPlacing();
+  }
+
+  protected startEditPlacing(): void {
+    this.geometryService.startPlacing();
+  }
+
+  protected adjustUploadGeometry(): void {
+    const geometry = this.geometryStore.placedGeometry();
+    if (geometry) {
+      this.geometryService.startAdjusting(geometry);
+    }
+  }
+
+  protected adjustEditGeometry(): void {
+    const geometry = this.geometryStore.placedGeometry() ?? this.editGeometry();
+    if (geometry) {
+      this.geometryService.startAdjusting(geometry);
+    }
+  }
+
+  protected removeUploadGeometry(): void {
+    this.geometryService.cancelPlacing();
+  }
+
+  protected removeEditGeometry(): void {
+    this.geometryService.cancelPlacing();
+    this.editGeometry.set(undefined);
+    this.editGeometryRemoved.set(true);
+  }
+
+  protected get effectiveEditGeometry(): Point | undefined {
+    return this.geometryStore.placedGeometry() ?? (this.editGeometryRemoved() ? undefined : this.editGeometry());
   }
 }

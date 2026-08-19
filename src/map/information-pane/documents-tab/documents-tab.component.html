@@ -1,7 +1,25 @@
 @if (!viewStore.historic() && !formActive()) {
   <rima-action-bar>
     <rima-action-bar-button icon="plus" label="Add" variant="primary" (triggered)="openUploadForm()" />
+    @if (geometryService.hasDocumentsWithGeometry()) {
+      <rima-action-bar-button
+        [icon]="geometryStore.displayVisible() ? 'view-visible' : 'view-hide'"
+        [label]="geometryStore.displayVisible() ? 'Punkte ausblenden' : 'Punkte einblenden'"
+        (triggered)="geometryService.toggleDisplay()"
+      />
+    }
   </rima-action-bar>
+}
+@if (viewStore.historic() && !formActive()) {
+  @if (geometryService.hasDocumentsWithGeometry()) {
+    <rima-action-bar>
+      <rima-action-bar-button
+        [icon]="geometryStore.displayVisible() ? 'view-visible' : 'view-hide'"
+        [label]="geometryStore.displayVisible() ? 'Punkte ausblenden' : 'Punkte einblenden'"
+        (triggered)="geometryService.toggleDisplay()"
+      />
+    </rima-action-bar>
+  }
 }
 @if (documentsStore.isLoading() && !formActive()) {
   <div class="documents-loading">
@@ -89,6 +107,28 @@
       </div>
     </div>
 
+    <div class="geometry-section">
+      <span class="geometry-section__label">Geometrie (optional)</span>
+      @if (geometryStore.placingActive()) {
+        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
+        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+          Abbrechen
+        </calcite-button>
+      } @else if (geometryStore.placedGeometry(); as geo) {
+        <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
+        <div class="geometry-section__actions">
+          <calcite-button appearance="outline" scale="s" (click)="adjustUploadGeometry()"> Verschieben </calcite-button>
+          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeUploadGeometry()">
+            Entfernen
+          </calcite-button>
+        </div>
+      } @else {
+        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startUploadPlacing()">
+          Auf Karte platzieren
+        </calcite-button>
+      }
+    </div>
+
     @if (uploadError()) {
       <p class="upload-form__error">{{ uploadError() }}</p>
     }
@@ -123,39 +163,44 @@
     @for (doc of documentsStore.documents(); track doc.objectId) {
       <div class="document-item">
         <div class="document-item__header">
-          <div class="document-item__info">
-            <span class="document-item__title">{{ getDocTitle(doc) }}</span>
-            <span class="document-item__meta">
-              {{ doc.attributes['typ'] }}
-              @if (doc.attributes['groesse']) {
-                · {{ formatFileSize(+doc.attributes['groesse']!) }}
-              }
-              @if (doc.attributes['letzte_aenderung']) {
-                · {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
-              }
-            </span>
-          </div>
-          <rima-action-bar class="document-item__actions">
-            @if (isViewable(doc)) {
-              <rima-action-bar-button icon="view-visible" label="Anzeigen" (triggered)="openDocument(doc)" />
+          <span class="document-item__title">{{ getDocTitle(doc) }}</span>
+          <span class="document-item__meta">
+            {{ doc.attributes['typ'] }}
+            @if (doc.attributes['groesse']) {
+              · {{ formatFileSize(+doc.attributes['groesse']!) }}
             }
-            <rima-action-bar-button icon="download" label="Herunterladen" (triggered)="downloadDocument(doc)" />
-            <rima-action-bar-button
-              [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
-              label="Details"
-              (triggered)="toggleDetails(doc.objectId)"
-            />
-            @if (!viewStore.historic()) {
-              <rima-action-bar-button icon="pencil" label="Bearbeiten" (triggered)="openEditForm(doc)" />
-              <rima-action-bar-button
-                icon="trash"
-                label="Löschen"
-                variant="destructive"
-                (triggered)="requestDelete(doc)"
-              />
+            @if (doc.attributes['letzte_aenderung']) {
+              · {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
             }
-          </rima-action-bar>
+          </span>
         </div>
+        <rima-action-bar class="document-item__actions">
+          @if (doc.geometry) {
+            <rima-action-bar-button
+              [icon]="geometryService.isDocumentHidden(doc.objectId) ? 'view-hide' : 'view-visible'"
+              [label]="geometryService.isDocumentHidden(doc.objectId) ? 'Punkt einblenden' : 'Punkt ausblenden'"
+              (triggered)="geometryService.toggleDocumentVisibility(doc.objectId)"
+            />
+          }
+          @if (isViewable(doc)) {
+            <rima-action-bar-button icon="view-visible" label="Anzeigen" (triggered)="openDocument(doc)" />
+          }
+          <rima-action-bar-button icon="download" label="Herunterladen" (triggered)="downloadDocument(doc)" />
+          <rima-action-bar-button
+            [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
+            label="Details"
+            (triggered)="toggleDetails(doc.objectId)"
+          />
+          @if (!viewStore.historic()) {
+            <rima-action-bar-button icon="pencil" label="Bearbeiten" (triggered)="openEditForm(doc)" />
+            <rima-action-bar-button
+              icon="trash"
+              label="Löschen"
+              variant="destructive"
+              (triggered)="requestDelete(doc)"
+            />
+          }
+        </rima-action-bar>
         @if (expandedDocId() === doc.objectId) {
           <div class="document-item__details">
             @for (field of documentsService.resolveEditableFields(); track field.name) {
@@ -250,6 +295,28 @@
         </div>
       </div>
     }
+
+    <div class="geometry-section">
+      <span class="geometry-section__label">Geometrie (optional)</span>
+      @if (geometryStore.placingActive()) {
+        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
+        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+          Abbrechen
+        </calcite-button>
+      } @else if (effectiveEditGeometry; as geo) {
+        <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
+        <div class="geometry-section__actions">
+          <calcite-button appearance="outline" scale="s" (click)="adjustEditGeometry()"> Verschieben </calcite-button>
+          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeEditGeometry()">
+            Entfernen
+          </calcite-button>
+        </div>
+      } @else {
+        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startEditPlacing()">
+          Auf Karte platzieren
+        </calcite-button>
+      }
+    </div>
 
     @if (editError()) {
       <p class="upload-form__error">{{ editError() }}</p>

@@ -5,6 +5,7 @@ import Layer from '@arcgis/core/layers/Layer';
 import Graphic from '@arcgis/core/Graphic';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
+import type Point from '@arcgis/core/geometry/Point';
 import { ViewService } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
 import { PortalService } from '../../portal/portal.service';
@@ -63,7 +64,7 @@ export class DocumentsService {
         objectIds: [objectId],
         relationshipId: relationship.id,
         outFields: ['*'],
-        returnGeometry: false,
+        returnGeometry: true,
         historicMoment: this.historyStore.selectedDate() ?? undefined,
       });
 
@@ -81,6 +82,7 @@ export class DocumentsService {
       const documents: DocumentRecord[] = featureSet.features.map((f: Graphic) => ({
         objectId: f.attributes[objectIdField],
         attributes: { ...f.attributes },
+        geometry: (f.geometry as Point) ?? undefined,
       }));
 
       this.documentsStore.setDocuments(documents);
@@ -130,7 +132,7 @@ export class DocumentsService {
       };
       /* eslint-enable @typescript-eslint/naming-convention -- Re-enable after feature service attributes. */
 
-      const newGraphic = new Graphic({ attributes });
+      const newGraphic = new Graphic({ attributes, geometry: payload.geometry ?? undefined });
       const editResult = await documentLayer.applyEdits({ addFeatures: [newGraphic] });
 
       if (editResult.addFeatureResults[0]?.error) {
@@ -141,6 +143,7 @@ export class DocumentsService {
       this.documentsStore.addDocument({
         objectId: newObjectId,
         attributes: { ...attributes, [documentLayer.objectIdField]: newObjectId },
+        geometry: payload.geometry,
       });
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
@@ -235,6 +238,7 @@ export class DocumentsService {
 
       const updateGraphic = new Graphic({
         attributes: { [documentLayer.objectIdField]: record.objectId, ...updatedAttributes },
+        geometry: payload.geometry ?? record.geometry ?? undefined,
       });
       const editResult = await documentLayer.applyEdits({ updateFeatures: [updateGraphic] });
 
@@ -245,6 +249,7 @@ export class DocumentsService {
       this.documentsStore.updateDocument({
         objectId: record.objectId,
         attributes: updatedAttributes,
+        geometry: payload.geometry !== undefined ? payload.geometry : record.geometry,
       });
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError || error instanceof DocumentRelationshipNotFoundError) {
