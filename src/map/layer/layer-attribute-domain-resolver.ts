@@ -9,6 +9,7 @@ import {
   convertAttributeFieldType,
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
+import { RBBS_FIELDS } from '../rbbs/rbbs-config';
 
 export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
   const layer = graphic.layer;
@@ -17,7 +18,7 @@ export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditF
   }
 
   return layer.fields
-    .filter((field) => !isImmutableField(field.name, layer))
+    .filter((field) => !isImmutableField(field.name, layer) && !RBBS_FIELDS.includes(field.name))
     .map((field) => buildEditAttributeField(field));
 }
 

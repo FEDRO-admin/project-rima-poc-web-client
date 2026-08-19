@@ -6,6 +6,7 @@ import '@esri/calcite-components/dist/components/calcite-icon';
 import { hasFieldMetadata, isImmutableField } from '../../layer/layer-attributes';
 import { resolveFieldDisplayValue, resolveEditableAttributeFields } from '../../layer/layer-attribute-domain-resolver';
 import { isLayerEditable, isLayerDeletable } from '../../layer/layer-capabilities';
+import { RBBS_FIELDS } from '../../rbbs/rbbs-config';
 import { ViewStore } from '../../view/view.store';
 import { ViewService } from '../../view/view.service';
 import { AttributeEditStore } from './attribute-edit.store';
@@ -73,7 +74,7 @@ export class AttributesTabComponent {
 
     if (hasFieldMetadata(layer)) {
       return layer.fields
-        .filter((field) => !isImmutableField(field.name, layer))
+        .filter((field) => !isImmutableField(field.name, layer) && !RBBS_FIELDS.includes(field.name))
         .map((field) => ({
           label: field.alias || field.name,
           value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),
@@ -81,6 +82,24 @@ export class AttributesTabComponent {
     }
 
     return Object.entries(attrs).map(([key, value]) => ({ label: key, value }));
+  });
+
+  protected readonly rbbsFields = computed<FieldEntry[]>(() => {
+    const graphic = this.graphic();
+    if (!graphic) return [];
+    const layer = graphic.layer;
+    const attrs: Record<string, string | number | boolean | null> = graphic.attributes ?? {};
+
+    if (hasFieldMetadata(layer)) {
+      return layer.fields
+        .filter((field) => RBBS_FIELDS.includes(field.name))
+        .map((field) => ({
+          label: field.alias || field.name,
+          value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),
+        }));
+    }
+
+    return [];
   });
 
   protected readonly immutableFields = computed<FieldEntry[]>(() => {

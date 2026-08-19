@@ -8,13 +8,14 @@ import {
   convertAttributeFieldType,
 } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
+import { RBBS_FIELDS } from '../../rbbs/rbbs-config';
 
 type AttributeValue = string | number | boolean | null;
 
 export function resolveCreatableFields(layer: FeatureLayer): AttributeEditField[] {
   if (!layer.fields?.length) return [];
   return layer.fields
-    .filter((field) => !isImmutableField(field.name, layer))
+    .filter((field) => !isImmutableField(field.name, layer) && !RBBS_FIELDS.includes(field.name))
     .map((field) => buildCreatableField(field));
 }
 
