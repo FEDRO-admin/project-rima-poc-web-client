@@ -163,11 +163,13 @@ export class AttributeGeometryService implements OnDestroy {
       updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
+    const tool = this.getToolForGeometryType(this.sketchGraphic.geometry?.type ?? '');
     this.sketchViewModel.update(this.sketchGraphic, {
-      tool: 'transform',
+      tool,
       enableRotation: true,
       enableScaling: false,
       toggleToolOnClick: true,
+      reshapeOptions: { edgeOperation: 'split', shapeOperation: 'move' },
     });
   }
 
@@ -308,21 +310,25 @@ export class AttributeGeometryService implements OnDestroy {
       updateUndoRedoState(this.sketchViewModel, this.store);
     });
 
+    const tool = this.getToolForGeometryType(this.sketchGraphic.geometry?.type ?? '');
     this.sketchViewModel.update(this.sketchGraphic, {
-      tool: 'transform',
+      tool,
       enableRotation: true,
       enableScaling: false,
       toggleToolOnClick: true,
+      reshapeOptions: { edgeOperation: 'split', shapeOperation: 'move' },
     });
   }
 
   private reenterUpdate(): void {
     if (this.sketchViewModel && this.sketchGraphic) {
+      const tool = this.getToolForGeometryType(this.sketchGraphic.geometry?.type ?? '');
       this.sketchViewModel.update(this.sketchGraphic, {
-        tool: 'transform',
+        tool,
         enableRotation: true,
         enableScaling: false,
         toggleToolOnClick: true,
+        reshapeOptions: { edgeOperation: 'split', shapeOperation: 'move' },
       });
     }
   }
