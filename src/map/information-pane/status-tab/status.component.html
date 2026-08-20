@@ -25,6 +25,31 @@
             idPrefix="status-new"
             (fieldChange)="onFieldChange($event)"
           />
+
+          <div class="geometry-section">
+            <span class="geometry-section__label">Geometrie (optional)</span>
+            @if (geometryStore.placingActive()) {
+              <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
+              <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+                Abbrechen
+              </calcite-button>
+            } @else if (geometryStore.placedGeometry(); as geo) {
+              <p class="geometry-section__coords">
+                X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
+              </p>
+              <div class="geometry-section__actions">
+                <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()"> Verschieben </calcite-button>
+                <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
+                  Entfernen
+                </calcite-button>
+              </div>
+            } @else {
+              <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
+                Auf Karte platzieren
+              </calcite-button>
+            }
+          </div>
+
           <rima-dialog-actions [message]="confirmMessage()">
             @if (confirmAction() === 'save') {
               <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
@@ -37,7 +62,7 @@
               <rima-dialog-action
                 [label]="store.saving() ? 'Saving...' : 'Save Status'"
                 variant="primary"
-                [disabled]="!store.hasPendingChanges() || store.saving()"
+                [disabled]="!hasAnyPendingChanges() || store.saving()"
                 (triggered)="requestSave()"
               />
             }
@@ -78,6 +103,33 @@
                       [idPrefix]="'status-' + record.objectId"
                       (fieldChange)="onFieldChange($event)"
                     />
+
+                    <div class="geometry-section">
+                      <span class="geometry-section__label">Geometrie (optional)</span>
+                      @if (geometryStore.placingActive()) {
+                        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
+                        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+                          Abbrechen
+                        </calcite-button>
+                      } @else if (getEffectiveEditGeometry(record); as geo) {
+                        <p class="geometry-section__coords">
+                          X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
+                        </p>
+                        <div class="geometry-section__actions">
+                          <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()">
+                            Verschieben
+                          </calcite-button>
+                          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
+                            Entfernen
+                          </calcite-button>
+                        </div>
+                      } @else {
+                        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
+                          Auf Karte platzieren
+                        </calcite-button>
+                      }
+                    </div>
+
                     <rima-dialog-actions [message]="confirmMessage()">
                       @if (confirmAction() === 'save') {
                         <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
@@ -90,7 +142,7 @@
                         <rima-dialog-action
                           [label]="store.saving() ? 'Saving...' : 'Save Status'"
                           variant="primary"
-                          [disabled]="!store.hasPendingChanges() || store.saving()"
+                          [disabled]="!hasAnyPendingChanges() || store.saving()"
                           (triggered)="requestSave()"
                         />
                       }

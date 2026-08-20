@@ -8,6 +8,7 @@ import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
+import { DOCUMENTS_MAP_LAYER_TITLE, STATUS_MAP_LAYER_TITLE } from '../map-config';
 
 @Component({
   selector: 'rima-toc',
@@ -48,7 +49,11 @@ export class TocComponent {
       sections.push([zoomAction]);
     }
 
-    if (item.layer instanceof FeatureLayer) {
+    if (
+      item.layer instanceof FeatureLayer &&
+      item.layer.title !== DOCUMENTS_MAP_LAYER_TITLE &&
+      item.layer.title !== STATUS_MAP_LAYER_TITLE
+    ) {
       const createAction = {
         title: 'Create',
         icon: 'plus',

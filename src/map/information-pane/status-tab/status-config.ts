@@ -1,6 +1,6 @@
-import { STATUS_LAYER_NAME } from '../../map-config';
+import { STATUS_LAYER_NAME, STATUS_MAP_LAYER_TITLE } from '../../map-config';
 
-export { STATUS_LAYER_NAME };
+export { STATUS_LAYER_NAME, STATUS_MAP_LAYER_TITLE };
 
 export const STATUS_FK_PARENT_FIELD = 'fk_parent';
 export const STATUS_PARENT_CLASS_NAME_FIELD = 'parent_class_name';

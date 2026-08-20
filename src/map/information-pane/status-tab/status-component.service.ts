@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { ViewService } from '../../view/view.service';
+import type Point from '@arcgis/core/geometry/Point';
+import { ViewService, type RimaView } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
 import { ViewStore } from '../../view/view.store';
 import { StatusRecord, AttributeValue } from './status-types';
@@ -40,14 +41,30 @@ export class StatusComponentService {
     const view = this.viewService.activeView();
     if (!view) return undefined;
 
-    const relationshipId = findStatusRelationshipId(layer, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
-    if (relationshipId == null) return undefined;
-
-    const statusLayer = findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
+    const statusLayer = this.findStatusLayerSafe(view);
     if (!statusLayer) return undefined;
+
+    const relationshipId = findStatusRelationshipId(layer, statusLayer.layerId);
+    if (relationshipId == null) return undefined;
 
     const fields = resolveStatusEditableFields(statusLayer);
     return { relationshipId, statusLayer, fields };
+  }
+
+  private findStatusLayerSafe(view: RimaView): FeatureLayer | undefined {
+    try {
+      return findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
+    } catch {
+      return findStatusLayer(view, -1);
+    }
+  }
+
+  private resolveParentClassName(layer: FeatureLayer): string {
+    try {
+      return this.layerIdResolver.resolveName(layer.layerId);
+    } catch {
+      return layer.title ?? '';
+    }
   }
 
   async loadForGraphic(graphic: Graphic): Promise<void> {
@@ -74,7 +91,7 @@ export class StatusComponentService {
     if (this.store.relationshipId() == null) return undefined;
     const view = this.viewService.activeView();
     if (!view) return undefined;
-    return findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
+    return this.findStatusLayerSafe(view);
   }
 
   getFields(): AttributeEditField[] {
@@ -122,7 +139,7 @@ export class StatusComponentService {
       }));
   }
 
-  async saveRecord(graphic: Graphic): Promise<void> {
+  async saveRecord(graphic: Graphic, geometry: Point | undefined): Promise<void> {
     const statusLayer = this.getStatusLayer();
     if (!statusLayer) return;
 
@@ -133,7 +150,7 @@ export class StatusComponentService {
     this.store.setSaving(true);
     this.viewStore.setSaving(true);
     try {
-      await this.applyUpdate(statusLayer, record, this.store.editedAttributes());
+      await this.applyUpdate(statusLayer, record, this.store.editedAttributes(), geometry);
     } finally {
       this.store.setSaving(false);
       this.viewStore.setSaving(false);
@@ -158,15 +175,15 @@ export class StatusComponentService {
     await this.loadForGraphic(graphic);
   }
 
-  async createRecord(graphic: Graphic, parentId: string, layerId: number): Promise<void> {
+  async createRecord(graphic: Graphic, parentId: string, layerId: number, geometry: Point | undefined): Promise<void> {
     const statusLayer = this.getStatusLayer();
     if (!statusLayer) return;
 
-    const parentLayerName = this.layerIdResolver.resolveName(layerId);
+    const parentLayerName = this.resolveParentClassName(graphic.layer as FeatureLayer);
     this.store.setSaving(true);
     this.viewStore.setSaving(true);
     try {
-      await this.applyCreate(statusLayer, parentId, parentLayerName, this.store.editedAttributes());
+      await this.applyCreate(statusLayer, parentId, parentLayerName, this.store.editedAttributes(), geometry);
     } finally {
       this.store.setSaving(false);
       this.viewStore.setSaving(false);
@@ -193,6 +210,7 @@ export class StatusComponentService {
     statusLayer: FeatureLayer,
     record: StatusRecord,
     editedAttributes: Record<string, AttributeValue>,
+    geometry: Point | undefined,
   ): Promise<void> {
     try {
       const updateGraphic = new Graphic({
@@ -200,6 +218,7 @@ export class StatusComponentService {
           [statusLayer.objectIdField]: record.objectId,
           ...editedAttributes,
         },
+        geometry: geometry ?? undefined,
       });
 
       const result = await statusLayer.applyEdits({ updateFeatures: [updateGraphic] });
@@ -218,6 +237,7 @@ export class StatusComponentService {
     parentId: string,
     parentClassName: string,
     attributes: Record<string, AttributeValue>,
+    geometry: Point | undefined,
   ): Promise<void> {
     try {
       const addGraphic = new Graphic({
@@ -226,6 +246,7 @@ export class StatusComponentService {
           [STATUS_FK_PARENT_FIELD]: parentId,
           [STATUS_PARENT_CLASS_NAME_FIELD]: parentClassName,
         },
+        geometry: geometry ?? undefined,
       });
 
       const result = await statusLayer.applyEdits({ addFeatures: [addGraphic] });

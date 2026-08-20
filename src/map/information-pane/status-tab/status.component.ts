@@ -1,9 +1,13 @@
 import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal, untracked } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import type Graphic from '@arcgis/core/Graphic';
+import type Point from '@arcgis/core/geometry/Point';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { StatusComponentStore } from './status-component.store';
 import { StatusComponentService } from './status-component.service';
+import { StatusGeometryStore } from './status-geometry.store';
+import { StatusGeometryService } from './status-geometry.service';
 import { StatusRecord } from './status-types';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
@@ -18,6 +22,7 @@ type StatusConfirmAction = 'save' | 'cancel' | null;
 @Component({
   selector: 'rima-status',
   imports: [
+    DecimalPipe,
     AttributeFormComponent,
     DialogActionsComponent,
     DialogActionComponent,
@@ -25,7 +30,7 @@ type StatusConfirmAction = 'save' | 'cancel' | null;
     ActionBarButtonComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  providers: [StatusComponentStore, StatusComponentService],
+  providers: [StatusComponentStore, StatusComponentService, StatusGeometryStore, StatusGeometryService],
   templateUrl: './status.component.html',
   styleUrl: './status.component.scss',
 })
@@ -34,6 +39,8 @@ export class StatusComponent {
 
   protected readonly store = inject(StatusComponentStore);
   protected readonly service = inject(StatusComponentService);
+  protected readonly geometryStore = inject(StatusGeometryStore);
+  protected readonly geometryService = inject(StatusGeometryService);
   protected readonly viewStore = inject(ViewStore);
   protected readonly confirmingDeleteId = signal<number | undefined>(undefined);
   protected readonly confirmAction = signal<StatusConfirmAction>(null);
@@ -45,8 +52,17 @@ export class StatusComponent {
     return undefined;
   });
 
+  protected readonly hasAnyPendingChanges = computed(() => {
+    if (this.store.hasPendingChanges()) return true;
+    const placedGeo = this.geometryStore.placedGeometry();
+    if (!placedGeo) return false;
+    const record = this.store.records().find((r) => r.objectId === this.store.activeEditId());
+    return placedGeo !== record?.geometry;
+  });
+
   constructor() {
     this.loadOnGraphicChange();
+    this.activateLayerOnLoad();
   }
 
   private loadOnGraphicChange(): void {
@@ -58,6 +74,26 @@ export class StatusComponent {
         this.service.loadForGraphic(graphic);
       });
     });
+  }
+
+  private activateLayerOnLoad(): void {
+    effect(() => {
+      const loading = this.store.loading();
+      untracked(() => {
+        if (!loading && this.store.available()) {
+          this.geometryService.activateStatusLayer();
+          this.highlightStatusRecords();
+        }
+      });
+    });
+  }
+
+  private highlightStatusRecords(): void {
+    const objectIds = this.store
+      .records()
+      .filter((r) => !!r.geometry && r.objectId != null)
+      .map((r) => r.objectId!);
+    this.geometryService.highlightRecords(objectIds);
   }
 
   protected isExpanded(objectId: number | undefined): boolean {
@@ -73,6 +109,10 @@ export class StatusComponent {
 
   protected startEdit(record: StatusRecord): void {
     this.confirmingDeleteId.set(undefined);
+    this.geometryService.cleanup();
+    if (record.geometry) {
+      this.geometryStore.setPlacedGeometry(record.geometry);
+    }
     this.store.startEdit(record);
   }
 
@@ -85,7 +125,7 @@ export class StatusComponent {
   }
 
   protected requestCancel(): void {
-    if (this.store.hasPendingChanges()) {
+    if (this.hasAnyPendingChanges()) {
       this.confirmAction.set('cancel');
     } else {
       this.cancelEdit();
@@ -93,7 +133,7 @@ export class StatusComponent {
   }
 
   protected requestCancelCreate(): void {
-    if (this.store.hasPendingChanges()) {
+    if (this.hasAnyPendingChanges()) {
       this.confirmAction.set('cancel');
     } else {
       this.cancelCreate();
@@ -124,6 +164,7 @@ export class StatusComponent {
   }
 
   protected startCreate(): void {
+    this.geometryService.cleanup();
     this.store.markCreating();
   }
 
@@ -143,15 +184,19 @@ export class StatusComponent {
   }
 
   private cancelEdit(): void {
+    this.geometryService.cleanup();
     this.store.cancelEdit();
   }
 
   private cancelCreate(): void {
+    this.geometryService.cleanup();
     this.store.cancelCreating();
   }
 
   private async saveEdit(): Promise<void> {
-    await this.service.saveRecord(this.graphic());
+    const geometry = this.geometryStore.placedGeometry();
+    this.geometryService.cleanup();
+    await this.service.saveRecord(this.graphic(), geometry);
   }
 
   private async saveCreate(): Promise<void> {
@@ -162,6 +207,27 @@ export class StatusComponent {
     const parentId = typeof graphic.attributes.id === 'string' ? graphic.attributes.id : undefined;
     if (!parentId) return;
 
-    await this.service.createRecord(graphic, parentId, layer.layerId);
+    const geometry = this.geometryStore.placedGeometry();
+    this.geometryService.cleanup();
+    await this.service.createRecord(graphic, parentId, layer.layerId, geometry);
+  }
+
+  protected startPlacing(): void {
+    this.geometryService.startPlacing();
+  }
+
+  protected adjustGeometry(): void {
+    const geo = this.geometryStore.placedGeometry();
+    if (geo) {
+      this.geometryService.startAdjusting(geo);
+    }
+  }
+
+  protected removeGeometry(): void {
+    this.geometryService.cancelPlacing();
+  }
+
+  protected getEffectiveEditGeometry(record: StatusRecord): Point | undefined {
+    return this.geometryStore.placedGeometry() ?? record.geometry;
   }
 }

@@ -1,21 +1,35 @@
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
+import type Point from '@arcgis/core/geometry/Point';
 import type { RimaView } from '../../view/view.service';
 import { AttributeEditField } from '../../shared/attribute-edit-field';
 import { isImmutableField } from '../../layer/layer-attributes';
 import { buildEditAttributeField } from '../../layer/layer-attribute-domain-resolver';
 import { StatusRecord } from './status-types';
-import { STATUS_AUTO_POPULATED_FIELDS, BEWERTUNGSDATUM_FIELD } from './status-config';
+import { STATUS_AUTO_POPULATED_FIELDS, BEWERTUNGSDATUM_FIELD, STATUS_MAP_LAYER_TITLE } from './status-config';
 
 export function findStatusRelationshipId(layer: FeatureLayer, layerId: number): number | undefined {
   return layer.relationships?.find((rel) => rel.role === 'origin' && rel.relatedTableId === layerId)?.id;
 }
 
 export function findStatusLayer(view: RimaView, layerId: number): FeatureLayer | undefined {
-  return view.map?.allLayers.find((l) => l instanceof FeatureLayer && l.layerId === layerId) as
-    | FeatureLayer
-    | undefined;
+  const byTitle = view.map?.allLayers.find(
+    (l: Layer) => l instanceof FeatureLayer && l.title === STATUS_MAP_LAYER_TITLE,
+  ) as FeatureLayer | undefined;
+
+  if (byTitle) return byTitle;
+
+  const fromLayers = view.map?.allLayers.find(
+    (l: Layer) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === layerId,
+  ) as FeatureLayer | undefined;
+
+  if (fromLayers) return fromLayers;
+
+  return view.map?.allTables?.find(
+    (l: Layer) => l instanceof FeatureLayer && (l as FeatureLayer).layerId === layerId,
+  ) as FeatureLayer | undefined;
 }
 
 export function resolveStatusEditableFields(layer: FeatureLayer): AttributeEditField[] {
@@ -43,7 +57,7 @@ export async function queryStatusRecords(
     objectIds: [objectId],
     relationshipId,
     outFields: ['*'],
-    returnGeometry: false,
+    returnGeometry: true,
     historicMoment: historicMoment ?? undefined,
   });
 
@@ -60,6 +74,7 @@ function graphicToStatusRecord(graphic: Graphic, statusLayer: FeatureLayer): Sta
     objectId: graphic.attributes[statusLayer.objectIdField],
     globalId: graphic.attributes.globalid ?? undefined,
     attributes: { ...graphic.attributes },
+    geometry: (graphic.geometry as Point) ?? undefined,
     isNew: false,
     isModified: false,
   };
