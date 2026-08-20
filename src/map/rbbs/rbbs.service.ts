@@ -11,7 +11,7 @@ import { LayerIdResolver } from '../layer/layer-id-resolver';
 import { REF_POINT_LAYER_NAME, REF_POINT_TYPE_FIELD } from '../map-config';
 import {
   findRelationshipId,
-  findRelatedLayer,
+  findRefPointLayer,
   queryRelatedPoints,
 } from '../information-pane/reference-tab/reference-point-resolution';
 import {
@@ -57,9 +57,14 @@ export class RbbsService {
     const view = this.viewService.activeView();
     if (!view) return undefined;
 
-    const refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
-    const relationshipId = findRelationshipId(layer, refPointLayerId);
-    const relatedLayer = findRelatedLayer(view, refPointLayerId);
+    let refPointLayerId: number;
+    try {
+      refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
+    } catch {
+      refPointLayerId = -1;
+    }
+    const relatedLayer = findRefPointLayer(view, refPointLayerId);
+    const relationshipId = relatedLayer ? findRelationshipId(layer, relatedLayer.layerId) : undefined;
 
     let vonPoint: Point | undefined;
     let bisPoint: Point | undefined;

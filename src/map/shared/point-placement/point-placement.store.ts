@@ -1,17 +1,17 @@
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import type Point from '@arcgis/core/geometry/Point';
 
-interface DocumentGeometryState {
+interface PointPlacementState {
   placingActive: boolean;
   placedGeometry: Point | undefined;
 }
 
-const initialState: DocumentGeometryState = {
+const initialState: PointPlacementState = {
   placingActive: false,
   placedGeometry: undefined,
 };
 
-export const DocumentGeometryStore = signalStore(
+export const PointPlacementStore = signalStore(
   withState(initialState),
   withMethods((store) => ({
     setPlacingActive(placingActive: boolean): void {

@@ -10,14 +10,14 @@ import { ReferencePoint, ReferencePointType, AttributeValue, generateClientId } 
 import { REF_POINT_SYMBOLS, REF_POINT_ADDING_SYMBOL } from './reference-point-config';
 import {
   findRelationshipId,
-  findRelatedLayer,
+  findRefPointLayer,
   resolveEditableFields,
   queryRelatedPoints,
 } from './reference-point-resolution';
 import { applyPointEdits } from './reference-point-helpers';
 import { REF_POINT_TYPE_FIELD, REF_POINT_LAYER_NAME } from '../../map-config';
 import { ViewStore } from '../../view/view.store';
-import { ViewService } from '../../view/view.service';
+import { ViewService, RimaView } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
@@ -375,11 +375,28 @@ export class ReferencePointComponentService implements OnDestroy {
 
   private resolve(layer: FeatureLayer): void {
     const view = this.viewService.activeView();
-    const refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
-    const relationshipId = findRelationshipId(layer, refPointLayerId);
-    const relatedLayer = view && relationshipId != null ? findRelatedLayer(view, refPointLayerId) : undefined;
-    const fields = relatedLayer ? resolveEditableFields(relatedLayer) : [];
-    this.store.setup(relationshipId, relatedLayer, fields);
+    if (!view) {
+      this.store.setup(undefined, undefined, []);
+      return;
+    }
+
+    const refPointLayer = this.findRefPointLayerSafe(view);
+    if (!refPointLayer) {
+      this.store.setup(undefined, undefined, []);
+      return;
+    }
+
+    const relationshipId = findRelationshipId(layer, refPointLayer.layerId);
+    const fields = resolveEditableFields(refPointLayer);
+    this.store.setup(relationshipId, refPointLayer, fields);
+  }
+
+  private findRefPointLayerSafe(view: RimaView): FeatureLayer | undefined {
+    try {
+      return findRefPointLayer(view, this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME));
+    } catch {
+      return findRefPointLayer(view, -1);
+    }
   }
 
   private async loadPoints(layer: FeatureLayer, graphic: Graphic): Promise<void> {

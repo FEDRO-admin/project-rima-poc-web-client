@@ -9,6 +9,7 @@ export const RIMA_SOE_BASE_URL =
 export const DOCUMENTS_LAYER_NAME = 'd_object_document';
 export const DOCUMENTS_MAP_LAYER_TITLE = 'Dokumente';
 export const REF_POINT_LAYER_NAME = 'referenzpunkt';
+export const REF_POINT_MAP_LAYER_TITLE = 'Referenzpunkt';
 export const STATUS_LAYER_NAME = 'zustand';
 export const STATUS_MAP_LAYER_TITLE = 'Zustand';
 

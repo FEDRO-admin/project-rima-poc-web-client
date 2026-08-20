@@ -1,6 +1,17 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  CUSTOM_ELEMENTS_SCHEMA,
+  effect,
+  inject,
+  input,
+  OnDestroy,
+  signal,
+  untracked,
+} from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
 import type Point from '@arcgis/core/geometry/Point';
+import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-icon';
@@ -8,7 +19,7 @@ import { DocumentsStore } from './documents.store';
 import { DocumentsService } from './documents.service';
 import { DocumentUploadService } from './document-upload.service';
 import { DocumentAccessLevel, DocumentRecord, DocumentUploadPayload, DocumentEditPayload } from './document-types';
-import { DOCUMENTS_MAX_FILE_SIZE_MB } from './documents-config';
+import { DOCUMENTS_MAX_FILE_SIZE_MB, DOCUMENTS_MAP_LAYER_TITLE } from './documents-config';
 import {
   DocumentEditError,
   DocumentFileTooLargeError,
@@ -16,8 +27,11 @@ import {
   DocumentUnsupportedFileTypeError,
   DocumentUploadError,
 } from './documents-errors';
-import { DocumentGeometryStore } from './document-geometry.store';
-import { DocumentGeometryService } from './document-geometry.service';
+import { PointPlacementStore, PointPlacementService, POINT_PLACEMENT_CONFIG } from '../../shared/point-placement';
+import { DOCUMENT_POINT_PLACING_SYMBOL } from './document-geometry-config';
+import { activateLayer, deactivateLayer, LayerActivationState } from '../../shared/layer-activation-utils';
+import { highlightFeatures } from '../../shared/layer-highlight-utils';
+import { ViewService } from '../../view/view.service';
 import { ViewStore } from '../../view/view.store';
 import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
@@ -41,19 +55,27 @@ type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit
     AttributeFormComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  providers: [DocumentGeometryStore, DocumentGeometryService],
+  providers: [
+    PointPlacementStore,
+    PointPlacementService,
+    { provide: POINT_PLACEMENT_CONFIG, useValue: { placingSymbol: DOCUMENT_POINT_PLACING_SYMBOL } },
+  ],
   templateUrl: './documents-tab.component.html',
   styleUrl: './documents-tab.component.scss',
 })
-export class DocumentsTabComponent {
+export class DocumentsTabComponent implements OnDestroy {
   readonly graphic = input.required<Graphic>();
 
   protected readonly documentsStore = inject(DocumentsStore);
   protected readonly viewStore = inject(ViewStore);
   protected readonly documentsService = inject(DocumentsService);
-  protected readonly geometryStore = inject(DocumentGeometryStore);
-  protected readonly geometryService = inject(DocumentGeometryService);
+  protected readonly geometryStore = inject(PointPlacementStore);
+  protected readonly geometryService = inject(PointPlacementService);
+  private readonly viewService = inject(ViewService);
   private readonly uploadService = inject(DocumentUploadService);
+
+  private layerActivationState: LayerActivationState | undefined;
+  private highlightHandle: { remove(): void } | undefined;
 
   protected readonly uploadProgress = this.uploadService.progress;
 
@@ -106,24 +128,52 @@ export class DocumentsTabComponent {
     this.activateAndHighlightOnLoad();
   }
 
+  ngOnDestroy(): void {
+    this.highlightHandle?.remove();
+    this.deactivateDocumentLayer();
+  }
+
   private activateAndHighlightOnLoad(): void {
     effect(() => {
       const loadState = this.documentsStore.loadState();
       untracked(() => {
         if (loadState === 'loaded') {
-          this.geometryService.activateDocumentLayer();
+          this.activateDocumentLayer();
           this.rehighlight();
         }
       });
     });
   }
 
-  private rehighlight(): void {
+  private activateDocumentLayer(): void {
+    const view = this.viewService.activeView();
+    if (!view?.map) return;
+    this.layerActivationState = activateLayer(view.map, DOCUMENTS_MAP_LAYER_TITLE);
+  }
+
+  private deactivateDocumentLayer(): void {
+    const view = this.viewService.activeView();
+    if (!view?.map || !this.layerActivationState) return;
+    deactivateLayer(view.map, this.layerActivationState);
+    this.layerActivationState = undefined;
+  }
+
+  private async rehighlight(): Promise<void> {
+    this.highlightHandle?.remove();
+    this.highlightHandle = undefined;
+
     const objectIds = this.documentsStore
       .documents()
       .filter((d) => !!d.geometry)
       .map((d) => d.objectId);
-    this.geometryService.highlightDocuments(objectIds);
+
+    const view = this.viewService.activeView();
+    if (!view?.map || !objectIds.length) return;
+
+    const layer = view.map.allLayers.find((l) => l.title === DOCUMENTS_MAP_LAYER_TITLE);
+    if (!layer) return;
+
+    this.highlightHandle = await highlightFeatures(view, layer as FeatureLayer, objectIds);
   }
 
   protected getDocTitle(record: DocumentRecord | undefined): string {
