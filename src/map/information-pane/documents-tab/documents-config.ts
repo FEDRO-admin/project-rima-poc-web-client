@@ -1,6 +1,6 @@
-import { DOCUMENTS_LAYER_NAME } from '../../map-config';
+import { DOCUMENTS_LAYER_NAME, DOCUMENTS_MAP_LAYER_TITLE } from '../../map-config';
 
-export { DOCUMENTS_LAYER_NAME };
+export { DOCUMENTS_LAYER_NAME, DOCUMENTS_MAP_LAYER_TITLE };
 
 // Fields set programmatically by the service — excluded from the edit form
 export const DOCUMENT_AUTO_POPULATED_FIELDS: readonly string[] = [

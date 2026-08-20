@@ -15,6 +15,7 @@ import { DocumentEditPayload, DocumentRecord, DocumentUploadPayload } from './do
 import {
   DOCUMENT_AUTO_POPULATED_FIELDS,
   DOCUMENTS_LAYER_NAME,
+  DOCUMENTS_MAP_LAYER_TITLE,
   DOCUMENTS_MAX_FILE_SIZE_MB,
   DOCUMENTS_VIEWABLE_TYPES,
 } from './documents-config';
@@ -122,7 +123,7 @@ export class DocumentsService {
         ...payload.editableAttributes,
         id: crypto.randomUUID(),
         fk_parent: parentKeyValue,
-        parent_class_name: this.layerIdResolver.resolveName(layer.layerId),
+        parent_class_name: this.resolveParentClassName(layer),
         pfad: downloadUrl,
         name: payload.file.name,
         groesse: payload.file.size,
@@ -262,10 +263,10 @@ export class DocumentsService {
   }
 
   async downloadDocument(record: DocumentRecord): Promise<void> {
-    const url = this.getDownloadUrl(record);
+    const pfad = (record.attributes['pfad'] as string) ?? '';
     const name = (record.attributes['name'] as string) || '';
-    const response = await esriRequest(url, { responseType: 'blob' });
-    const blob = response.data as Blob;
+    const response = await esriRequest(pfad, { responseType: 'native' });
+    const blob = await (response.data as Response).blob();
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -308,13 +309,29 @@ export class DocumentsService {
   private findDocumentRelationship(layer: FeatureLayer): Relationship | undefined {
     if (!layer.relationships) return undefined;
 
-    return layer.relationships.find(
-      (rel) => rel.role === 'origin' && rel.relatedTableId === this.layerIdResolver.resolveId(DOCUMENTS_LAYER_NAME),
-    );
+    const docLayer = this.findDocumentLayer();
+    if (!docLayer) return undefined;
+
+    return layer.relationships.find((rel) => rel.role === 'origin' && rel.relatedTableId === docLayer.layerId);
   }
 
   private findDocumentLayer(): FeatureLayer | undefined {
-    return this.findLayerById(this.layerIdResolver.resolveId(DOCUMENTS_LAYER_NAME));
+    const view = this.viewService.activeView();
+    if (!view?.map) return undefined;
+
+    const byTitle = view.map.allLayers.find(
+      (l: Layer) => l instanceof FeatureLayer && l.title === DOCUMENTS_MAP_LAYER_TITLE,
+    ) as FeatureLayer | undefined;
+
+    return byTitle ?? this.findLayerByName();
+  }
+
+  private findLayerByName(): FeatureLayer | undefined {
+    try {
+      return this.findLayerById(this.layerIdResolver.resolveId(DOCUMENTS_LAYER_NAME));
+    } catch {
+      return undefined;
+    }
   }
 
   private findLayerById(relatedTableId: number): FeatureLayer | undefined {
@@ -337,5 +354,13 @@ export class DocumentsService {
   private getParentKeyValue(graphic: Graphic, relationship: Relationship): string {
     const keyField = relationship.keyField || 'id';
     return graphic.attributes[keyField] ?? '';
+  }
+
+  private resolveParentClassName(layer: FeatureLayer): string {
+    try {
+      return this.layerIdResolver.resolveName(layer.layerId);
+    } catch {
+      return layer.title ?? '';
+    }
   }
 }

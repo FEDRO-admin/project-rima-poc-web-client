@@ -9,7 +9,6 @@ import type Polyline from '@arcgis/core/geometry/Polyline';
 import { ViewService } from '../view/view.service';
 import { LayerIdResolver } from '../layer/layer-id-resolver';
 import { REF_POINT_LAYER_NAME, REF_POINT_TYPE_FIELD } from '../map-config';
-import { RIMA_SPATIAL_REFERENCE_LV95_EPSG } from '../map-constants';
 import {
   findRelationshipId,
   findRelatedLayer,
@@ -87,14 +86,12 @@ export class RbbsService {
   }
 
   private async callSoe(vonPoint: Point, bisPoint: Point): Promise<XyToRbbsResult[] | undefined> {
-    const requestPayload = JSON.stringify([vonPoint, bisPoint].map((point) => this.buildSoeRequestItem(point)));
-
-    const query: Record<string, string> = {};
-    query['f'] = 'json';
-    query['XyToRbbsRequestList'] = requestPayload;
+    const body = JSON.stringify([vonPoint, bisPoint].map((point) => this.buildSoeRequestItem(point)));
 
     const response = await esriRequest(RBBS_TRANSFORM_URL, {
-      query,
+      query: { f: 'json' },
+      method: 'post',
+      body,
       responseType: 'json',
     });
 
@@ -215,14 +212,12 @@ export class RbbsService {
 
   // SOE expects PascalCase JSON keys per its REST contract
   private buildSoeRequestItem(point: Point): Record<string, unknown> {
-    const pointXY: Record<string, unknown> = {};
-    pointXY['X'] = point.x;
-    pointXY['Y'] = point.y;
-    pointXY['SrId'] = RIMA_SPATIAL_REFERENCE_LV95_EPSG;
-
-    const item: Record<string, unknown> = {};
-    item['PointXY'] = pointXY;
-    return item;
+    /* eslint-disable @typescript-eslint/naming-convention -- SOE REST contract requires PascalCase keys. */
+    return {
+      Date: new Date().toISOString(),
+      PointXY: { X: point.x, Y: point.y },
+    };
+    /* eslint-enable @typescript-eslint/naming-convention -- Re-enable after SOE request payload. */
   }
 
   private findWestMost(points: Point[]): Point {

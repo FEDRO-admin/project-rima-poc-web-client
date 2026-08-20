@@ -1,25 +1,7 @@
 @if (!viewStore.historic() && !formActive()) {
   <rima-action-bar>
     <rima-action-bar-button icon="plus" label="Add" variant="primary" (triggered)="openUploadForm()" />
-    @if (geometryService.hasDocumentsWithGeometry()) {
-      <rima-action-bar-button
-        [icon]="geometryStore.displayVisible() ? 'view-visible' : 'view-hide'"
-        [label]="geometryStore.displayVisible() ? 'Punkte ausblenden' : 'Punkte einblenden'"
-        (triggered)="geometryService.toggleDisplay()"
-      />
-    }
   </rima-action-bar>
-}
-@if (viewStore.historic() && !formActive()) {
-  @if (geometryService.hasDocumentsWithGeometry()) {
-    <rima-action-bar>
-      <rima-action-bar-button
-        [icon]="geometryStore.displayVisible() ? 'view-visible' : 'view-hide'"
-        [label]="geometryStore.displayVisible() ? 'Punkte ausblenden' : 'Punkte einblenden'"
-        (triggered)="geometryService.toggleDisplay()"
-      />
-    </rima-action-bar>
-  }
 }
 @if (documentsStore.isLoading() && !formActive()) {
   <div class="documents-loading">
@@ -175,13 +157,6 @@
           </span>
         </div>
         <rima-action-bar class="document-item__actions">
-          @if (doc.geometry) {
-            <rima-action-bar-button
-              [icon]="geometryService.isDocumentHidden(doc.objectId) ? 'view-hide' : 'view-visible'"
-              [label]="geometryService.isDocumentHidden(doc.objectId) ? 'Punkt einblenden' : 'Punkt ausblenden'"
-              (triggered)="geometryService.toggleDocumentVisibility(doc.objectId)"
-            />
-          }
           @if (isViewable(doc)) {
             <rima-action-bar-button icon="view-visible" label="Anzeigen" (triggered)="openDocument(doc)" />
           }

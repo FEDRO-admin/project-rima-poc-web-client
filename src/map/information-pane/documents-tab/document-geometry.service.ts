@@ -1,79 +1,118 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import type Point from '@arcgis/core/geometry/Point';
+import type EsriMap from '@arcgis/core/Map';
 import { DocumentGeometryStore } from './document-geometry.store';
-import { DocumentsStore } from './documents.store';
-import { DocumentRecord } from './document-types';
-import { DOCUMENT_POINT_SYMBOL, DOCUMENT_POINT_PLACING_SYMBOL } from './document-geometry-config';
+import { DOCUMENT_POINT_PLACING_SYMBOL } from './document-geometry-config';
+import { DOCUMENTS_MAP_LAYER_TITLE } from './documents-config';
 import { ViewService } from '../../view/view.service';
 import { ViewStore } from '../../view/view.store';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
 
+interface HighlightableLayerView {
+  highlight(target: number[]): { remove(): void };
+}
+
 @Injectable()
 export class DocumentGeometryService implements OnDestroy {
   private readonly geometryStore = inject(DocumentGeometryStore);
-  private readonly documentsStore = inject(DocumentsStore);
   private readonly viewService = inject(ViewService);
   private readonly viewStore = inject(ViewStore);
 
-  private displayLayer: GraphicsLayer | undefined;
   private sketchViewModel: SketchViewModel | undefined;
   private sketchLayer: GraphicsLayer | undefined;
   private eventHandle: { remove(): void } | undefined;
+  private highlightHandle: { remove(): void } | undefined;
+  private previousVisibility: { layer: Layer; visible: boolean }[] = [];
+  private previousIndex: number | undefined;
 
   ngOnDestroy(): void {
     this.cleanup();
   }
 
-  // --- Display ---
+  // --- Document Layer Activation ---
 
-  refreshDisplayLayer(): void {
+  activateDocumentLayer(): void {
+    const layer = this.findDocumentLayer();
+    if (!layer) return;
+
+    this.previousVisibility = [];
+    this.saveAndActivate(layer);
+
     const view = this.viewService.activeView();
-    if (!view?.map) return;
-
-    if (!this.geometryStore.displayVisible()) {
-      this.removeDisplayLayer();
-      return;
-    }
-
-    const hiddenIds = this.geometryStore.hiddenDocumentIds();
-    const graphics = this.documentsStore
-      .documents()
-      .filter((d) => d.geometry && !hiddenIds.includes(d.objectId))
-      .map((d) => new Graphic({ geometry: d.geometry, symbol: DOCUMENT_POINT_SYMBOL }));
-
-    if (!this.displayLayer) {
-      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Dokument-Punkte' });
-      view.map.add(this.displayLayer);
-    }
-
-    this.displayLayer.removeAll();
-    this.displayLayer.addMany(graphics);
-  }
-
-  toggleDisplay(): void {
-    const visible = !this.geometryStore.displayVisible();
-    this.geometryStore.setDisplayVisible(visible);
-    if (visible) {
-      this.refreshDisplayLayer();
-    } else {
-      this.removeDisplayLayer();
+    if (view?.map) {
+      const topLayerParent = this.getTopLevelParent(layer, view.map);
+      if (topLayerParent) {
+        const layers = view.map.layers;
+        this.previousIndex = layers.indexOf(topLayerParent);
+        view.map.reorder(topLayerParent, layers.length - 1);
+      }
     }
   }
 
-  toggleDocumentVisibility(objectId: number): void {
-    this.geometryStore.toggleDocumentHidden(objectId);
-    this.refreshDisplayLayer();
+  private saveAndActivate(layer: Layer): void {
+    this.previousVisibility.push({ layer, visible: layer.visible });
+    layer.visible = true;
+
+    const parent = layer.parent;
+    if (parent instanceof GroupLayer) {
+      this.saveAndActivate(parent);
+    }
   }
 
-  isDocumentHidden(objectId: number): boolean {
-    return this.geometryStore.hiddenDocumentIds().includes(objectId);
+  private getTopLevelParent(layer: Layer, map: EsriMap): Layer | undefined {
+    let current: Layer = layer;
+    while (current.parent instanceof GroupLayer) {
+      current = current.parent;
+    }
+    return map.layers.includes(current) ? current : undefined;
   }
 
-  hasDocumentsWithGeometry(): boolean {
-    return this.documentsStore.documents().some((d) => !!d.geometry);
+  private deactivateDocumentLayer(): void {
+    if (!this.previousVisibility.length) return;
+
+    const view = this.viewService.activeView();
+    if (view?.map && this.previousIndex !== undefined) {
+      const layer = this.findDocumentLayer();
+      if (layer) {
+        const topLayerParent = this.getTopLevelParent(layer, view.map);
+        if (topLayerParent) {
+          view.map.reorder(topLayerParent, this.previousIndex);
+        }
+      }
+    }
+
+    for (const entry of this.previousVisibility) {
+      entry.layer.visible = entry.visible;
+    }
+    this.previousVisibility = [];
+    this.previousIndex = undefined;
+  }
+
+  // --- Highlight ---
+
+  async highlightDocuments(objectIds: number[]): Promise<void> {
+    this.clearHighlight();
+    if (!objectIds.length) return;
+
+    const layer = this.findDocumentLayer();
+    const view = this.viewService.activeView();
+    if (!layer || !view) return;
+
+    const layerView = (await view.whenLayerView(layer)) as HighlightableLayerView;
+    if (typeof layerView.highlight !== 'function') return;
+
+    this.highlightHandle = layerView.highlight(objectIds);
+  }
+
+  private clearHighlight(): void {
+    this.highlightHandle?.remove();
+    this.highlightHandle = undefined;
   }
 
   // --- Geometry Placement ---
@@ -168,7 +207,8 @@ export class DocumentGeometryService implements OnDestroy {
 
   cleanup(): void {
     this.cleanupSketch();
-    this.removeDisplayLayer();
+    this.clearHighlight();
+    this.deactivateDocumentLayer();
     this.geometryStore.reset();
   }
 
@@ -182,12 +222,12 @@ export class DocumentGeometryService implements OnDestroy {
     this.sketchLayer = cleaned.sketchLayer;
   }
 
-  private removeDisplayLayer(): void {
+  private findDocumentLayer(): FeatureLayer | undefined {
     const view = this.viewService.activeView();
-    if (this.displayLayer && view?.map) {
-      view.map.remove(this.displayLayer);
-      this.displayLayer.destroy();
-    }
-    this.displayLayer = undefined;
+    if (!view?.map) return undefined;
+
+    return view.map.allLayers.find((l: Layer) => l instanceof FeatureLayer && l.title === DOCUMENTS_MAP_LAYER_TITLE) as
+      | FeatureLayer
+      | undefined;
   }
 }

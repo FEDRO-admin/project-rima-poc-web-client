@@ -7,6 +7,7 @@ export const RIMA_SOE_BASE_URL =
 
 // FEATURE LAYER NAMES (resolved to IDs at runtime via LayerIdResolver)
 export const DOCUMENTS_LAYER_NAME = 'd_object_document';
+export const DOCUMENTS_MAP_LAYER_TITLE = 'Dokumente';
 export const REF_POINT_LAYER_NAME = 'referenzpunkt';
 export const STATUS_LAYER_NAME = 'zustand';
 

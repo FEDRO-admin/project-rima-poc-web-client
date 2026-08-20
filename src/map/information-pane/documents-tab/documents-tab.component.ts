@@ -103,18 +103,27 @@ export class DocumentsTabComponent {
       }
     });
 
-    this.refreshDisplayOnLoad();
+    this.activateAndHighlightOnLoad();
   }
 
-  private refreshDisplayOnLoad(): void {
+  private activateAndHighlightOnLoad(): void {
     effect(() => {
       const loadState = this.documentsStore.loadState();
       untracked(() => {
         if (loadState === 'loaded') {
-          this.geometryService.refreshDisplayLayer();
+          this.geometryService.activateDocumentLayer();
+          this.rehighlight();
         }
       });
     });
+  }
+
+  private rehighlight(): void {
+    const objectIds = this.documentsStore
+      .documents()
+      .filter((d) => !!d.geometry)
+      .map((d) => d.objectId);
+    this.geometryService.highlightDocuments(objectIds);
   }
 
   protected getDocTitle(record: DocumentRecord | undefined): string {
@@ -261,7 +270,7 @@ export class DocumentsTabComponent {
       await this.documentsService.uploadDocument(this.graphic(), payload);
       this.showUploadForm.set(false);
       this.resetUploadForm();
-      this.geometryService.refreshDisplayLayer();
+      this.rehighlight();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
         this.uploadError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
@@ -332,7 +341,7 @@ export class DocumentsTabComponent {
       this.editGeometry.set(undefined);
       this.editGeometryRemoved.set(false);
       this.geometryStore.setPlacedGeometry(undefined);
-      this.geometryService.refreshDisplayLayer();
+      this.rehighlight();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
         this.editError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
