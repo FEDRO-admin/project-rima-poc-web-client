@@ -66,45 +66,40 @@ export class RbbsService {
     const relatedLayer = findRefPointLayer(view, refPointLayerId);
     const relationshipId = relatedLayer ? findRelationshipId(layer, relatedLayer.layerId) : undefined;
 
-    let vonPoint: Point | undefined;
-    let bisPoint: Point | undefined;
-
     if (relationshipId != null && relatedLayer) {
       const points = await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
       const vonRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'von');
       const bisRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'bis');
 
-      if (vonRef?.geometry) vonPoint = vonRef.geometry;
-      if (bisRef?.geometry) bisPoint = bisRef.geometry;
+      if (vonRef?.geometry && bisRef?.geometry) {
+        return { vonPoint: vonRef.geometry, bisPoint: bisRef.geometry };
+      }
     }
 
-    if (!vonPoint || !bisPoint) {
-      const vertices = this.extractVertices(graphic);
-      if (!vertices || vertices.length === 0) return undefined;
+    const vertices = this.extractVertices(graphic);
+    if (!vertices || vertices.length === 0) return undefined;
 
-      if (!vonPoint) vonPoint = this.findWestMost(vertices);
-      if (!bisPoint) bisPoint = this.findEastMost(vertices);
-    }
+    const vonPoint = this.findWestMost(vertices);
+    const bisPoint = this.findEastMost(vertices);
 
-    if (!vonPoint || !bisPoint) return undefined;
     return { vonPoint, bisPoint };
   }
 
   private async callSoe(vonPoint: Point, bisPoint: Point): Promise<XyToRbbsResult[] | undefined> {
-    const body = JSON.stringify([vonPoint, bisPoint].map((point) => this.buildSoeRequestItem(point)));
+    const requestList = [vonPoint, bisPoint].map((point) => this.buildSoeRequestItem(point));
 
     const response = await esriRequest(RBBS_TRANSFORM_URL, {
-      query: { f: 'json' },
+      query: {
+        f: 'json',
+        // eslint-disable-next-line @typescript-eslint/naming-convention -- SOE REST contract requires PascalCase.
+        XyToRbbsRequestList: JSON.stringify(requestList),
+      },
       method: 'post',
-      body,
       responseType: 'json',
     });
 
     const data = response.data as Record<string, unknown>;
-    if (data['status'] === 'error') {
-      // SOE returns error when no axis is found near the point — this is expected for some geometries
-      return undefined;
-    }
+    if (data['status'] === 'error') return undefined;
 
     const rawResults = data['XyToRbbsResultList'] as Record<string, unknown>[];
     if (!Array.isArray(rawResults)) return undefined;

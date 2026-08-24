@@ -3,8 +3,9 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { FeatureEditResult } from '@arcgis/core/editing/types';
 
 import { ViewService } from '../view/view.service';
-import { LayerIdResolver } from '../layer/layer-id-resolver';
+import { findRefPointLayer } from '../information-pane/reference-tab/reference-point-resolution';
 import { REF_POINT_LAYER_NAME } from '../map-config';
+import { LayerIdResolver } from '../layer/layer-id-resolver';
 import { RBBS_VON_FIELD } from './rbbs-config';
 import { RbbsService } from './rbbs.service';
 
@@ -32,7 +33,7 @@ export class RbbsEffects {
 
         if (!view?.map) return;
 
-        this.initListeners();
+        this.initListeners().catch(() => undefined);
       });
 
       onCleanup(() => this.removeAllHandles());
@@ -47,8 +48,9 @@ export class RbbsEffects {
     try {
       refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
     } catch {
-      return;
+      // LayerIdResolver not yet populated — find ref point layer by title instead
     }
+    const refPointLayer = findRefPointLayer(view, refPointLayerId ?? -1);
 
     const layers: FeatureLayer[] = [];
     view.map.allLayers.forEach((layer) => {
@@ -60,12 +62,12 @@ export class RbbsEffects {
     for (const layer of layers) {
       if (this.isRbbsLayer(layer)) {
         const handle = layer.on('edits', (event) => {
-          this.onIObjectEdited(layer, event.updatedFeatures);
+          this.onIObjectEdited(layer, [...event.addedFeatures, ...event.updatedFeatures]);
         });
         this.handles.push(handle);
       }
 
-      if (layer.layerId === refPointLayerId) {
+      if (refPointLayer && layer === refPointLayer) {
         const handle = layer.on('edits', (event) => {
           this.onReferenzpunktChanged(layer, event);
         });
