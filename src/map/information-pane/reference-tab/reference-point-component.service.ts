@@ -244,11 +244,11 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Save ---
 
-  async save(parentId: string, parentLayerId: number): Promise<void> {
+  async save(parentId: string, parentLayer: FeatureLayer): Promise<void> {
     const relatedLayer = this.store.relatedLayer();
     if (!relatedLayer) return;
 
-    const parentLayerName = this.layerIdResolver.resolveName(parentLayerId);
+    const parentLayerName = this.resolveParentClassName(parentLayer);
     this.viewStore.setSaving(true);
     try {
       await applyPointEdits(
@@ -263,6 +263,14 @@ export class ReferencePointComponentService implements OnDestroy {
     } catch (error) {
       this.viewStore.setSaving(false);
       throw new ReferencePointSaveError(error);
+    }
+  }
+
+  private resolveParentClassName(layer: FeatureLayer): string {
+    try {
+      return this.layerIdResolver.resolveName(layer.layerId);
+    } catch {
+      return layer.title ?? '';
     }
   }
 

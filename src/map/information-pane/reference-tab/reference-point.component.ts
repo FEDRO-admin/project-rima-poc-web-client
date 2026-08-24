@@ -78,7 +78,7 @@ export class ReferencePointComponent implements OnDestroy {
 
     this.saving.set(true);
     try {
-      await this.service.save(parentId, layer.layerId);
+      await this.service.save(parentId, layer);
     } finally {
       this.saving.set(false);
     }
