@@ -1,13 +1,14 @@
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { computed } from '@angular/core';
 import type Graphic from '@arcgis/core/Graphic';
-import { HierarchyNode } from './hierarchy-node';
+import { HierarchyNode, RelatedParent } from './hierarchy-node';
 
 export type HierarchyLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
 interface HierarchyState {
   graphic: Graphic | undefined;
   tree: HierarchyNode | undefined;
+  relatedParents: RelatedParent[];
   loadState: HierarchyLoadState;
   error: string | undefined;
 }
@@ -15,6 +16,7 @@ interface HierarchyState {
 const initialState: HierarchyState = {
   graphic: undefined,
   tree: undefined,
+  relatedParents: [],
   loadState: 'idle',
   error: undefined,
 };
@@ -32,10 +34,10 @@ export const HierarchyStore = signalStore(
       patchState(store, { graphic });
     },
     setLoading(): void {
-      patchState(store, { loadState: 'loading', error: undefined, tree: undefined });
+      patchState(store, { loadState: 'loading', error: undefined, tree: undefined, relatedParents: [] });
     },
-    setTree(tree: HierarchyNode): void {
-      patchState(store, { tree, loadState: 'loaded' });
+    setResult(tree: HierarchyNode, relatedParents: RelatedParent[]): void {
+      patchState(store, { tree, relatedParents, loadState: 'loaded' });
     },
     setError(error: string): void {
       patchState(store, { loadState: 'error', error });

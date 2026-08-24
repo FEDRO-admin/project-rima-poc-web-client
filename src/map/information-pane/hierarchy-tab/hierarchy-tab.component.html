@@ -18,6 +18,30 @@
   </calcite-tree>
 }
 
+@if (hierarchyStore.relatedParents(); as relatedParents) {
+  @if (relatedParents.length > 0) {
+    <div class="related-parents">
+      <div class="related-parents__divider"></div>
+      <span class="related-parents__heading">Related Features</span>
+      <calcite-tree lines selection-mode="none">
+        @for (parent of relatedParents; track parent.relationshipLabel) {
+          <calcite-tree-item>
+            <span
+              class="node-label"
+              (click)="onRelatedParentClick($event, parent)"
+              (keydown.enter)="onRelatedParentClick($event, parent)"
+              tabindex="0"
+            >
+              <span class="node-display-label">{{ parent.displayLabel }}</span>
+              <span class="node-layer-title">[{{ parent.relationshipLabel }}]</span>
+            </span>
+          </calcite-tree-item>
+        }
+      </calcite-tree>
+    </div>
+  }
+}
+
 <ng-template #nodeTemplate let-node>
   <calcite-tree-item [expanded]="node.expanded">
     @if (node.isGroup) {

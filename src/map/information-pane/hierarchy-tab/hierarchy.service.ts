@@ -5,7 +5,7 @@ import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
 import { ViewService } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
-import { HierarchyNode } from './hierarchy-node';
+import { HierarchyNode, HierarchyResult, RelatedParent } from './hierarchy-node';
 import { HIERARCHY_DISPLAY_FIELD, HIERARCHY_BRACKET_FIELD, LAYER_NAME_WILDCARD } from './hierarchy-config';
 
 @Injectable({
@@ -15,7 +15,7 @@ export class HierarchyService {
   private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
 
-  async buildHierarchyTree(graphic: Graphic): Promise<HierarchyNode | undefined> {
+  async buildHierarchyTree(graphic: Graphic): Promise<HierarchyResult> {
     const parentChain = await this.getParentChain(graphic);
     const clickedNode = this.buildNode(graphic, true);
     clickedNode.expanded = true;
@@ -23,6 +23,9 @@ export class HierarchyService {
     const children = await this.getChildrenRecursive(graphic);
     clickedNode.children = children;
 
+    const relatedParents = await this.getRelatedParents(graphic);
+
+    let tree: HierarchyNode | undefined;
     if (parentChain.length > 0) {
       const root = parentChain[0];
       let current = root;
@@ -35,10 +38,12 @@ export class HierarchyService {
       }
 
       current.children = [clickedNode];
-      return root;
+      tree = root;
+    } else {
+      tree = clickedNode;
     }
 
-    return clickedNode;
+    return { tree, relatedParents };
   }
 
   private async getParentChain(graphic: Graphic): Promise<HierarchyNode[]> {
@@ -130,14 +135,41 @@ export class HierarchyService {
 
   private async findParent(layer: FeatureLayer, graphic: Graphic): Promise<Graphic | undefined> {
     if (!layer.relationships) return undefined;
-    const parentRelationships = layer.relationships.filter((rel) => rel.role === 'destination');
+    const compositeParentRelationships = layer.relationships.filter(
+      (rel) => rel.role === 'destination' && rel.composite,
+    );
 
-    for (const rel of parentRelationships) {
+    for (const rel of compositeParentRelationships) {
       const parent = await this.queryParent(layer, graphic, rel);
       if (parent) return parent;
     }
 
     return undefined;
+  }
+
+  private async getRelatedParents(graphic: Graphic): Promise<RelatedParent[]> {
+    const layer = graphic.layer as FeatureLayer;
+    if (!layer?.relationships?.length) return [];
+
+    const nonCompositeParentRelationships = layer.relationships.filter(
+      (rel) => rel.role === 'destination' && !rel.composite,
+    );
+
+    const results: RelatedParent[] = [];
+    for (const rel of nonCompositeParentRelationships) {
+      const parentGraphic = await this.queryParent(layer, graphic, rel);
+      if (!parentGraphic) continue;
+
+      const relatedLayer = parentGraphic.layer as FeatureLayer | undefined;
+      results.push({
+        graphic: parentGraphic,
+        displayLabel: this.buildDisplayLabel(parentGraphic, relatedLayer ?? layer),
+        layerTitle: relatedLayer?.title ?? '',
+        relationshipLabel: rel.keyField.replace(/^fk_/, ''),
+      });
+    }
+
+    return results;
   }
 
   private findChildRelationships(layer: FeatureLayer): Relationship[] {

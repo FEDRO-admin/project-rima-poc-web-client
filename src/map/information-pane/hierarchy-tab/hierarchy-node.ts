@@ -12,3 +12,15 @@ export interface HierarchyNode {
   childRelationships: Relationship[];
   loading: boolean;
 }
+
+export interface RelatedParent {
+  graphic: Graphic;
+  displayLabel: string;
+  layerTitle: string;
+  relationshipLabel: string;
+}
+
+export interface HierarchyResult {
+  tree: HierarchyNode | undefined;
+  relatedParents: RelatedParent[];
+}

@@ -55,3 +55,23 @@
   color: #6a6a6a;
   font-style: italic;
 }
+
+.related-parents {
+  margin-top: 12px;
+
+  &__divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin-bottom: 8px;
+  }
+
+  &__heading {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+  }
+}

@@ -22,9 +22,9 @@ export class HierarchyEffects {
         this.store.setLoading();
 
         try {
-          const tree = await this.hierarchyService.buildHierarchyTree(graphic);
-          if (tree) {
-            this.store.setTree(tree);
+          const result = await this.hierarchyService.buildHierarchyTree(graphic);
+          if (result.tree) {
+            this.store.setResult(result.tree, result.relatedParents);
           } else {
             this.store.setError('No hierarchy found');
           }

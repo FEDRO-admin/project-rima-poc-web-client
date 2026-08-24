@@ -6,7 +6,7 @@ import '@esri/calcite-components/dist/components/calcite-tree';
 import '@esri/calcite-components/dist/components/calcite-tree-item';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import { HierarchyStore } from './hierarchy.store';
-import { HierarchyNode } from './hierarchy-node';
+import { HierarchyNode, RelatedParent } from './hierarchy-node';
 import type FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 import { ViewService } from '../../view/view.service';
 
@@ -48,6 +48,24 @@ export class HierarchyTabComponent implements OnDestroy {
 
     this.clearHighlight();
     const graphic = node.graphic;
+    const layer = graphic.layer;
+    const view = this.viewService.activeView();
+
+    if (!view || !graphic.geometry) return;
+
+    if (layer instanceof FeatureLayer) {
+      const objectId = graphic.attributes[layer.objectIdField];
+      const layerView = await view.whenLayerView(layer);
+      this.flashAndHighlight(layerView, objectId);
+    }
+  }
+
+  protected async onRelatedParentClick(event: Event, parent: RelatedParent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.clearHighlight();
+    const graphic = parent.graphic;
     const layer = graphic.layer;
     const view = this.viewService.activeView();
 
