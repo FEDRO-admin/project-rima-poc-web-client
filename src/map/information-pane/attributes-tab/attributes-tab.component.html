@@ -213,7 +213,7 @@
     }
   </rima-action-bar>
 
-  @if (fields().length === 0) {
+  @if (fields().length === 0 && !hasZustandsnote()) {
     <p class="attributes-placeholder">No attributes available.</p>
   } @else {
     <table class="attributes-table">
@@ -222,6 +222,23 @@
           <td class="attributes-key">{{ field.label }}</td>
           <td class="attributes-value" [class.attributes-value--null]="field.value == null">
             {{ field.value == null ? 'null' : field.value }}
+          </td>
+        </tr>
+      }
+      @if (hasZustandsnote()) {
+        <tr>
+          <td class="attributes-key">zustandsnote</td>
+          <td
+            class="attributes-value"
+            [class.attributes-value--null]="!gradeLoading() && zustandsnoteDisplayValue() == null"
+          >
+            @if (gradeLoading()) {
+              <span class="grade-loading">Calculating...</span>
+            } @else if (zustandsnoteDisplayValue() != null) {
+              {{ zustandsnoteDisplayValue() }}
+            } @else {
+              null
+            }
           </td>
         </tr>
       }

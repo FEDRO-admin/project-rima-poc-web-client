@@ -1,4 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, input, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, signal, untracked } from '@angular/core';
 import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
@@ -21,6 +21,8 @@ import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-ac
 import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
 import type { AttributeEditField } from '../../shared/attribute-edit-field';
 import type { AttributeValue } from '../../shared/attribute-value-conversion';
+import { GradeService } from '../../grade/grade.service';
+import { ZUSTANDSNOTE_FIELD } from '../../grade/grade-config';
 
 type ConfirmAction = 'save' | 'cancel' | null;
 
@@ -50,9 +52,42 @@ export class AttributesTabComponent {
   private readonly viewService = inject(ViewService);
   private readonly editService = inject(AttributeEditService);
   private readonly deleteService = inject(AttributeDeleteService);
+  private readonly gradeService = inject(GradeService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
+
+  private readonly writableGradeValue = signal<number | undefined>(undefined);
+  private readonly writableGradeLoading = signal<boolean>(false);
+  protected readonly gradeValue = this.writableGradeValue.asReadonly();
+  protected readonly gradeLoading = this.writableGradeLoading.asReadonly();
+
+  protected readonly hasZustandsnote = computed(() => {
+    const graphic = this.graphic();
+    if (!graphic) return false;
+    const layer = graphic.layer;
+    if (!hasFieldMetadata(layer)) return false;
+    return layer.fields.some((f) => f.name === ZUSTANDSNOTE_FIELD);
+  });
+
+  protected readonly storedZustandsnote = computed<number | null>(() => {
+    const graphic = this.graphic();
+    if (!graphic) return null;
+    const value = graphic.attributes?.[ZUSTANDSNOTE_FIELD];
+    return typeof value === 'number' ? value : null;
+  });
+
+  protected readonly zustandsnoteDisplayValue = computed<string | null>(() => {
+    const stored = this.storedZustandsnote();
+    if (stored != null) return stored.toFixed(1);
+    const calculated = this.gradeValue();
+    if (calculated != null) return calculated.toFixed(1);
+    return null;
+  });
+
+  constructor() {
+    this.setupGradeEffect();
+  }
 
   protected readonly isEditable = computed(() => {
     const graphic = this.graphic();
@@ -110,7 +145,7 @@ export class AttributesTabComponent {
 
     if (hasFieldMetadata(layer)) {
       return layer.fields
-        .filter((field) => isImmutableField(field.name, layer))
+        .filter((field) => isImmutableField(field.name, layer) && field.name !== ZUSTANDSNOTE_FIELD)
         .map((field) => ({
           label: field.alias || field.name,
           value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),
@@ -262,5 +297,39 @@ export class AttributesTabComponent {
 
   protected dismissConfirm(): void {
     this.confirmAction.set(null);
+  }
+
+  private setupGradeEffect(): void {
+    effect(() => {
+      const graphic = this.graphic();
+      untracked(() => this.loadGrade(graphic));
+    });
+  }
+
+  private async loadGrade(graphic: Graphic | undefined): Promise<void> {
+    this.writableGradeValue.set(undefined);
+    this.writableGradeLoading.set(false);
+
+    if (!graphic) return;
+
+    const layer = graphic.layer;
+    if (!hasFieldMetadata(layer)) {
+      return;
+    }
+    if (!layer.fields.some((f) => f.name === ZUSTANDSNOTE_FIELD)) {
+      return;
+    }
+
+    const storedValue = graphic.attributes?.[ZUSTANDSNOTE_FIELD];
+    if (typeof storedValue === 'number') {
+      return;
+    }
+    this.writableGradeLoading.set(true);
+    try {
+      const result = await this.gradeService.calculateGrade(graphic);
+      this.writableGradeValue.set(result);
+    } finally {
+      this.writableGradeLoading.set(false);
+    }
   }
 }
