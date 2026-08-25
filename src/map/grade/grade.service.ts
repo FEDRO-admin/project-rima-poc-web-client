@@ -3,7 +3,7 @@ import Graphic from '@arcgis/core/Graphic';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import RelationshipQuery from '@arcgis/core/rest/support/RelationshipQuery';
 import type Relationship from '@arcgis/core/layers/support/Relationship';
-import { ViewService, type RimaView } from '../view/view.service';
+import { ViewService } from '../view/view.service';
 import { HistoryStore } from '../history/history.store';
 import { LayerIdResolver } from '../layer/layer-id-resolver';
 import { STATUS_LAYER_NAME } from '../map-config';
@@ -29,27 +29,25 @@ export class GradeService {
       return undefined;
     }
 
-    const statusLayer = this.findStatusLayerSafe(view);
+    let zustandLayerId: number;
+    try {
+      zustandLayerId = await this.layerIdResolver.resolveIdAsync(STATUS_LAYER_NAME, view.map);
+    } catch {
+      console.warn('[GradeService] Cannot resolve zustand layer ID');
+      return undefined;
+    }
+
+    const statusLayer = findStatusLayer(view, zustandLayerId);
     if (!statusLayer) {
       console.warn('[GradeService] Status layer not found');
       return undefined;
     }
-
-    const zustandLayerId = statusLayer.layerId;
     const values = await this.collectLeafZustandValues(graphic, zustandLayerId, statusLayer);
 
     if (values.length === 0) return undefined;
 
     const sum = values.reduce((acc, val) => acc + val, 0);
     return sum / values.length;
-  }
-
-  private findStatusLayerSafe(view: RimaView): FeatureLayer | undefined {
-    try {
-      return findStatusLayer(view, this.layerIdResolver.resolveId(STATUS_LAYER_NAME));
-    } catch {
-      return findStatusLayer(view, -1);
-    }
   }
 
   private async collectLeafZustandValues(

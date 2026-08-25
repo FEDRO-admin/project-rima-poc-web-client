@@ -44,13 +44,13 @@ export class RbbsEffects {
     const view = this.viewService.activeView();
     if (!view?.map) return;
 
-    let refPointLayerId: number | undefined;
+    let refPointLayerId: number;
     try {
-      refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
+      refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
     } catch {
-      // LayerIdResolver not yet populated — find ref point layer by title instead
+      return;
     }
-    const refPointLayer = findRefPointLayer(view, refPointLayerId ?? -1);
+    const refPointLayer = findRefPointLayer(view, refPointLayerId);
 
     const layers: FeatureLayer[] = [];
     view.map.allLayers.forEach((layer) => {

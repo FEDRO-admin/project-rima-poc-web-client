@@ -59,7 +59,7 @@ export class RbbsService {
 
     let refPointLayerId: number;
     try {
-      refPointLayerId = this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME);
+      refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
     } catch {
       refPointLayerId = -1;
     }

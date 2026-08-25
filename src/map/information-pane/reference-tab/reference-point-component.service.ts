@@ -17,7 +17,7 @@ import {
 import { applyPointEdits } from './reference-point-helpers';
 import { REF_POINT_TYPE_FIELD, REF_POINT_LAYER_NAME } from '../../map-config';
 import { ViewStore } from '../../view/view.store';
-import { ViewService, RimaView } from '../../view/view.service';
+import { ViewService } from '../../view/view.service';
 import { HistoryStore } from '../../history/history.store';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
@@ -44,23 +44,23 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Resolution & Loading ---
 
-  resolveAndLoad(graphic: Graphic): void {
+  async resolveAndLoad(graphic: Graphic): Promise<void> {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.resolve(layer);
+    await this.resolve(layer);
     this.loadPoints(layer, graphic);
   }
 
-  resolveForCreate(layer: FeatureLayer): void {
-    this.resolve(layer);
+  async resolveForCreate(layer: FeatureLayer): Promise<void> {
+    await this.resolve(layer);
   }
 
-  resolveAndLoadForView(graphic: Graphic): void {
+  async resolveAndLoadForView(graphic: Graphic): Promise<void> {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    this.resolve(layer);
+    await this.resolve(layer);
     this.loadPointsForView(layer, graphic);
   }
 
@@ -248,7 +248,7 @@ export class ReferencePointComponentService implements OnDestroy {
     const relatedLayer = this.store.relatedLayer();
     if (!relatedLayer) return;
 
-    const parentLayerName = this.resolveParentClassName(parentLayer);
+    const parentLayerName = await this.resolveParentClassName(parentLayer);
     this.viewStore.setSaving(true);
     try {
       await applyPointEdits(
@@ -266,9 +266,11 @@ export class ReferencePointComponentService implements OnDestroy {
     }
   }
 
-  private resolveParentClassName(layer: FeatureLayer): string {
+  private async resolveParentClassName(layer: FeatureLayer): Promise<string> {
+    const view = this.viewService.activeView();
+    if (!view?.map) return layer.title ?? '';
     try {
-      return this.layerIdResolver.resolveName(layer.layerId);
+      return await this.layerIdResolver.resolveNameAsync(layer.layerId, view.map);
     } catch {
       return layer.title ?? '';
     }
@@ -381,14 +383,22 @@ export class ReferencePointComponentService implements OnDestroy {
 
   // --- Private ---
 
-  private resolve(layer: FeatureLayer): void {
+  private async resolve(layer: FeatureLayer): Promise<void> {
     const view = this.viewService.activeView();
     if (!view) {
       this.store.setup(undefined, undefined, []);
       return;
     }
 
-    const refPointLayer = this.findRefPointLayerSafe(view);
+    let refPointLayerId: number;
+    try {
+      refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
+    } catch {
+      this.store.setup(undefined, undefined, []);
+      return;
+    }
+
+    const refPointLayer = findRefPointLayer(view, refPointLayerId);
     if (!refPointLayer) {
       this.store.setup(undefined, undefined, []);
       return;
@@ -397,14 +407,6 @@ export class ReferencePointComponentService implements OnDestroy {
     const relationshipId = findRelationshipId(layer, refPointLayer.layerId);
     const fields = resolveEditableFields(refPointLayer);
     this.store.setup(relationshipId, refPointLayer, fields);
-  }
-
-  private findRefPointLayerSafe(view: RimaView): FeatureLayer | undefined {
-    try {
-      return findRefPointLayer(view, this.layerIdResolver.resolveId(REF_POINT_LAYER_NAME));
-    } catch {
-      return findRefPointLayer(view, -1);
-    }
   }
 
   private async loadPoints(layer: FeatureLayer, graphic: Graphic): Promise<void> {

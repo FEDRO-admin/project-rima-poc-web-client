@@ -35,13 +35,20 @@ export class StatusComponentService {
   private readonly store = inject(StatusComponentStore);
   private readonly layerIdResolver = inject(LayerIdResolver);
 
-  resolveForView(
+  async resolveForView(
     layer: FeatureLayer,
-  ): { relationshipId: number; statusLayer: FeatureLayer; fields: AttributeEditField[] } | undefined {
+  ): Promise<{ relationshipId: number; statusLayer: FeatureLayer; fields: AttributeEditField[] } | undefined> {
     const view = this.viewService.activeView();
     if (!view) return undefined;
 
-    const statusLayer = this.findStatusLayerSafe(view);
+    let statusLayerId: number;
+    try {
+      statusLayerId = await this.layerIdResolver.resolveIdAsync(STATUS_LAYER_NAME, view.map);
+    } catch {
+      return undefined;
+    }
+
+    const statusLayer = findStatusLayer(view, statusLayerId);
     if (!statusLayer) return undefined;
 
     const relationshipId = findStatusRelationshipId(layer, statusLayer.layerId);
@@ -59,9 +66,11 @@ export class StatusComponentService {
     }
   }
 
-  private resolveParentClassName(layer: FeatureLayer): string {
+  private async resolveParentClassName(layer: FeatureLayer): Promise<string> {
+    const view = this.viewService.activeView();
+    if (!view?.map) return layer.title ?? '';
     try {
-      return this.layerIdResolver.resolveName(layer.layerId);
+      return await this.layerIdResolver.resolveNameAsync(layer.layerId, view.map);
     } catch {
       return layer.title ?? '';
     }
@@ -73,7 +82,7 @@ export class StatusComponentService {
     const layer = graphic.layer;
     if (!(layer instanceof FeatureLayer)) return;
 
-    const resolved = this.resolveForView(layer);
+    const resolved = await this.resolveForView(layer);
     if (!resolved) return;
 
     this.store.setup(resolved.relationshipId);
@@ -179,7 +188,7 @@ export class StatusComponentService {
     const statusLayer = this.getStatusLayer();
     if (!statusLayer) return;
 
-    const parentLayerName = this.resolveParentClassName(graphic.layer as FeatureLayer);
+    const parentLayerName = await this.resolveParentClassName(graphic.layer as FeatureLayer);
     this.store.setSaving(true);
     this.viewStore.setSaving(true);
     try {

@@ -123,7 +123,7 @@ export class DocumentsService {
         ...payload.editableAttributes,
         id: crypto.randomUUID(),
         fk_parent: parentKeyValue,
-        parent_class_name: this.resolveParentClassName(layer),
+        parent_class_name: await this.resolveParentClassName(layer),
         pfad: downloadUrl,
         name: payload.file.name,
         groesse: payload.file.size,
@@ -356,9 +356,11 @@ export class DocumentsService {
     return graphic.attributes[keyField] ?? '';
   }
 
-  private resolveParentClassName(layer: FeatureLayer): string {
+  private async resolveParentClassName(layer: FeatureLayer): Promise<string> {
+    const view = this.viewService.activeView();
+    if (!view?.map) return layer.title ?? '';
     try {
-      return this.layerIdResolver.resolveName(layer.layerId);
+      return await this.layerIdResolver.resolveNameAsync(layer.layerId, view.map);
     } catch {
       return layer.title ?? '';
     }
