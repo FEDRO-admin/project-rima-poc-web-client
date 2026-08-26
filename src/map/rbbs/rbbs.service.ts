@@ -57,13 +57,7 @@ export class RbbsService {
     layer: FeatureLayer,
     graphic: Graphic,
   ): Promise<{ vonPoint: Point; bisPoint: Point } | undefined> {
-    let vonRef: ReferencePoint | undefined;
-    let bisRef: ReferencePoint | undefined;
-    try {
-      ({ vonRef, bisRef } = await this.queryReferenzpunkte(layer, graphic));
-    } catch {
-      // Fall through to geometry-based resolution
-    }
+    const { vonRef, bisRef } = await this.queryReferenzpunkte(layer, graphic);
 
     const vertices = this.extractVertices(graphic);
 

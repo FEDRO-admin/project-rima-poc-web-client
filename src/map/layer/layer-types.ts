@@ -20,8 +20,17 @@ interface LayerBase {
   opacity?: number;
 }
 
+export interface DrawingInfoJson {
+  renderer?: object;
+}
+
+export interface LayerDefinitionJson {
+  drawingInfo?: DrawingInfoJson;
+}
+
 export interface FeatureLayerJson extends LayerBase {
   layerType: typeof LAYER_TYPE_FEATURE;
+  layerDefinition?: LayerDefinitionJson;
 }
 
 export interface GroupLayerJson extends LayerBase {

@@ -4,12 +4,14 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import Layer from '@arcgis/core/layers/Layer';
+import { fromJSON as rendererFromJSON } from '@arcgis/core/renderers/support/jsonUtils';
 import { RIMA_SWITZERLAND_EXTENT } from '../map-constants';
 import {
   LAYER_TYPE_FEATURE,
   LAYER_TYPE_GROUP,
   LAYER_TYPE_WMS,
   LAYER_TYPE_WEB_TILED,
+  type FeatureLayerJson,
   type WebmapDataJson,
   type GroupLayerJson,
   type WebmapOperationalLayerJson,
@@ -40,7 +42,7 @@ export class LayerService {
   private parseLayer(entry: WebmapOperationalLayerJson): Layer | undefined {
     switch (entry.layerType) {
       case LAYER_TYPE_FEATURE:
-        return this.createFeatureLayer(entry);
+        return this.createFeatureLayer(entry as FeatureLayerJson);
       case LAYER_TYPE_GROUP:
         return this.createGroupLayer(entry as GroupLayerJson);
       case LAYER_TYPE_WMS:
@@ -52,8 +54,10 @@ export class LayerService {
     }
   }
 
-  private createFeatureLayer(entry: WebmapOperationalLayerJson): FeatureLayer | undefined {
+  private createFeatureLayer(entry: FeatureLayerJson): FeatureLayer | undefined {
     if (!entry.url) return undefined;
+
+    const rendererJson = entry.layerDefinition?.drawingInfo?.renderer;
 
     return new FeatureLayer({
       url: entry.url,
@@ -61,6 +65,7 @@ export class LayerService {
       visible: entry.visibility ?? true,
       fullExtent: RIMA_SWITZERLAND_EXTENT,
       outFields: ['*'],
+      ...(rendererJson && { renderer: rendererFromJSON(rendererJson) }),
     });
   }
 
