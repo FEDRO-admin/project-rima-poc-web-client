@@ -7,6 +7,7 @@ import { TocComponent } from './toc/toc.component';
 import { PopupComponent } from './information-pane/popup.component';
 import { SceneToggleComponent } from './view/view-toggle/scene-toggle.component';
 import { BasemapGalleryComponent } from './view/basemap/basemap-gallery/basemap-gallery.component';
+import { SceneToolsComponent } from './view/sceneview/scene-tools/scene-tools.component';
 import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
 import { SceneViewService } from './view/sceneview/sceneview.service';
@@ -14,7 +15,14 @@ import { HistoryPickerComponent } from './history/history-picker/history-picker.
 
 @Component({
   selector: 'rima-map',
-  imports: [TocComponent, PopupComponent, SceneToggleComponent, BasemapGalleryComponent, HistoryPickerComponent],
+  imports: [
+    TocComponent,
+    PopupComponent,
+    SceneToggleComponent,
+    BasemapGalleryComponent,
+    SceneToolsComponent,
+    HistoryPickerComponent,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',

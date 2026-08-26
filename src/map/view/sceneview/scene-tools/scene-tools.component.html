@@ -1,0 +1,88 @@
+@if (viewStore.mode() === 'scene') {
+  <button
+    class="scene-tools-toggle"
+    (click)="toggle()"
+    [attr.aria-label]="open() ? 'Close scene tools' : 'Open scene tools'"
+    [class.active]="open()"
+  >
+    <calcite-icon icon="urban-model" scale="s"></calcite-icon>
+  </button>
+
+  @if (minimized()) {
+    <button class="scene-tools-restore" (click)="restore()" aria-label="Restore scene tools">
+      <calcite-icon icon="urban-model" scale="s"></calcite-icon>
+      <calcite-icon icon="chevron-right" scale="s"></calcite-icon>
+    </button>
+  }
+
+  @if (open()) {
+    <div class="scene-tools-panel" [class.minimized]="minimized()">
+      <div class="panel-header">
+        <span class="panel-title">Scene Tools</span>
+        <button class="minimize-button" (click)="minimize()" aria-label="Minimize scene tools">
+          <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+        </button>
+      </div>
+      <div class="tool-selector">
+        <button
+          class="tool-button"
+          [class.active]="activeTool() === 'daylight'"
+          (click)="selectTool('daylight')"
+          aria-label="Daylight"
+        >
+          <calcite-icon icon="brightness" scale="s"></calcite-icon>
+        </button>
+        <button
+          class="tool-button"
+          [class.active]="activeTool() === 'slice'"
+          (click)="selectTool('slice')"
+          aria-label="Slice"
+        >
+          <calcite-icon icon="slice" scale="s"></calcite-icon>
+        </button>
+        <button
+          class="tool-button"
+          [class.active]="activeTool() === 'elevation-profile'"
+          (click)="selectTool('elevation-profile')"
+          aria-label="Elevation Profile"
+        >
+          <calcite-icon icon="altitude" scale="s"></calcite-icon>
+        </button>
+        <button
+          class="tool-button"
+          [class.active]="activeTool() === 'measurement-3d'"
+          (click)="selectTool('measurement-3d')"
+          aria-label="3D Measurement"
+        >
+          <calcite-icon icon="measure-line" scale="s"></calcite-icon>
+        </button>
+      </div>
+
+      @switch (activeTool()) {
+        @case ('daylight') {
+          <div class="tool-content">
+            <arcgis-daylight #daylightRef auto-destroy-disabled></arcgis-daylight>
+          </div>
+        }
+        @case ('slice') {
+          <div class="tool-content">
+            <arcgis-slice #sliceRef auto-destroy-disabled></arcgis-slice>
+          </div>
+        }
+        @case ('elevation-profile') {
+          <div class="tool-content">
+            <arcgis-elevation-profile #elevationProfileRef auto-destroy-disabled></arcgis-elevation-profile>
+          </div>
+        }
+        @case ('measurement-3d') {
+          <div class="tool-content">
+            <arcgis-direct-line-measurement-3d
+              #measurementRef
+              auto-destroy-disabled
+            ></arcgis-direct-line-measurement-3d>
+          </div>
+        }
+      }
+    </div>
+  }
+}
