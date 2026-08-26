@@ -44,13 +44,13 @@ export class RbbsEffects {
     const view = this.viewService.activeView();
     if (!view?.map) return;
 
-    let refPointLayerId: number;
+    let refPointLayer: FeatureLayer | undefined;
     try {
-      refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
+      const refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
+      refPointLayer = findRefPointLayer(view, refPointLayerId);
     } catch {
-      return;
+      // Referenzpunkt layer not available — geometry-based RBBS still works.
     }
-    const refPointLayer = findRefPointLayer(view, refPointLayerId);
 
     const layers: FeatureLayer[] = [];
     view.map.allLayers.forEach((layer) => {
@@ -98,7 +98,9 @@ export class RbbsEffects {
       deletedFeatures: FeatureEditResult[];
     },
   ): Promise<void> {
-    const affectedObjectIds = [...event.addedFeatures, ...event.updatedFeatures, ...event.deletedFeatures]
+    // Deleted features are excluded — they can't be queried for fk_parent.
+    // Deletion-triggered recalculation is handled by ReferencePointComponentService.
+    const affectedObjectIds = [...event.addedFeatures, ...event.updatedFeatures]
       .filter((r) => !r.error && r.objectId != null)
       .map((r) => r.objectId as number);
 
@@ -128,36 +130,8 @@ export class RbbsEffects {
   }
 
   private async recalculateForParentIds(parentIds: string[]): Promise<void> {
-    const view = this.viewService.activeView();
-    if (!view?.map) return;
-
-    const rbbsLayers: FeatureLayer[] = [];
-    view.map.allLayers.forEach((layer) => {
-      if (layer instanceof FeatureLayer && this.isRbbsLayer(layer)) {
-        rbbsLayers.push(layer);
-      }
-    });
-
     for (const parentId of parentIds) {
-      for (const layer of rbbsLayers) {
-        const query = layer.createQuery();
-        query.where = `id = '${parentId}'`;
-        query.outFields = ['*'];
-        query.returnGeometry = true;
-
-        const result = await layer.queryFeatures(query);
-        const graphic = result.features[0];
-        if (graphic) {
-          const objectId = graphic.attributes[layer.objectIdField] as number;
-          this.calculating.add(objectId);
-          try {
-            await this.rbbsService.calculateAndSave(layer, graphic);
-          } finally {
-            this.calculating.delete(objectId);
-          }
-          break;
-        }
-      }
+      await this.rbbsService.recalculateForParent(parentId);
     }
   }
 

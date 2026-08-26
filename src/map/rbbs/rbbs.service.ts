@@ -5,6 +5,8 @@ import esriRequest from '@arcgis/core/request';
 import Point from '@arcgis/core/geometry/Point';
 import type Polygon from '@arcgis/core/geometry/Polygon';
 import type Polyline from '@arcgis/core/geometry/Polyline';
+import type MapView from '@arcgis/core/views/MapView';
+import type SceneView from '@arcgis/core/views/SceneView';
 
 import { ViewService } from '../view/view.service';
 import { LayerIdResolver } from '../layer/layer-id-resolver';
@@ -14,6 +16,7 @@ import {
   findRefPointLayer,
   queryRelatedPoints,
 } from '../information-pane/reference-tab/reference-point-resolution';
+import type { ReferencePoint } from '../information-pane/reference-tab/reference-point-types';
 import {
   RBBS_TRANSFORM_URL,
   RBBS_VON_FIELD,
@@ -54,35 +57,84 @@ export class RbbsService {
     layer: FeatureLayer,
     graphic: Graphic,
   ): Promise<{ vonPoint: Point; bisPoint: Point } | undefined> {
+    let vonRef: ReferencePoint | undefined;
+    let bisRef: ReferencePoint | undefined;
+    try {
+      ({ vonRef, bisRef } = await this.queryReferenzpunkte(layer, graphic));
+    } catch {
+      // Fall through to geometry-based resolution
+    }
+
+    const vertices = this.extractVertices(graphic);
+
+    const vonPoint = vonRef?.geometry ?? (vertices?.length ? this.findWestMost(vertices) : undefined);
+    const bisPoint = bisRef?.geometry ?? (vertices?.length ? this.findEastMost(vertices) : undefined);
+
+    if (!vonPoint || !bisPoint) return undefined;
+    return { vonPoint, bisPoint };
+  }
+
+  async hasCompleteReferenzpunkte(layer: FeatureLayer, graphic: Graphic): Promise<boolean> {
+    const { vonRef, bisRef } = await this.queryReferenzpunkte(layer, graphic);
+    return !!(vonRef?.geometry && bisRef?.geometry);
+  }
+
+  async recalculateForParent(parentId: string): Promise<void> {
     const view = this.viewService.activeView();
-    if (!view) return undefined;
+    if (!view?.map) return;
+
+    const rbbsLayers = this.findRbbsLayers(view);
+    for (const layer of rbbsLayers) {
+      const query = layer.createQuery();
+      query.where = `id = '${parentId}'`;
+      query.outFields = ['*'];
+      query.returnGeometry = true;
+
+      const result = await layer.queryFeatures(query);
+      const graphic = result.features[0];
+      if (graphic) {
+        await this.calculateAndSave(layer, graphic);
+        break;
+      }
+    }
+  }
+
+  findRbbsLayers(view: MapView | SceneView): FeatureLayer[] {
+    const layers: FeatureLayer[] = [];
+    view.map?.allLayers.forEach((layer) => {
+      if (layer instanceof FeatureLayer && layer.fields?.some((f) => f.name === RBBS_VON_FIELD)) {
+        layers.push(layer);
+      }
+    });
+    return layers;
+  }
+
+  private async queryReferenzpunkte(
+    layer: FeatureLayer,
+    graphic: Graphic,
+  ): Promise<{ vonRef: ReferencePoint | undefined; bisRef: ReferencePoint | undefined }> {
+    const view = this.viewService.activeView();
+    if (!view) return { vonRef: undefined, bisRef: undefined };
 
     let refPointLayerId: number;
     try {
       refPointLayerId = await this.layerIdResolver.resolveIdAsync(REF_POINT_LAYER_NAME, view.map);
     } catch {
-      refPointLayerId = -1;
+      return { vonRef: undefined, bisRef: undefined };
     }
     const relatedLayer = findRefPointLayer(view, refPointLayerId);
     const relationshipId = relatedLayer ? findRelationshipId(layer, relatedLayer.layerId) : undefined;
 
-    if (relationshipId != null && relatedLayer) {
+    if (relationshipId == null || !relatedLayer) return { vonRef: undefined, bisRef: undefined };
+
+    try {
       const points = await queryRelatedPoints(layer, graphic, relationshipId, relatedLayer);
       const vonRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'von');
       const bisRef = points.find((p) => p.attributes[REF_POINT_TYPE_FIELD] === 'bis');
-
-      if (vonRef?.geometry && bisRef?.geometry) {
-        return { vonPoint: vonRef.geometry, bisPoint: bisRef.geometry };
-      }
+      return { vonRef, bisRef };
+    } catch {
+      return { vonRef: undefined, bisRef: undefined };
     }
-
-    const vertices = this.extractVertices(graphic);
-    if (!vertices || vertices.length === 0) return undefined;
-
-    const vonPoint = this.findWestMost(vertices);
-    const bisPoint = this.findEastMost(vertices);
-
-    return { vonPoint, bisPoint };
   }
 
   private async callSoe(vonPoint: Point, bisPoint: Point): Promise<XyToRbbsResult[] | undefined> {

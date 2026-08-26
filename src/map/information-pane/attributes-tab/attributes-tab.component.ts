@@ -109,7 +109,12 @@ export class AttributesTabComponent {
 
     if (hasFieldMetadata(layer)) {
       return layer.fields
-        .filter((field) => !isImmutableField(field.name, layer) && !RBBS_FIELDS.includes(field.name))
+        .filter(
+          (field) =>
+            !isImmutableField(field.name, layer) &&
+            !RBBS_FIELDS.includes(field.name) &&
+            field.name !== ZUSTANDSNOTE_FIELD,
+        )
         .map((field) => ({
           label: field.alias || field.name,
           value: resolveFieldDisplayValue(graphic, field, attrs[field.name]),

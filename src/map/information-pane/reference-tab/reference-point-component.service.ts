@@ -22,6 +22,7 @@ import { HistoryStore } from '../../history/history.store';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { buildSnappingSources, cleanupSketchResources } from '../../shared/sketch-utils';
 import { LayerIdResolver } from '../../layer/layer-id-resolver';
+import { RbbsService } from '../../rbbs/rbbs.service';
 
 @Injectable()
 export class ReferencePointComponentService implements OnDestroy {
@@ -30,6 +31,7 @@ export class ReferencePointComponentService implements OnDestroy {
   private readonly viewService = inject(ViewService);
   private readonly historyStore = inject(HistoryStore);
   private readonly layerIdResolver = inject(LayerIdResolver);
+  private readonly rbbsService = inject(RbbsService);
 
   private displayLayer: GraphicsLayer | undefined;
   private highlightLayer: GraphicsLayer | undefined;
@@ -249,6 +251,7 @@ export class ReferencePointComponentService implements OnDestroy {
     if (!relatedLayer) return;
 
     const parentLayerName = await this.resolveParentClassName(parentLayer);
+    const hadDeletions = this.store.deletedObjectIds().length > 0;
     this.viewStore.setSaving(true);
     try {
       await applyPointEdits(
@@ -263,6 +266,10 @@ export class ReferencePointComponentService implements OnDestroy {
     } catch (error) {
       this.viewStore.setSaving(false);
       throw new ReferencePointSaveError(error);
+    }
+
+    if (hadDeletions) {
+      this.rbbsService.recalculateForParent(parentId).catch(() => undefined);
     }
   }
 
