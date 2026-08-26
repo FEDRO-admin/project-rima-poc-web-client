@@ -2,6 +2,22 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import type { CreateTool } from '@arcgis/core/widgets/Sketch/types';
+import { ZUSTANDSNOTE_FIELD } from '../../grade/grade-config';
+import { RBBS_FIELDS } from '../../rbbs/rbbs-config';
+
+/**
+ * Fields hidden from the edit/create panes.
+ * Use '*' to hide a field on all layers, or a layer title to scope it.
+ */
+export const HIDDEN_EDIT_FIELDS: Record<string, readonly string[]> = {
+  '*': [...RBBS_FIELDS, ZUSTANDSNOTE_FIELD],
+};
+
+export function isHiddenEditField(fieldName: string, layerTitle: string | null | undefined): boolean {
+  const globalHidden = HIDDEN_EDIT_FIELDS['*'] ?? [];
+  const layerHidden = layerTitle ? (HIDDEN_EDIT_FIELDS[layerTitle] ?? []) : [];
+  return globalHidden.includes(fieldName) || layerHidden.includes(fieldName);
+}
 
 export const EDIT_POINT_SYMBOL = new SimpleMarkerSymbol({
   color: [0, 121, 193, 0.3],

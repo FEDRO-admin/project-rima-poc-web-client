@@ -9,7 +9,7 @@ import {
   convertAttributeFieldType,
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
-import { RBBS_FIELDS } from '../rbbs/rbbs-config';
+import { isHiddenEditField } from '../information-pane/attributes-tab/attributes-config';
 
 export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
   const layer = graphic.layer;
@@ -18,7 +18,7 @@ export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditF
   }
 
   return layer.fields
-    .filter((field) => !isImmutableField(field.name, layer) && !RBBS_FIELDS.includes(field.name))
+    .filter((field) => !isImmutableField(field.name, layer) && !isHiddenEditField(field.name, layer.title))
     .map((field) => buildEditAttributeField(field));
 }
 
