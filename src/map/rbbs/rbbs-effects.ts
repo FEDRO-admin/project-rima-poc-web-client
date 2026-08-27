@@ -84,7 +84,7 @@ export class RbbsEffects {
 
     for (const result of updatedFeatures) {
       if (result.error || result.objectId == null) continue;
-      if (this.rbbsService.calculating.has(result.objectId)) continue;
+      if (this.rbbsService.isCalculating(result.objectId)) continue;
       await this.recalculateForObjectId(layer, result.objectId);
     }
   }
@@ -135,21 +135,16 @@ export class RbbsEffects {
   }
 
   private async recalculateForObjectId(layer: FeatureLayer, objectId: number): Promise<void> {
-    this.rbbsService.calculating.add(objectId);
-    try {
-      const query = layer.createQuery();
-      query.objectIds = [objectId];
-      query.outFields = ['*'];
-      query.returnGeometry = true;
+    const query = layer.createQuery();
+    query.objectIds = [objectId];
+    query.outFields = ['*'];
+    query.returnGeometry = true;
 
-      const result = await layer.queryFeatures(query);
-      const graphic = result.features[0];
-      if (!graphic) return;
+    const result = await layer.queryFeatures(query);
+    const graphic = result.features[0];
+    if (!graphic) return;
 
-      await this.rbbsService.calculateAndSave(layer, graphic);
-    } finally {
-      this.rbbsService.calculating.delete(objectId);
-    }
+    await this.rbbsService.calculateAndSave(layer, graphic);
   }
 
   private removeAllHandles(): void {

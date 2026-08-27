@@ -36,9 +36,17 @@ type AttributeValue = string | number | null;
 export class RbbsService {
   private readonly viewService = inject(ViewService);
   private readonly layerIdResolver = inject(LayerIdResolver);
-  readonly calculating = new Set<number>();
+  private readonly calculating = new Set<number>();
+
+  isCalculating(objectId: number): boolean {
+    return this.calculating.has(objectId);
+  }
 
   async calculateAndSave(layer: FeatureLayer, graphic: Graphic): Promise<void> {
+    const objectId = graphic.attributes[layer.objectIdField] as number;
+    if (this.calculating.has(objectId)) return;
+
+    this.calculating.add(objectId);
     try {
       const coordinates = await this.resolveCoordinates(layer, graphic);
       if (!coordinates) return;
@@ -51,6 +59,8 @@ export class RbbsService {
     } catch (error) {
       if (error instanceof RbbsCalculationError || error instanceof RbbsSaveError) throw error;
       throw new RbbsCalculationError(error);
+    } finally {
+      this.calculating.delete(objectId);
     }
   }
 
@@ -88,13 +98,7 @@ export class RbbsService {
       const result = await layer.queryFeatures(query);
       const graphic = result.features[0];
       if (graphic) {
-        const objectId = graphic.attributes[layer.objectIdField] as number;
-        this.calculating.add(objectId);
-        try {
-          await this.calculateAndSave(layer, graphic);
-        } finally {
-          this.calculating.delete(objectId);
-        }
+        await this.calculateAndSave(layer, graphic);
         break;
       }
     }
