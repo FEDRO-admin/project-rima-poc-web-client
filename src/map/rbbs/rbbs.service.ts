@@ -36,6 +36,7 @@ type AttributeValue = string | number | null;
 export class RbbsService {
   private readonly viewService = inject(ViewService);
   private readonly layerIdResolver = inject(LayerIdResolver);
+  readonly calculating = new Set<number>();
 
   async calculateAndSave(layer: FeatureLayer, graphic: Graphic): Promise<void> {
     try {
@@ -87,7 +88,13 @@ export class RbbsService {
       const result = await layer.queryFeatures(query);
       const graphic = result.features[0];
       if (graphic) {
-        await this.calculateAndSave(layer, graphic);
+        const objectId = graphic.attributes[layer.objectIdField] as number;
+        this.calculating.add(objectId);
+        try {
+          await this.calculateAndSave(layer, graphic);
+        } finally {
+          this.calculating.delete(objectId);
+        }
         break;
       }
     }
@@ -198,6 +205,11 @@ export class RbbsService {
     graphic: Graphic,
     values: Record<string, AttributeValue>,
   ): Promise<void> {
+    const hasChanges = Object.entries(values).some(
+      ([key, value]) => String(graphic.attributes[key] ?? '') !== String(value ?? ''),
+    );
+    if (!hasChanges) return;
+
     const objectIdField = layer.objectIdField;
     const objectId = graphic.attributes[objectIdField];
 
