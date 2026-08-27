@@ -9,11 +9,13 @@ import {
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideTransloco } from '@jsverse/transloco';
+import esriConfig from '@arcgis/core/config';
 import { routes } from './app.routes';
 import { ErrorHandlerService } from '../error-handling/error-handler.service';
 import { AppEffectsService } from './app-effects.service';
 import { languageConfig } from '../i18n/language';
 import { TranslocoHttpLoader } from '../i18n/transloco/transloco-loader';
+import { RIMA_PORTAL_URL } from '../map/map-config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,6 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(),
     provideAppInitializer(() => {
+      esriConfig.portalUrl = RIMA_PORTAL_URL;
       inject(AppEffectsService);
     }),
     provideTransloco({

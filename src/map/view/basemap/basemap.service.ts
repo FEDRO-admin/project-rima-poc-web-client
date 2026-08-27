@@ -1,6 +1,5 @@
 import { inject, Injectable } from '@angular/core';
 import type Basemap from '@arcgis/core/Basemap';
-import PortalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/PortalBasemapsSource';
 import { PortalService } from '../../portal/portal.service';
 import { BasemapLoadError, Default3DBasemapMissingError } from './basemap-errors';
 
@@ -32,10 +31,5 @@ export class BasemapService {
       if (error instanceof Default3DBasemapMissingError) throw error;
       throw new BasemapLoadError(error);
     }
-  }
-
-  async createSource(): Promise<PortalBasemapsSource> {
-    const portal = await this.portalService.getPortal();
-    return new PortalBasemapsSource({ portal });
   }
 }
