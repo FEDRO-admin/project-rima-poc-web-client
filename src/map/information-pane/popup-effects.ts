@@ -1,18 +1,22 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { PopupService } from './popup.service';
 import { PopupStore } from './popup.store';
 import { ViewService } from '../view/view.service';
+import { ViewStore } from '../view/view.store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PopupEffects {
   private readonly viewService = inject(ViewService);
+  private readonly viewStore = inject(ViewStore);
   private readonly popupService = inject(PopupService);
   private readonly popupStore = inject(PopupStore);
 
   constructor() {
     this.attachClickHandler();
+    this.closeOnSceneSwitch();
     this.highlightSelected();
     this.highlightHovered();
     this.clearHighlight();
@@ -24,6 +28,21 @@ export class PopupEffects {
       untracked(() => {
         if (view) {
           this.popupService.attach(view);
+        }
+      });
+    });
+  }
+
+  private closeOnSceneSwitch(): void {
+    effect(() => {
+      const mode = this.viewStore.mode();
+      untracked(() => {
+        if (mode !== 'scene' || !this.popupStore.visible()) return;
+        const hasNonTransferredGraphic = this.popupStore
+          .graphics()
+          .some((g) => !(g.layer instanceof FeatureLayer && g.layer.hasZ));
+        if (hasNonTransferredGraphic) {
+          this.popupStore.close();
         }
       });
     });
