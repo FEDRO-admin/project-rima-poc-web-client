@@ -89,7 +89,12 @@
   color: #2b2b2b;
 }
 
-.minimize-button {
+.panel-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.header-button {
   display: flex;
   align-items: center;
   justify-content: center;

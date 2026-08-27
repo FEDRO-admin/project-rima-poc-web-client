@@ -19,9 +19,14 @@
     <div class="scene-tools-panel" [class.minimized]="minimized()">
       <div class="panel-header">
         <span class="panel-title">Scene Tools</span>
-        <button class="minimize-button" (click)="minimize()" aria-label="Minimize scene tools">
-          <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
-        </button>
+        <div class="panel-header-actions">
+          <button class="header-button" (click)="minimize()" aria-label="Minimize scene tools">
+            <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+          </button>
+          <button class="header-button" (click)="close()" aria-label="Close scene tools">
+            <calcite-icon icon="x" scale="s"></calcite-icon>
+          </button>
+        </div>
       </div>
       <div class="tool-selector">
         <button

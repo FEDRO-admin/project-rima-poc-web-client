@@ -46,11 +46,18 @@ export class SceneToolsComponent {
   }
 
   protected toggle(): void {
-    this.open.update((v) => !v);
-    if (!this.open()) {
-      this.activeTool.set(null);
-      this.minimized.set(false);
+    if (this.open()) {
+      this.close();
+    } else {
+      this.open.set(true);
     }
+  }
+
+  protected close(): void {
+    this.clearActiveTool();
+    this.open.set(false);
+    this.activeTool.set(null);
+    this.minimized.set(false);
   }
 
   protected minimize(): void {
@@ -62,6 +69,7 @@ export class SceneToolsComponent {
   }
 
   protected selectTool(tool: SceneTool): void {
+    this.clearActiveTool();
     this.activeTool.set(this.activeTool() === tool ? null : tool);
   }
 
@@ -70,9 +78,7 @@ export class SceneToolsComponent {
       const mode = this.viewStore.mode();
       untracked(() => {
         if (mode !== 'scene') {
-          this.open.set(false);
-          this.activeTool.set(null);
-          this.minimized.set(false);
+          this.close();
         }
       });
     });
@@ -96,6 +102,23 @@ export class SceneToolsComponent {
         if (measurement) measurement.view = view;
       });
     });
+  }
+
+  private clearActiveTool(): void {
+    switch (this.activeTool()) {
+      case 'measurement-3d':
+        this.measurementEl()?.nativeElement?.clear();
+        break;
+      case 'slice':
+        this.sliceEl()?.nativeElement?.clear();
+        break;
+      case 'elevation-profile':
+        this.elevationProfileEl()?.nativeElement?.clear();
+        break;
+      case 'daylight':
+      case null:
+        break;
+    }
   }
 
   private async configureElevationProfiles(el: HTMLArcgisElevationProfileElement): Promise<void> {
