@@ -93,6 +93,8 @@ export class PopupService implements OnDestroy {
       const refreshedFeature = featureSet.features[0];
       if (refreshedFeature) {
         this.popupStore.replaceSelectedGraphic(refreshedFeature);
+      } else {
+        this.popupStore.close();
       }
     } catch (error) {
       throw new PopupRefreshError(error);
