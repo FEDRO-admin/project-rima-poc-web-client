@@ -1,5 +1,8 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   font-size: 13px;
   font-family: 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -7,9 +10,14 @@
 .popup-content {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .popup-panel {
   padding: 4px 0;
   min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }

@@ -13,6 +13,7 @@ import '@esri/calcite-components/dist/components/calcite-action-bar';
 import { DialogActionsComponent } from '../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action.component';
 import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
+import { buildFeatureDisplayLabel, buildFeatureListLabel } from '../shared/display-label';
 
 @Component({
   selector: 'rima-popup',
@@ -40,10 +41,14 @@ export class PopupComponent {
   protected readonly activeGraphicTitle = computed(() => {
     const graphic = this.store.selectedGraphic();
     if (!graphic) return this.activeTabLabel();
-    return this.getFeatureTitle(graphic);
+    return buildFeatureDisplayLabel(graphic);
   });
 
+  protected readonly activeGraphicSubtitle = computed(() => this.store.selectedGraphic()?.layer?.title ?? '');
+
   protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
+
+  protected readonly actionBarExpanded = signal(false);
 
   protected readonly isFeatureLayerSelected = computed(() => {
     const graphic = this.store.selectedGraphic();
@@ -78,15 +83,12 @@ export class PopupComponent {
     this.activeTab.set(tab);
   }
 
-  getFeatureLabel(graphic: Graphic): string {
-    const attrs = graphic.attributes;
-    if (!attrs) return 'Feature';
-    return attrs.OBJECTID ?? attrs.FID ?? attrs.ID ?? Object.values(attrs)[0] ?? 'Feature';
+  onActionBarToggle(event: Event): void {
+    const bar = event.target as HTMLElement & { expanded: boolean };
+    this.actionBarExpanded.set(bar.expanded);
   }
 
-  getFeatureTitle(graphic: Graphic): string {
-    const attrs = graphic.attributes;
-    if (!attrs) return 'Feature';
-    return attrs.id ?? attrs.name ?? attrs.objectid ?? Object.values(attrs)[0] ?? 'Feature';
+  getFeatureLabel(graphic: Graphic): string {
+    return buildFeatureListLabel(graphic);
   }
 }

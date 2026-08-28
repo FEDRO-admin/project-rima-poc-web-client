@@ -1,19 +1,41 @@
 @if (store.visible() || editStore.active()) {
-  <div class="popup-container" (keydown.escape)="onEscape()" tabindex="-1">
-    @if (editStore.isCreating()) {
-      <div class="popup-card">
-        <div class="popup-header">
+  <div
+    class="popup-container"
+    [class.action-bar-expanded]="actionBarExpanded()"
+    (keydown.escape)="onEscape()"
+    tabindex="-1"
+  >
+    <div class="popup-header">
+      @if (store.showDetail() && store.graphics().length > 1) {
+        <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
+          <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
+        </button>
+      }
+      <div class="popup-header-text">
+        @if (editStore.isCreating()) {
           <h3 class="popup-header-title">Create Feature</h3>
-          <span class="popup-header-spacer"></span>
-          <button class="popup-header-btn popup-close" (click)="cancelCreate()" aria-label="Close">✕</button>
-        </div>
-        <div class="popup-panel">
-          <rima-attributes-tab />
-        </div>
+        } @else if (store.showList()) {
+          <h3 class="popup-header-title">Features ({{ store.graphics().length }})</h3>
+        } @else if (store.showDetail()) {
+          <h3 class="popup-header-title">{{ activeGraphicTitle() }}</h3>
+          @if (activeGraphicSubtitle()) {
+            <span class="popup-header-subtitle">{{ activeGraphicSubtitle() }}</span>
+          }
+        }
       </div>
-    } @else {
-      @if (store.showDetail() && isFeatureLayerSelected()) {
-        <calcite-action-bar scale="s" class="popup-action-bar">
+      <span class="popup-header-spacer"></span>
+      <button
+        class="popup-header-btn popup-close"
+        (click)="editStore.isCreating() ? cancelCreate() : requestClose()"
+        aria-label="Close"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="popup-body">
+      @if (!editStore.isCreating() && store.showDetail() && isFeatureLayerSelected()) {
+        <calcite-action-bar scale="s" class="popup-action-bar" (calciteActionBarToggle)="onActionBarToggle($event)">
           <calcite-action
             icon="information"
             text="Attributes"
@@ -33,7 +55,7 @@
             (click)="selectTab('status')"
           ></calcite-action>
           <calcite-action
-            icon="organization"
+            icon="folder-open"
             text="Hierarchy"
             [attr.active]="activeTab() === 'hierarchy' ? '' : null"
             (click)="selectTab('hierarchy')"
@@ -46,50 +68,43 @@
           ></calcite-action>
         </calcite-action-bar>
       }
+
       <div class="popup-card">
-        <div class="popup-header">
-          @if (store.showDetail() && store.graphics().length > 1) {
-            <button class="popup-header-btn" (click)="store.backToList()" aria-label="Back to feature list">
-              <calcite-icon icon="chevron-left" scale="s"></calcite-icon>
-            </button>
+        @if (editStore.isCreating()) {
+          <div class="popup-panel">
+            <rima-attributes-tab />
+          </div>
+        } @else {
+          @if (store.showList()) {
+            <ul class="popup-feature-list">
+              @for (graphic of store.graphics(); track $index) {
+                <li>
+                  <button
+                    class="popup-feature-item"
+                    (click)="store.selectFeature($index)"
+                    (mouseenter)="store.hoverFeature($index)"
+                    (mouseleave)="store.hoverFeature(undefined)"
+                  >
+                    <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
+                    <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
           }
-          @if (store.showDetail()) {
-            <h3 class="popup-header-title">{{ activeGraphicTitle() }}</h3>
+
+          @if (store.showDetail() && store.selectedGraphic()) {
+            <rima-popup-content [graphic]="store.selectedGraphic()!" [activeTab]="activeTab()" />
           }
-          <span class="popup-header-spacer"></span>
-          <button class="popup-header-btn popup-close" (click)="requestClose()" aria-label="Close popup">✕</button>
-        </div>
 
-        @if (store.showList()) {
-          <h3 class="popup-list-title">Features ({{ store.graphics().length }})</h3>
-          <ul class="popup-feature-list">
-            @for (graphic of store.graphics(); track $index) {
-              <li>
-                <button
-                  class="popup-feature-item"
-                  (click)="store.selectFeature($index)"
-                  (mouseenter)="store.hoverFeature($index)"
-                  (mouseleave)="store.hoverFeature(undefined)"
-                >
-                  <span class="popup-feature-layer">{{ graphic.layer?.title }}</span>
-                  <span class="popup-feature-id">{{ getFeatureLabel(graphic) }}</span>
-                </button>
-              </li>
-            }
-          </ul>
-        }
-
-        @if (store.showDetail() && store.selectedGraphic()) {
-          <rima-popup-content [graphic]="store.selectedGraphic()!" [activeTab]="activeTab()" />
-        }
-
-        @if (deleteStore.confirmRequested()) {
-          <rima-dialog-actions message="Are you sure you want to delete this feature? This action cannot be undone.">
-            <rima-dialog-action label="Cancel" (triggered)="cancelDelete()" />
-            <rima-dialog-action label="Delete" variant="destructive" (triggered)="confirmDelete()" />
-          </rima-dialog-actions>
+          @if (deleteStore.confirmRequested()) {
+            <rima-dialog-actions message="Are you sure you want to delete this feature? This action cannot be undone.">
+              <rima-dialog-action label="Cancel" (triggered)="cancelDelete()" />
+              <rima-dialog-action label="Delete" variant="destructive" (triggered)="confirmDelete()" />
+            </rima-dialog-actions>
+          }
         }
       </div>
-    }
+    </div>
   </div>
 }
