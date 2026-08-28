@@ -1,7 +1,5 @@
 import Extent from '@arcgis/core/geometry/Extent';
 
-export const RIMA_PORTAL_URL = 'https://rima-poc.astra.admin.ch/arcgis';
-
 // SPATIAL REFERENCES
 export const RIMA_SPATIAL_REFERENCE_LV95_EPSG = 2056;
 export const RIMA_SPATIAL_REFERENCE_WGS84_EPSG = 4326;

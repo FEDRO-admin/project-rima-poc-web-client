@@ -1,0 +1,9 @@
+<button
+  class="dialog-action-btn"
+  [class.dialog-action-btn--primary]="variant() === 'primary'"
+  [class.dialog-action-btn--destructive]="variant() === 'destructive'"
+  [disabled]="disabled()"
+  (click)="triggered.emit()"
+>
+  {{ label() }}
+</button>

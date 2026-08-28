@@ -2,27 +2,24 @@ import { inject, Injectable } from '@angular/core';
 import MapView from '@arcgis/core/views/MapView';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Layer from '@arcgis/core/layers/Layer';
-import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
-import Basemap from '@arcgis/core/Basemap';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
 import { languageInfos } from '../../../i18n/language-info-config';
 import { MapViewAlreadyRegisteredError } from '../../map-errors';
-import {
-  RIMA_MAPVIEW_BASEMAP_WMTS_URL,
-  RIMA_MAPVIEW_BASEMAP_LAYER_ID,
-  RIMA_MAPVIEW_HIDDEN_CATEGORY,
-  RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP,
-} from './mapview-config';
+import { RIMA_MAPVIEW_HIDDEN_CATEGORY, RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP } from './mapview-config';
+import { BasemapService } from '../basemap/basemap.service';
 import {
   MapViewInitialisationError,
   MapViewLanguageCategoryMissingError,
   MapViewLayerAddError,
 } from './mapview-errors';
 import { LayerService } from '../../layer/layer.service';
+import { LayerIdResolver } from '../../layer/layer-id-resolver';
+import { RIMA_ROOT_CATEGORY } from '../../map-config';
 import type { WebmapDataJson } from '../../layer/layer-types';
+import { buildCategoryTree, convertTreeToLayers, type PortalItemEntry } from '../../shared/category-tree';
 
 @Injectable({
   providedIn: 'root',
@@ -31,6 +28,8 @@ export class MapViewService {
   private readonly portalService = inject(PortalService);
   private readonly languageStore = inject(LanguageStore);
   private readonly layerService = inject(LayerService);
+  private readonly layerIdResolver = inject(LayerIdResolver);
+  private readonly basemapService = inject(BasemapService);
 
   private _mapView: MapView | undefined;
 
@@ -41,10 +40,13 @@ export class MapViewService {
     }
 
     this.registerMapView(view);
-    this.addBasemap();
+    await this.applyDefaultBasemap();
     await view.when();
 
-    const layers = await this.loadWebMapLayers();
+    const [layers] = await Promise.all([
+      this.loadWebMapLayers(),
+      this.layerIdResolver.loadFromPortalCategory(RIMA_ROOT_CATEGORY),
+    ]);
     this.addLayersToMap(layers);
   }
 
@@ -57,20 +59,11 @@ export class MapViewService {
     this._mapView = mapView;
   }
 
-  private addBasemap(): void {
+  private async applyDefaultBasemap(): Promise<void> {
     const view = this._mapView;
     if (!view?.map) throw new Error('Map view not registered');
 
-    const swisstopoLayer = new WMTSLayer({
-      url: RIMA_MAPVIEW_BASEMAP_WMTS_URL,
-      activeLayer: { id: RIMA_MAPVIEW_BASEMAP_LAYER_ID },
-    });
-
-    view.map.basemap = new Basemap({
-      baseLayers: [swisstopoLayer],
-      title: 'Swisstopo Pixelkarte',
-      id: 'swisstopo',
-    });
+    view.map.basemap = await this.basemapService.getDefault2DBasemap();
   }
 
   private addLayersToMap(layers: Layer[]): void {
@@ -93,44 +86,28 @@ export class MapViewService {
     });
 
     const items: PortalItem[] = await this.portalService.queryItems(query);
-    const layerGroups: Layer[][] = await Promise.all(items.map((item) => this.loadWebMapItem(item)));
+    const entries: PortalItemEntry[] = await Promise.all(items.map((item) => this.loadWebMapItem(item)));
+    const validEntries = entries.filter((entry) => entry.layers.length > 0);
 
-    return layerGroups.flat().reverse();
+    const { rootNode, rootLayers } = buildCategoryTree(validEntries, languageCategory, RIMA_MAPVIEW_HIDDEN_CATEGORY);
+    const categoryLayers = convertTreeToLayers(rootNode);
+
+    return [...categoryLayers, ...rootLayers].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '')).reverse();
   }
 
-  private async loadWebMapItem(item: PortalItem): Promise<Layer[]> {
-    if (!item.id) return [];
+  private async loadWebMapItem(item: PortalItem): Promise<PortalItemEntry> {
+    if (!item.id) return { item, layers: [] };
 
     const data: WebmapDataJson = await item.fetchData('json');
     const layers = this.layerService.parseWebmapJsonToLayers(data);
 
-    if (layers.length === 0) return [];
-
-    const isHidden = this.isHiddenCategory(item);
+    if (layers.length === 0) return { item, layers: [] };
 
     if (RIMA_MAPVIEW_WRAP_WEBMAP_AS_GROUP) {
-      return [
-        new GroupLayer({
-          title: item.title ?? '',
-          layers,
-          visible: !isHidden,
-          listMode: isHidden ? 'hide' : 'show',
-        }),
-      ];
+      return { item, layers: [new GroupLayer({ title: item.title ?? '', layers })] };
     }
 
-    if (isHidden) {
-      layers.forEach((layer) => {
-        layer.visible = false;
-        layer.listMode = 'hide';
-      });
-    }
-
-    return layers;
-  }
-
-  private isHiddenCategory(item: PortalItem): boolean {
-    return (item.categories ?? []).some((cat) => cat.split('/').includes(RIMA_MAPVIEW_HIDDEN_CATEGORY));
+    return { item, layers };
   }
 
   private resolveLanguageCategory(): string {

@@ -1,0 +1,15 @@
+<button
+  class="action-bar-btn"
+  [class.action-bar-btn--destructive]="variant() === 'destructive'"
+  [class.action-bar-btn--primary]="variant() === 'primary'"
+  [class.action-bar-btn--icon-only]="!label()"
+  [disabled]="disabled()"
+  [title]="label() ?? ''"
+  [attr.aria-label]="label()"
+  (click)="triggered.emit()"
+>
+  <calcite-icon [icon]="icon()" scale="s"></calcite-icon>
+  @if (label()) {
+    <span class="action-bar-btn-label">{{ label() }}</span>
+  }
+</button>

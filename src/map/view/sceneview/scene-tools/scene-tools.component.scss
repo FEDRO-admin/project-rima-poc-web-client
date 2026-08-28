@@ -1,0 +1,157 @@
+.scene-tools-toggle {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(110, 110, 110, 0.3);
+  border-radius: 4px;
+  background: #fff;
+  color: #6e6e6e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover,
+  &.active {
+    background: #f3f3f3;
+    color: #2b2b2b;
+  }
+}
+
+.scene-tools-restore {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 28px;
+  height: 64px;
+  border: 1px solid rgba(110, 110, 110, 0.3);
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  background: #fff;
+  color: #6e6e6e;
+  cursor: pointer;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  &:hover {
+    background: #f3f3f3;
+    color: #2b2b2b;
+  }
+}
+
+.scene-tools-panel {
+  position: absolute;
+  top: 55px;
+  left: 15px;
+  z-index: 2;
+  width: 450px;
+  max-height: calc(100% - 70px);
+  overflow: auto;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  background: #fff;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+
+  &.minimized {
+    transform: translateX(-100vw);
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    left: -9999px;
+    right: auto;
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 0;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2b2b2b;
+}
+
+.panel-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.header-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6e6e6e;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f3f3;
+    color: #2b2b2b;
+  }
+}
+
+.tool-selector {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(110, 110, 110, 0.2);
+}
+
+.tool-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border: 1px solid rgba(110, 110, 110, 0.3);
+  border-radius: 4px;
+  background: #fff;
+  color: #6e6e6e;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f3f3;
+    color: #2b2b2b;
+  }
+
+  &.active {
+    background: #e2f1fb;
+    color: #0079c1;
+    border-color: #0079c1;
+  }
+}
+
+.tool-content {
+  padding: 4px;
+  overflow: hidden;
+
+  arcgis-daylight,
+  arcgis-slice,
+  arcgis-elevation-profile,
+  arcgis-direct-line-measurement-3d {
+    display: block;
+    width: 100%;
+  }
+}

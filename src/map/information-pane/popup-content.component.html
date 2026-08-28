@@ -1,0 +1,29 @@
+<div class="popup-content">
+  @switch (activeTab()) {
+    @case ('attributes') {
+      <div class="popup-panel">
+        <rima-attributes-tab [graphic]="graphic()" />
+      </div>
+    }
+    @case ('reference') {
+      <div class="popup-panel">
+        <rima-reference-point [mode]="refMode()" [graphic]="graphic()" />
+      </div>
+    }
+    @case ('status') {
+      <div class="popup-panel">
+        <rima-status [graphic]="graphic()" />
+      </div>
+    }
+    @case ('hierarchy') {
+      <div class="popup-panel">
+        <rima-hierarchy-tab [graphic]="graphic()" />
+      </div>
+    }
+    @case ('documents') {
+      <div class="popup-panel">
+        <rima-documents-tab [graphic]="graphic()" />
+      </div>
+    }
+  }
+</div>

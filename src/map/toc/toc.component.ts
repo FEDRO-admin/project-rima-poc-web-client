@@ -1,13 +1,14 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, inject, untracked, viewChild } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-layer-list';
 import { ViewService } from '../view/view.service';
-import { CreateStore } from '../create/create.store';
+import { ViewStore } from '../view/view.store';
+import { AttributeEditService } from '../information-pane/attributes-tab/attribute-edit.service';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
-import { HistoryStore } from '../history/history.store';
+import { DOCUMENTS_MAP_LAYER_TITLE, STATUS_MAP_LAYER_TITLE } from '../map-config';
 
 @Component({
   selector: 'rima-toc',
@@ -17,8 +18,8 @@ import { HistoryStore } from '../history/history.store';
 })
 export class TocComponent {
   private readonly viewService = inject(ViewService);
-  private readonly createStore = inject(CreateStore);
-  private readonly historyStore = inject(HistoryStore);
+  private readonly viewStore = inject(ViewStore);
+  private readonly editService = inject(AttributeEditService);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -48,7 +49,11 @@ export class TocComponent {
       sections.push([zoomAction]);
     }
 
-    if (item.layer instanceof FeatureLayer) {
+    if (
+      item.layer instanceof FeatureLayer &&
+      item.layer.title !== DOCUMENTS_MAP_LAYER_TITLE &&
+      item.layer.title !== STATUS_MAP_LAYER_TITLE
+    ) {
       const createAction = {
         title: 'Create',
         icon: 'plus',
@@ -64,7 +69,8 @@ export class TocComponent {
   protected async onTriggerAction(event: CustomEvent): Promise<void> {
     const { action, item } = event.detail;
     if (action.id === 'zoom-to-layer') await this.zoomToLayer(item.layer);
-    if (action.id === 'create-feature' && !this.historyStore.active()) await this.createFeature(item.layer);
+    if (action.id === 'create-feature' && !this.viewStore.locked() && !this.viewStore.historic())
+      await this.createFeature(item.layer);
   }
 
   private async zoomToLayer(layer: Layer): Promise<void> {
@@ -84,6 +90,6 @@ export class TocComponent {
     if (!(layer instanceof FeatureLayer)) return;
 
     await layer.load();
-    this.createStore.activate(layer);
+    this.editService.activateCreate(layer);
   }
 }

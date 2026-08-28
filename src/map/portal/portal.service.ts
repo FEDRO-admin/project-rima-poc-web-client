@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Portal from '@arcgis/core/portal/Portal';
-import { RIMA_PORTAL_URL } from '../map-constants';
+import { RIMA_PORTAL_URL } from '../map-config';
 import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalQueryResult from '@arcgis/core/portal/PortalQueryResult';
 import PortalItem from '@arcgis/core/portal/PortalItem';

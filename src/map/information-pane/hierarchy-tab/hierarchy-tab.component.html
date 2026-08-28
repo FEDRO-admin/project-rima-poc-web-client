@@ -1,0 +1,73 @@
+@if (hierarchyStore.isLoading()) {
+  <div class="hierarchy-loading">
+    <calcite-loader scale="m"></calcite-loader>
+  </div>
+}
+
+@if (hierarchyStore.hasError()) {
+  <p class="hierarchy-error">{{ hierarchyStore.error() }}</p>
+}
+
+@if (hierarchyStore.isEmpty()) {
+  <p class="hierarchy-empty">No relationships found for this feature.</p>
+}
+
+@if (hierarchyStore.tree(); as tree) {
+  <calcite-tree lines selection-mode="none">
+    <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: tree }" />
+  </calcite-tree>
+}
+
+@if (hierarchyStore.relatedParents(); as relatedParents) {
+  @if (relatedParents.length > 0) {
+    <div class="related-parents">
+      <div class="related-parents__divider"></div>
+      <span class="related-parents__heading">Related Features</span>
+      <calcite-tree lines selection-mode="none">
+        @for (parent of relatedParents; track parent.relationshipLabel) {
+          <calcite-tree-item>
+            <span
+              class="node-label"
+              (click)="onRelatedParentClick($event, parent)"
+              (keydown.enter)="onRelatedParentClick($event, parent)"
+              tabindex="0"
+            >
+              <span class="node-display-label">{{ parent.displayLabel }}</span>
+              <span class="node-layer-title">[{{ parent.relationshipLabel }}]</span>
+            </span>
+          </calcite-tree-item>
+        }
+      </calcite-tree>
+    </div>
+  }
+}
+
+<ng-template #nodeTemplate let-node>
+  <calcite-tree-item [expanded]="node.expanded">
+    @if (node.isGroup) {
+      <span class="node-label node-label--group">
+        <span class="node-display-label">{{ node.displayLabel }}</span>
+      </span>
+    } @else {
+      <span
+        class="node-label"
+        [class.node-label--active]="node.isClickedFeature"
+        (click)="onNodeClick($event, node)"
+        (keydown.enter)="onNodeClick($event, node)"
+        tabindex="0"
+      >
+        <span class="node-display-label">{{ node.displayLabel }}</span>
+        @if (node.layerTitle) {
+          <span class="node-layer-title">[{{ node.layerTitle }}]</span>
+        }
+      </span>
+    }
+    @if (node.children?.length) {
+      <calcite-tree slot="children">
+        @for (child of node.children; track $index) {
+          <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: child }" />
+        }
+      </calcite-tree>
+    }
+  </calcite-tree-item>
+</ng-template>

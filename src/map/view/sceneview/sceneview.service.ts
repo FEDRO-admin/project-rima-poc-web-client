@@ -1,22 +1,21 @@
 import { inject, Injectable } from '@angular/core';
 import type ArcGISMap from '@arcgis/core/Map';
 import SceneView from '@arcgis/core/views/SceneView';
-import Layer from '@arcgis/core/layers/Layer';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import Ground from '@arcgis/core/Ground';
 import ElevationLayer from '@arcgis/core/layers/ElevationLayer';
-import WMSLayer from '@arcgis/core/layers/WMSLayer';
-import Basemap from '@arcgis/core/Basemap';
 import { RIMA_SPATIAL_REFERENCE_LV95_EPSG, RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
-import { RIMA_SCENEVIEW_CONFIG } from './sceneview-config';
+import { RIMA_ELEVATION_SERVICE_URL } from '../../map-config';
 import { SceneViewInitialisationError } from './sceneview-errors';
 import { SceneViewLayerService } from './sceneview-layer.service';
+import { BasemapService } from '../basemap/basemap.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SceneViewService {
   private readonly sceneViewLayerService = inject(SceneViewLayerService);
+  private readonly basemapService = inject(BasemapService);
 
   private _sceneView: SceneView | undefined;
 
@@ -27,7 +26,7 @@ export class SceneViewService {
     }
 
     this.registerSceneView(sceneView);
-    this.configureSceneView();
+    await this.configureSceneView();
 
     await sceneEl.viewOnReady();
   }
@@ -38,22 +37,18 @@ export class SceneViewService {
 
   async add3DLayers(map: ArcGISMap): Promise<void> {
     try {
-      const groupLayer = await this.sceneViewLayerService.load3DGroupLayer();
-      map.layers.add(groupLayer);
+      const layers = await this.sceneViewLayerService.loadSceneLayers();
+      map.layers.addMany(layers);
     } catch {
       // Scene layer load failure is non-fatal — 3D view still usable without extra layers
     }
-  }
-
-  isSceneLayer(layer: Layer): boolean {
-    return this.sceneViewLayerService.isSceneLayer(layer);
   }
 
   private registerSceneView(sceneView: SceneView): void {
     this._sceneView = sceneView;
   }
 
-  private configureSceneView(): void {
+  private async configureSceneView(): Promise<void> {
     const sceneView = this._sceneView;
     if (!sceneView) throw new Error('Scene view not registered');
     if (!sceneView.map) throw new Error('Scene view has no map');
@@ -61,26 +56,9 @@ export class SceneViewService {
     sceneView.spatialReference = new SpatialReference({ wkid: RIMA_SPATIAL_REFERENCE_LV95_EPSG });
     sceneView.clippingArea = RIMA_SWITZERLAND_EXTENT;
 
-    const basemapLayer = new WMSLayer({
-      url: RIMA_SCENEVIEW_CONFIG.basemap.wmsUrl,
-      sublayers: [{ name: RIMA_SCENEVIEW_CONFIG.basemap.sublayer }],
-      spatialReference: new SpatialReference({ wkid: RIMA_SPATIAL_REFERENCE_LV95_EPSG }),
+    sceneView.map.basemap = await this.basemapService.getDefault3DBasemap();
+    sceneView.map.ground = new Ground({
+      layers: [new ElevationLayer({ url: RIMA_ELEVATION_SERVICE_URL })],
     });
-
-    sceneView.map.basemap = new Basemap({
-      baseLayers: [basemapLayer],
-      title: RIMA_SCENEVIEW_CONFIG.basemap.title,
-      id: 'scene-basemap',
-    });
-
-    if (RIMA_SCENEVIEW_CONFIG.elevation.url) {
-      sceneView.map.ground = new Ground({
-        layers: [
-          new ElevationLayer({
-            url: RIMA_SCENEVIEW_CONFIG.elevation.url,
-          }),
-        ],
-      });
-    }
   }
 }

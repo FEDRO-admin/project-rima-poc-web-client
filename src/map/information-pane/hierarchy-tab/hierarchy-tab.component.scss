@@ -1,0 +1,81 @@
+:host {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hierarchy-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.hierarchy-error {
+  color: #d83020;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.hierarchy-empty {
+  color: #6a6a6a;
+  font-style: italic;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+
+  &--active {
+    font-weight: 600;
+    background-color: rgba(0, 122, 194, 0.1);
+    border-left: 3px solid #007ac2;
+    padding-left: 4px;
+  }
+
+  &--group {
+    cursor: default;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+.node-display-label {
+  color: #323232;
+}
+
+.node-layer-title {
+  font-size: 0.8em;
+  color: #6a6a6a;
+  font-style: italic;
+}
+
+.related-parents {
+  margin-top: 12px;
+
+  &__divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin-bottom: 8px;
+  }
+
+  &__heading {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+  }
+}

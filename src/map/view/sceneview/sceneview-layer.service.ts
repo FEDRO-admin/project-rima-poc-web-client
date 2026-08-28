@@ -3,13 +3,16 @@ import PortalQueryParams from '@arcgis/core/portal/PortalQueryParams';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import Layer from '@arcgis/core/layers/Layer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import SceneLayer from '@arcgis/core/layers/SceneLayer';
+import BuildingSceneLayer from '@arcgis/core/layers/BuildingSceneLayer';
 import WebScene from '@arcgis/core/WebScene';
 import { PortalService } from '../../portal/portal.service';
 import { LanguageStore } from '../../../i18n/language.store';
 import { languageInfos } from '../../../i18n/language-info-config';
-import { RIMA_SCENEVIEW_3D_CATEGORY } from './sceneview-config';
+import { RIMA_SCENEVIEW_HIDDEN_CATEGORY } from './sceneview-config';
 import { isOfTypeRimaError } from '../../../error-handling/base-error';
 import { SceneViewCatalogLoadError } from './sceneview-errors';
+import { buildCategoryTree, convertTreeToLayers, type PortalItemEntry } from '../../shared/category-tree';
 
 @Injectable({
   providedIn: 'root',
@@ -19,15 +22,15 @@ export class SceneViewLayerService {
   private readonly languageStore = inject(LanguageStore);
 
   private readonly sceneLayers = new WeakSet<Layer>();
-  private cachedGroupLayer: GroupLayer | undefined;
+  private cachedLayers: Layer[] | undefined;
   private cachedForLanguage: string | undefined;
 
-  async load3DGroupLayer(): Promise<GroupLayer> {
+  async loadSceneLayers(): Promise<Layer[]> {
     const language = this.languageStore.activeLanguage();
     const languageCategory = languageInfos.find((info) => info.code === language)?.catalogId;
 
-    if (this.cachedGroupLayer && this.cachedForLanguage === languageCategory) {
-      return this.cachedGroupLayer;
+    if (this.cachedLayers && this.cachedForLanguage === languageCategory) {
+      return this.cachedLayers;
     }
 
     if (!languageCategory) {
@@ -36,10 +39,10 @@ export class SceneViewLayerService {
 
     try {
       const items = await this.queryWebSceneItems(languageCategory);
-      const groupLayer = await this.buildGroupHierarchy(items);
-      this.cachedGroupLayer = groupLayer;
+      const layers = await this.buildSceneLayerHierarchy(items, languageCategory);
+      this.cachedLayers = layers;
       this.cachedForLanguage = languageCategory;
-      return groupLayer;
+      return layers;
     } catch (error) {
       if (isOfTypeRimaError(error)) {
         throw error;
@@ -53,13 +56,13 @@ export class SceneViewLayerService {
   }
 
   invalidateCache(): void {
-    this.cachedGroupLayer = undefined;
+    this.cachedLayers = undefined;
     this.cachedForLanguage = undefined;
   }
 
   private async queryWebSceneItems(languageCategory: string): Promise<PortalItem[]> {
     const query = new PortalQueryParams({
-      categories: [`/Categories/${languageCategory}/${RIMA_SCENEVIEW_3D_CATEGORY}`],
+      categories: [`/Categories/${languageCategory}`],
       query: 'type:"Web Scene"',
       num: 100,
       sortField: 'title',
@@ -69,14 +72,27 @@ export class SceneViewLayerService {
     return this.portalService.queryItems(query);
   }
 
-  private async buildGroupHierarchy(items: PortalItem[]): Promise<GroupLayer> {
-    const childGroups = await Promise.all(items.map((item) => this.loadWebSceneAsGroup(item)));
-    const validGroups = childGroups.filter((group): group is GroupLayer => group !== undefined);
+  private async buildSceneLayerHierarchy(items: PortalItem[], languageCategory: string): Promise<Layer[]> {
+    const entries: PortalItemEntry[] = await Promise.all(
+      items.map(async (item) => {
+        const layers = await this.loadWebSceneLayers(item);
+        return { item, layers };
+      }),
+    );
+    const validEntries = entries.filter((entry) => entry.layers.length > 0);
 
-    return this.registerSceneLayer(new GroupLayer({ title: RIMA_SCENEVIEW_3D_CATEGORY, layers: validGroups }));
+    const { rootNode, rootLayers } = buildCategoryTree(validEntries, languageCategory, RIMA_SCENEVIEW_HIDDEN_CATEGORY);
+    const categoryLayers = convertTreeToLayers(rootNode);
+
+    const allLayers = [...categoryLayers, ...rootLayers]
+      .sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
+      .reverse();
+
+    allLayers.forEach((layer) => this.registerSceneLayerRecursive(layer));
+    return allLayers;
   }
 
-  private async loadWebSceneAsGroup(item: PortalItem): Promise<GroupLayer | undefined> {
+  private async loadWebSceneLayers(item: PortalItem): Promise<Layer[]> {
     try {
       const webScene = new WebScene({ portalItem: item });
       await webScene.loadAll();
@@ -84,16 +100,33 @@ export class SceneViewLayerService {
       const layers = webScene.layers.toArray();
       webScene.layers.removeAll();
 
-      layers.forEach((layer) => this.registerSceneLayer(layer));
-
-      return this.registerSceneLayer(new GroupLayer({ title: item.title ?? '', layers }));
+      this.configureSceneLayers(layers);
+      return [new GroupLayer({ title: item.title ?? '', layers })];
     } catch {
-      return undefined;
+      return [];
     }
   }
 
-  private registerSceneLayer<T extends Layer>(layer: T): T {
+  private configureSceneLayers(layers: Layer[]): void {
+    for (const layer of layers) {
+      if (layer instanceof SceneLayer) {
+        layer.outFields = ['*'];
+      } else if (layer instanceof BuildingSceneLayer) {
+        layer.allSublayers.forEach((sublayer) => {
+          if ('outFields' in sublayer) {
+            (sublayer as unknown as { outFields: string[] }).outFields = ['*'];
+          }
+        });
+      } else if (layer instanceof GroupLayer) {
+        this.configureSceneLayers(layer.layers.toArray());
+      }
+    }
+  }
+
+  private registerSceneLayerRecursive(layer: Layer): void {
     this.sceneLayers.add(layer);
-    return layer;
+    if (layer instanceof GroupLayer) {
+      layer.layers.forEach((child) => this.registerSceneLayerRecursive(child));
+    }
   }
 }

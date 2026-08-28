@@ -1,6 +1,4 @@
 <div class="map-container">
-  <rima-create-form />
-  <rima-edit-form />
   <rima-popup></rima-popup>
   <div class="map-area">
     <arcgis-map
@@ -11,6 +9,8 @@
     ></arcgis-map>
     <arcgis-scene #arcgisScene viewing-mode="local" [class.visually-hidden]="viewStore.mode() === 'map'"></arcgis-scene>
     <rima-scene-toggle />
+    <rima-basemap-gallery />
+    <rima-scene-tools />
     <rima-history-picker />
   </div>
   <rima-toc></rima-toc>

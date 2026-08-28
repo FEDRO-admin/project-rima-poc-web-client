@@ -9,6 +9,7 @@ import {
   convertAttributeFieldType,
 } from '../shared/attribute-edit-field';
 import { isImmutableField } from './layer-attributes';
+import { isHiddenEditField } from '../information-pane/attributes-tab/attributes-config';
 
 export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditField[] {
   const layer = graphic.layer;
@@ -17,22 +18,17 @@ export function resolveEditableAttributeFields(graphic: Graphic): AttributeEditF
   }
 
   return layer.fields
-    .filter((field) => !isImmutableField(field.name, layer))
+    .filter((field) => !isImmutableField(field.name, layer) && !isHiddenEditField(field.name, layer.title))
     .map((field) => buildEditAttributeField(field));
 }
 
 export function resolveFieldDisplayValue(
-  graphic: Graphic,
+  _graphic: Graphic,
   field: Field,
   value: string | number | boolean | null | undefined,
 ): string | number | boolean | null {
   if (value == null) {
     return null;
-  }
-
-  const layer = graphic.layer;
-  if (!(layer instanceof FeatureLayer)) {
-    return value;
   }
 
   if (isCodedValueDomain(field.domain)) {
@@ -47,7 +43,7 @@ export function resolveFieldDisplayValue(
   return value;
 }
 
-function buildEditAttributeField(field: Field): AttributeEditField {
+export function buildEditAttributeField(field: Field): AttributeEditField {
   const fieldType = convertAttributeFieldType(field, field.domain);
   const codedValues = resolveCodedValues(field.domain);
 
