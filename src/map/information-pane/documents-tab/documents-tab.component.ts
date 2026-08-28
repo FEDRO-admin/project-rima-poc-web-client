@@ -146,6 +146,7 @@ export class DocumentsTabComponent implements OnDestroy {
   }
 
   private activateDocumentLayer(): void {
+    if (this.layerActivationState) return;
     const view = this.viewService.activeView();
     if (!view?.map) return;
     this.layerActivationState = activateLayer(view.map, DOCUMENTS_MAP_LAYER_TITLE);

@@ -119,6 +119,7 @@ export class StatusComponent implements OnDestroy {
   }
 
   private activateStatusLayer(): void {
+    if (this.layerActivationState) return;
     const view = this.viewService.activeView();
     if (!view?.map) return;
     this.layerActivationState = activateLayer(view.map, STATUS_MAP_LAYER_TITLE);
