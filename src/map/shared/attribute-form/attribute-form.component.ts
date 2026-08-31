@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, effect, inject, input, output, signal } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { AttributeEditField } from '../attribute-edit-field';
@@ -12,6 +12,7 @@ import { DateTimePickerComponent } from '../date-time-picker/date-time-picker.co
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './attribute-form.component.html',
   styleUrl: './attribute-form.component.scss',
+  providers: [GuidPickerService],
 })
 export class AttributeFormComponent {
   readonly fields = input.required<AttributeEditField[]>();
@@ -24,15 +25,6 @@ export class AttributeFormComponent {
 
   protected readonly guidPickerService = inject(GuidPickerService);
   protected readonly activeDateField = signal<string | null>(null);
-
-  constructor() {
-    effect(() => {
-      const selection = this.guidPickerService.lastSelection();
-      if (selection) {
-        this.fieldChange.emit({ fieldName: selection.fieldName, value: selection.value });
-      }
-    });
-  }
 
   protected getFieldValue(fieldName: string): AttributeValue {
     return this.values()[fieldName] ?? null;
@@ -78,7 +70,10 @@ export class AttributeFormComponent {
   }
 
   protected selectGuidCandidate(candidate: GuidPickerCandidate): void {
-    this.guidPickerService.confirmSelection(candidate);
+    const result = this.guidPickerService.confirmSelection(candidate);
+    if (result) {
+      this.fieldChange.emit({ fieldName: result.fieldName, value: result.value });
+    }
   }
 
   protected cancelGuidPick(): void {

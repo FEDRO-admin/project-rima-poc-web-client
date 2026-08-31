@@ -16,16 +16,13 @@ export interface GuidPickerResult {
   value: string;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class GuidPickerService implements OnDestroy {
   private readonly viewService = inject(ViewService);
 
   readonly active = signal(false);
   readonly candidates = signal<GuidPickerCandidate[]>([]);
   readonly fieldName = signal<string | undefined>(undefined);
-  readonly lastSelection = signal<GuidPickerResult | undefined>(undefined);
 
   private clickHandle: { remove(): void } | undefined;
 
@@ -38,7 +35,6 @@ export class GuidPickerService implements OnDestroy {
     this.fieldName.set(forField);
     this.active.set(true);
     this.candidates.set([]);
-    this.lastSelection.set(undefined);
 
     const view = this.viewService.activeView();
     if (!view) {
@@ -64,12 +60,10 @@ export class GuidPickerService implements OnDestroy {
     });
   }
 
-  confirmSelection(candidate: GuidPickerCandidate): void {
+  confirmSelection(candidate: GuidPickerCandidate): GuidPickerResult | undefined {
     const field = this.fieldName();
-    if (field) {
-      this.lastSelection.set({ fieldName: field, value: candidate.idValue });
-    }
     this.cleanup();
+    return field ? { fieldName: field, value: candidate.idValue } : undefined;
   }
 
   cancel(): void {
