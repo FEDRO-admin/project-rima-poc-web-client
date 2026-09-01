@@ -91,7 +91,7 @@ export class ReferencePointComponent implements OnDestroy {
   protected getPointLabel(point: ReferencePoint): string {
     const rbbs = point.attributes['rbbs'];
     if (rbbs != null && rbbs !== '') return String(rbbs);
-    return 'Point';
+    return this.translocoService.translate('drawing-tool.point');
   }
 
   protected getPointTypeBadge(point: ReferencePoint): string {
