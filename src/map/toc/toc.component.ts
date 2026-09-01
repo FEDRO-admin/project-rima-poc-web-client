@@ -10,6 +10,7 @@ import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import { DOCUMENTS_MAP_LAYER_TITLE, STATUS_MAP_LAYER_TITLE } from '../map-config';
 import { TranslocoService } from '@jsverse/transloco';
+import { TablePaneService } from '../table-pane/table-pane.service';
 
 @Component({
   selector: 'rima-toc',
@@ -22,6 +23,7 @@ export class TocComponent {
   private readonly viewStore = inject(ViewStore);
   private readonly editService = inject(AttributeEditService);
   private readonly translocoService = inject(TranslocoService);
+  private readonly tablePaneService = inject(TablePaneService);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -62,7 +64,13 @@ export class TocComponent {
         id: 'create-feature',
         type: 'button',
       } as const;
-      sections.push([createAction]);
+      const tableAction = {
+        title: this.translocoService.translate('toc.table'),
+        icon: 'table',
+        id: 'open-table',
+        type: 'button',
+      } as const;
+      sections.push([createAction, tableAction]);
     }
 
     item.actionsSections = sections;
@@ -73,6 +81,7 @@ export class TocComponent {
     if (action.id === 'zoom-to-layer') await this.zoomToLayer(item.layer);
     if (action.id === 'create-feature' && !this.viewStore.locked() && !this.viewStore.historic())
       await this.createFeature(item.layer);
+    if (action.id === 'open-table') await this.openTable(item.layer);
   }
 
   private async zoomToLayer(layer: Layer): Promise<void> {
@@ -93,5 +102,10 @@ export class TocComponent {
 
     await layer.load();
     this.editService.activateCreate(layer);
+  }
+
+  private async openTable(layer: Layer): Promise<void> {
+    if (!(layer instanceof FeatureLayer)) return;
+    await this.tablePaneService.openTable(layer);
   }
 }

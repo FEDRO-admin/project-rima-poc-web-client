@@ -12,6 +12,7 @@ import { ViewStore } from './view/view.store';
 import { MapViewService } from './view/mapview/mapview.service';
 import { SceneViewService } from './view/sceneview/sceneview.service';
 import { HistoryPickerComponent } from './history/history-picker/history-picker.component';
+import { TablePaneComponent } from './table-pane/table-pane.component';
 
 @Component({
   selector: 'rima-map',
@@ -22,6 +23,7 @@ import { HistoryPickerComponent } from './history/history-picker/history-picker.
     BasemapGalleryComponent,
     SceneToolsComponent,
     HistoryPickerComponent,
+    TablePaneComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './map.component.html',

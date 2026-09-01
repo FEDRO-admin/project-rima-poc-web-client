@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.table-pane-container {
+  display: flex;
+  flex-direction: column;
+  height: 280px;
+  border-top: 2px solid color-mix(in srgb, #0079c1 35%, white);
+  background-color: #fff;
+}
+
+.table-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid color-mix(in srgb, #0079c1 18%, white);
+  background-color: color-mix(in srgb, #0079c1 10%, white);
+}
+
+.table-pane-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-pane-spacer {
+  flex: 1;
+}
+
+.table-pane-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: color-mix(in srgb, #0079c1 15%, white);
+  }
+}
+
+arcgis-feature-table {
+  flex: 1;
+  min-height: 0;
+}

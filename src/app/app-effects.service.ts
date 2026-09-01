@@ -7,6 +7,7 @@ import { HistoryEffects } from '../map/history/history-effects';
 import { ViewEffects } from '../map/view/view-effects';
 import { DocumentsEffects } from '../map/information-pane/documents-tab/documents-effects';
 import { RbbsEffects } from '../map/rbbs/rbbs-effects';
+import { TablePaneEffects } from '../map/table-pane/table-pane-effects';
 
 @Injectable({
   providedIn: 'root',
@@ -25,5 +26,6 @@ export class AppEffectsService {
     inject(DocumentsEffects);
     inject(ViewEffects);
     inject(RbbsEffects);
+    inject(TablePaneEffects);
   }
 }

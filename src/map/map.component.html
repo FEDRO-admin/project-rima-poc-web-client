@@ -1,17 +1,24 @@
 <div class="map-container">
   <rima-popup></rima-popup>
-  <div class="map-area">
-    <arcgis-map
-      id="rima-map"
-      #arcgisMap
-      [extent]="switzerlandExtent"
-      [class.visually-hidden]="viewStore.mode() === 'scene'"
-    ></arcgis-map>
-    <arcgis-scene #arcgisScene viewing-mode="local" [class.visually-hidden]="viewStore.mode() === 'map'"></arcgis-scene>
-    <rima-scene-toggle />
-    <rima-basemap-gallery />
-    <rima-scene-tools />
-    <rima-history-picker />
+  <div class="map-and-table">
+    <div class="map-area">
+      <arcgis-map
+        id="rima-map"
+        #arcgisMap
+        [extent]="switzerlandExtent"
+        [class.visually-hidden]="viewStore.mode() === 'scene'"
+      ></arcgis-map>
+      <arcgis-scene
+        #arcgisScene
+        viewing-mode="local"
+        [class.visually-hidden]="viewStore.mode() === 'map'"
+      ></arcgis-scene>
+      <rima-scene-toggle />
+      <rima-basemap-gallery />
+      <rima-scene-tools />
+      <rima-history-picker />
+    </div>
+    <rima-table-pane></rima-table-pane>
   </div>
   <rima-toc></rima-toc>
 </div>

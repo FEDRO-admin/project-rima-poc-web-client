@@ -1,0 +1,18 @@
+@if (store.visible()) {
+  <div class="table-pane-container">
+    <div class="table-pane-header">
+      <calcite-icon icon="table" scale="s"></calcite-icon>
+      <span class="table-pane-title">{{ store.title() }}</span>
+      <span class="table-pane-spacer"></span>
+      <button class="table-pane-close" (click)="close()" [attr.aria-label]="'common.close' | transloco">
+        <calcite-icon icon="x" scale="s"></calcite-icon>
+      </button>
+    </div>
+    <arcgis-feature-table
+      #featureTable
+      (arcgisCellPointerover)="onCellPointerOver($event)"
+      (arcgisCellPointerout)="onCellPointerOut()"
+      (arcgisSelectionChange)="onSelectionChange()"
+    ></arcgis-feature-table>
+  </div>
+}
