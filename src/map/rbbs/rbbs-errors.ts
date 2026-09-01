@@ -4,6 +4,15 @@ export class RbbsCalculationError extends RecoverableError {
   public override message = 'Error calculating RBBS values';
 }
 
+export class RbbsSoeError extends RecoverableError {
+  public override message: string;
+
+  constructor(soeMessage: string) {
+    super();
+    this.message = `RBBS SOE error: ${soeMessage}`;
+  }
+}
+
 export class RbbsSaveError extends RecoverableError {
   public override message = 'Error saving RBBS values to feature';
 }

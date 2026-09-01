@@ -25,7 +25,7 @@ import {
   RBBS_KM_BIS_FIELD,
   RBBS_UH_ABSCHNITT_FIELD,
 } from './rbbs-config';
-import { RbbsCalculationError, RbbsSaveError } from './rbbs-errors';
+import { RbbsCalculationError, RbbsSaveError, RbbsSoeError } from './rbbs-errors';
 import type { XyToRbbsResult } from './rbbs-types';
 
 type AttributeValue = string | number | null;
@@ -57,7 +57,8 @@ export class RbbsService {
       const attributes = this.mapToAttributes(results[0], results[1]);
       await this.saveAttributes(layer, graphic, attributes);
     } catch (error) {
-      if (error instanceof RbbsCalculationError || error instanceof RbbsSaveError) throw error;
+      if (error instanceof RbbsCalculationError || error instanceof RbbsSaveError || error instanceof RbbsSoeError)
+        throw error;
       throw new RbbsCalculationError(error);
     } finally {
       this.calculating.delete(objectId);
@@ -156,7 +157,9 @@ export class RbbsService {
     });
 
     const data = response.data as Record<string, unknown>;
-    if (data['status'] === 'error') return undefined;
+    if (data['status'] === 'error') {
+      throw new RbbsSoeError((data['message'] as string) ?? 'Unknown SOE error');
+    }
 
     const rawResults = data['XyToRbbsResultList'] as Record<string, unknown>[];
     if (!Array.isArray(rawResults)) return undefined;
