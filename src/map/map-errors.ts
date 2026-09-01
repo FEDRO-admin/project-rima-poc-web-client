@@ -1,9 +1,9 @@
 import { FatalError, SilentError } from '../error-handling/base-error';
 
 export class MapViewInitialiseError extends FatalError {
-  public override message = 'Map view could not be loaded';
+  public override message = 'error.map.view-load';
 }
 
 export class MapViewAlreadyRegisteredError extends SilentError {
-  public override message = 'A map view has already been registered';
+  public override message = 'error.map.already-registered';
 }

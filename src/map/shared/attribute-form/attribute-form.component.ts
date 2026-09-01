@@ -3,12 +3,13 @@ import { FormsModule } from '@angular/forms';
 import '@esri/calcite-components/dist/components/calcite-icon';
 import { AttributeEditField } from '../attribute-edit-field';
 import { AttributeValue, convertAttributeValue, formatDateDisplay } from '../attribute-value-conversion';
+import { TranslocoModule } from '@jsverse/transloco';
 import { GuidPickerCandidate, GuidPickerService } from '../guid-picker.service';
 import { DateTimePickerComponent } from '../date-time-picker/date-time-picker.component';
 
 @Component({
   selector: 'rima-attribute-form',
-  imports: [FormsModule, DateTimePickerComponent],
+  imports: [FormsModule, DateTimePickerComponent, TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './attribute-form.component.html',
   styleUrl: './attribute-form.component.scss',

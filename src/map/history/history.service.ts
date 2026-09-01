@@ -52,7 +52,7 @@ export class HistoryService {
       await this.loadMoments();
       return true;
     } else {
-      this.historyStore.setErrorMessage(result.message ?? 'Failed to add marker');
+      this.historyStore.setErrorMessage(result.message ?? 'error.history.add-marker');
       return false;
     }
   }
@@ -65,7 +65,7 @@ export class HistoryService {
       await this.loadMoments();
       return true;
     } else {
-      this.historyStore.setErrorMessage(result.message ?? 'Failed to delete marker');
+      this.historyStore.setErrorMessage(result.message ?? 'error.history.delete-marker');
       return false;
     }
   }
@@ -126,7 +126,7 @@ export class HistoryService {
       });
       const data = response.data as Record<string, unknown>;
       if (data?.['status'] === 'error') {
-        return { success: false, message: (data['message'] as string) ?? 'Unknown error' };
+        return { success: false, message: (data['message'] as string) ?? 'error.unknown' };
       }
       return { success: true };
     } catch (error) {
@@ -142,7 +142,7 @@ export class HistoryService {
       });
       const data = response.data as Record<string, unknown>;
       if (data?.['status'] === 'error') {
-        return { success: false, message: (data['message'] as string) ?? 'Unknown error' };
+        return { success: false, message: (data['message'] as string) ?? 'error.unknown' };
       }
       return { success: true };
     } catch (error) {

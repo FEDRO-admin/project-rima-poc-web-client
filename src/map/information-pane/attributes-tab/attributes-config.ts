@@ -46,18 +46,18 @@ export function getDrawingToolsForGeometryType(geometryType: string): DrawingToo
   switch (geometryType) {
     case 'point':
     case 'multipoint':
-      return [{ tool: 'point', label: 'Point', icon: 'pin-plus' }];
+      return [{ tool: 'point', label: 'drawing-tool.point', icon: 'pin-plus' }];
     case 'polyline':
       return [
-        { tool: 'polyline', label: 'Line', icon: 'line' },
-        { tool: 'freehandPolyline', label: 'Freehand', icon: 'freehand' },
+        { tool: 'polyline', label: 'drawing-tool.line', icon: 'line' },
+        { tool: 'freehandPolyline', label: 'drawing-tool.freehand', icon: 'freehand' },
       ];
     default:
       return [
-        { tool: 'polygon', label: 'Polygon', icon: 'polygon-vertices' },
-        { tool: 'rectangle', label: 'Rectangle', icon: 'rectangle' },
-        { tool: 'circle', label: 'Circle', icon: 'circle' },
-        { tool: 'freehandPolygon', label: 'Freehand', icon: 'freehand' },
+        { tool: 'polygon', label: 'drawing-tool.polygon', icon: 'polygon-vertices' },
+        { tool: 'rectangle', label: 'drawing-tool.rectangle', icon: 'rectangle' },
+        { tool: 'circle', label: 'drawing-tool.circle', icon: 'circle' },
+        { tool: 'freehandPolygon', label: 'drawing-tool.freehand', icon: 'freehand' },
       ];
   }
 }

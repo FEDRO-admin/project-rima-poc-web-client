@@ -1,22 +1,24 @@
-<div class="date-time-picker">
-  <calcite-input-date-picker
-    layout="horizontal"
-    lang="de-CH"
-    [attr.value]="selectedDate()"
-    (calciteInputDatePickerChange)="onDateChange($event)"
-  ></calcite-input-date-picker>
-  <calcite-input-time-picker
-    step="60"
-    hour-format="24"
-    [attr.value]="selectedTime()"
-    (calciteInputTimePickerChange)="onTimeChange($event)"
-  ></calcite-input-time-picker>
-  <div class="date-time-picker-actions">
-    <calcite-button appearance="outline" kind="neutral" scale="s" width="full" (click)="cancel()">
-      Cancel
-    </calcite-button>
-    <calcite-button appearance="solid" kind="brand" scale="s" icon-start="check" width="full" (click)="confirm()">
-      Confirm
-    </calcite-button>
+﻿<ng-container *transloco="let t">
+  <div class="date-time-picker">
+    <calcite-input-date-picker
+      layout="horizontal"
+      lang="de-CH"
+      [attr.value]="selectedDate()"
+      (calciteInputDatePickerChange)="onDateChange($event)"
+    ></calcite-input-date-picker>
+    <calcite-input-time-picker
+      step="60"
+      hour-format="24"
+      [attr.value]="selectedTime()"
+      (calciteInputTimePickerChange)="onTimeChange($event)"
+    ></calcite-input-time-picker>
+    <div class="date-time-picker-actions">
+      <calcite-button appearance="outline" kind="neutral" scale="s" width="full" (click)="cancel()">
+        {{ t('date-time-picker.cancel') }}
+      </calcite-button>
+      <calcite-button appearance="solid" kind="brand" scale="s" icon-start="check" width="full" (click)="confirm()">
+        {{ t('date-time-picker.confirm') }}
+      </calcite-button>
+    </div>
   </div>
-</div>
+</ng-container>

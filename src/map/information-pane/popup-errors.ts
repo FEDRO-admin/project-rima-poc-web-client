@@ -1,13 +1,13 @@
 import { SilentError } from '../../error-handling/base-error';
 
 export class PopupInitialisationError extends SilentError {
-  public override message = 'Error initializing popup';
+  public override message = 'error.popup.init';
 }
 
 export class PopupHighlightError extends SilentError {
-  public override message = 'Error highlighting popup';
+  public override message = 'error.popup.highlight';
 }
 
 export class PopupRefreshError extends SilentError {
-  public override message = 'Error refreshing popup feature';
+  public override message = 'error.popup.refresh';
 }

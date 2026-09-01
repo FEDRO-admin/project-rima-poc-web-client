@@ -13,11 +13,12 @@ import '@esri/calcite-components/dist/components/calcite-notice';
 import '@esri/calcite-components/dist/components/calcite-popover';
 import { HistoryStore } from '../history.store';
 import { HistoryService } from '../history.service';
+import { TranslocoModule } from '@jsverse/transloco';
 import { HistoryEntry } from '../history-entry';
 
 @Component({
   selector: 'rima-history-picker',
-  imports: [DatePipe],
+  imports: [DatePipe, TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './history-picker.component.html',
   styleUrl: './history-picker.component.scss',

@@ -1,9 +1,9 @@
 import { FatalError } from '../../../error-handling/base-error';
 
 export class BasemapLoadError extends FatalError {
-  public override message = 'Failed to load basemaps from portal';
+  public override message = 'error.basemap.load';
 }
 
 export class Default3DBasemapMissingError extends FatalError {
-  public override message = 'No default 3D basemap configured in portal organization settings';
+  public override message = 'error.basemap.default-3d-missing';
 }

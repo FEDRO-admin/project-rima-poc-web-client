@@ -1,18 +1,19 @@
 import { RecoverableError } from '../../error-handling/base-error';
 
 export class RbbsCalculationError extends RecoverableError {
-  public override message = 'Error calculating RBBS values';
+  public override message = 'error.rbbs.calculation';
 }
 
 export class RbbsSoeError extends RecoverableError {
-  public override message: string;
+  public override message = 'error.rbbs.soe';
+  public override translationArguments: Record<'soeMessage', string>;
 
   constructor(soeMessage: string) {
     super();
-    this.message = `RBBS SOE error: ${soeMessage}`;
+    this.translationArguments = { soeMessage };
   }
 }
 
 export class RbbsSaveError extends RecoverableError {
-  public override message = 'Error saving RBBS values to feature';
+  public override message = 'error.rbbs.save';
 }

@@ -9,6 +9,7 @@ import ListItem from '@arcgis/core/widgets/LayerList/ListItem';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMTSLayer from '@arcgis/core/layers/WMTSLayer';
 import { DOCUMENTS_MAP_LAYER_TITLE, STATUS_MAP_LAYER_TITLE } from '../map-config';
+import { TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'rima-toc',
@@ -20,6 +21,7 @@ export class TocComponent {
   private readonly viewService = inject(ViewService);
   private readonly viewStore = inject(ViewStore);
   private readonly editService = inject(AttributeEditService);
+  private readonly translocoService = inject(TranslocoService);
   private readonly layerListElement = viewChild<ElementRef<HTMLArcgisLayerListElement>>('layerList');
 
   constructor() {
@@ -41,7 +43,7 @@ export class TocComponent {
 
     if (item.layer instanceof FeatureLayer || item.layer instanceof MapImageLayer) {
       const zoomAction = {
-        title: 'Zoom to',
+        title: this.translocoService.translate('toc.zoom-to'),
         icon: 'zoom-to-object',
         id: 'zoom-to-layer',
         type: 'button',
@@ -55,7 +57,7 @@ export class TocComponent {
       item.layer.title !== STATUS_MAP_LAYER_TITLE
     ) {
       const createAction = {
-        title: 'Create',
+        title: this.translocoService.translate('toc.create'),
         icon: 'plus',
         id: 'create-feature',
         type: 'button',

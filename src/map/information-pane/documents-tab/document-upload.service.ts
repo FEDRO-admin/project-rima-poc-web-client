@@ -133,7 +133,7 @@ export class DocumentUploadService {
             }
           } catch {
             console.error('[Documents] Portal response (parse error):', xhr.responseText);
-            reject(new DocumentUploadError('Invalid response from portal'));
+            reject(new DocumentUploadError('error.document-upload.invalid-response'));
           }
         } else {
           console.error('[Documents] Portal HTTP error:', xhr.status, xhr.responseText);

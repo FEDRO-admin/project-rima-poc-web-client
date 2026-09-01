@@ -15,6 +15,7 @@ import '@arcgis/map-components/dist/components/arcgis-direct-line-measurement-3d
 import '@esri/calcite-components/dist/components/calcite-icon';
 import ElevationProfileLineGround from '@arcgis/core/analysis/ElevationProfile/ElevationProfileLineGround';
 import ElevationProfileLineScene from '@arcgis/core/analysis/ElevationProfile/ElevationProfileLineScene';
+import { TranslocoModule } from '@jsverse/transloco';
 import { ViewStore } from '../../view.store';
 import { ViewService } from '../../view.service';
 
@@ -22,7 +23,7 @@ export type SceneTool = 'daylight' | 'slice' | 'elevation-profile' | 'measuremen
 
 @Component({
   selector: 'rima-scene-tools',
-  standalone: true,
+  imports: [TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './scene-tools.component.html',
   styleUrl: './scene-tools.component.scss',

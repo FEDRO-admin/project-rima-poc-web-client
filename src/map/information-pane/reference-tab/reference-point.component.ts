@@ -18,6 +18,7 @@ import { ReferencePointComponentStore } from './reference-point-component.store'
 import { ReferencePointComponentService } from './reference-point-component.service';
 import { ReferencePoint, AttributeValue } from './reference-point-types';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewStore } from '../../view/view.store';
 import { RIMA_SWITZERLAND_EXTENT } from '../../map-constants';
 import { isImmutableField } from '../../layer/layer-attributes';
@@ -30,7 +31,7 @@ interface FieldEntry {
 
 @Component({
   selector: 'rima-reference-point',
-  imports: [FormsModule, DecimalPipe, AttributeFormComponent],
+  imports: [FormsModule, DecimalPipe, AttributeFormComponent, TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ReferencePointComponentStore, ReferencePointComponentService],
   templateUrl: './reference-point.component.html',
@@ -44,6 +45,7 @@ export class ReferencePointComponent implements OnDestroy {
   protected readonly componentStore = inject(ReferencePointComponentStore);
   protected readonly viewStore = inject(ViewStore);
   private readonly service = inject(ReferencePointComponentService);
+  private readonly translocoService = inject(TranslocoService);
 
   protected readonly saving = signal(false);
   protected readonly addCardinalityError = signal('');
@@ -124,13 +126,18 @@ export class ReferencePointComponent implements OnDestroy {
     const x = parseFloat(this.coordinateX);
     const y = parseFloat(this.coordinateY);
     if (isNaN(x) || isNaN(y)) {
-      this.coordinateError = 'Please enter valid numbers';
+      this.coordinateError = this.translocoService.translate('reference-points.validation.invalid-numbers');
       return;
     }
 
     const extent = RIMA_SWITZERLAND_EXTENT;
     if (x < extent.xmin || x > extent.xmax || y < extent.ymin || y > extent.ymax) {
-      this.coordinateError = `Coordinates must be within Switzerland (E: ${extent.xmin}–${extent.xmax}, N: ${extent.ymin}–${extent.ymax})`;
+      this.coordinateError = this.translocoService.translate('reference-points.validation.outside-switzerland', {
+        xmin: extent.xmin,
+        xmax: extent.xmax,
+        ymin: extent.ymin,
+        ymax: extent.ymax,
+      });
       return;
     }
 
@@ -146,7 +153,7 @@ export class ReferencePointComponent implements OnDestroy {
   protected confirmAdd(): void {
     const success = this.service.confirmAdd();
     if (!success) {
-      this.addCardinalityError.set('A reference point of this type already exists for this feature.');
+      this.addCardinalityError.set(this.translocoService.translate('reference-points.validation.duplicate-type'));
     }
   }
 
@@ -167,7 +174,7 @@ export class ReferencePointComponent implements OnDestroy {
   protected onEditFieldChange(clientId: string, event: { fieldName: string; value: AttributeValue }): void {
     const success = this.service.updatePointAttribute(clientId, event.fieldName, event.value);
     if (!success) {
-      this.editCardinalityError.set('A reference point of this type already exists for this feature.');
+      this.editCardinalityError.set(this.translocoService.translate('reference-points.validation.duplicate-type'));
     } else {
       this.editCardinalityError.set('');
     }

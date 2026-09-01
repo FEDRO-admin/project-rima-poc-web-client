@@ -39,6 +39,7 @@ import { ActionBarComponent } from '../../../shared/action-bar/action-bar.compon
 import { ActionBarButtonComponent } from '../../../shared/action-bar/action-bar-button.component';
 import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { AttributeValue } from '../../shared/attribute-value-conversion';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DatePipe, DecimalPipe } from '@angular/common';
 
 type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit' | 'delete';
@@ -53,6 +54,7 @@ type DocumentsConfirmAction = 'upload' | 'save' | 'cancel-upload' | 'cancel-edit
     ActionBarComponent,
     ActionBarButtonComponent,
     AttributeFormComponent,
+    TranslocoModule,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
@@ -73,6 +75,7 @@ export class DocumentsTabComponent implements OnDestroy {
   protected readonly geometryService = inject(PointPlacementService);
   private readonly viewService = inject(ViewService);
   private readonly uploadService = inject(DocumentUploadService);
+  private readonly translocoService = inject(TranslocoService);
 
   private layerActivationState: LayerActivationState | undefined;
   private highlightHandle: { remove(): void } | undefined;
@@ -103,14 +106,16 @@ export class DocumentsTabComponent implements OnDestroy {
   protected readonly confirmMessage = computed(() => {
     switch (this.confirmAction()) {
       case 'upload':
-        return 'Dokument hochladen?';
+        return this.translocoService.translate('documents.confirm.upload');
       case 'save':
-        return 'Änderungen speichern?';
+        return this.translocoService.translate('documents.confirm.save');
       case 'cancel-upload':
       case 'cancel-edit':
-        return 'Änderungen verwerfen?';
+        return this.translocoService.translate('documents.confirm.discard');
       case 'delete':
-        return `Möchten Sie das Dokument "${this.getDocTitle(this.documentToDelete())}" wirklich löschen?`;
+        return this.translocoService.translate('documents.delete.message', {
+          name: this.getDocTitle(this.documentToDelete()),
+        });
       case undefined:
         return undefined;
     }
@@ -324,16 +329,22 @@ export class DocumentsTabComponent implements OnDestroy {
       this.rehighlight();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
-        this.uploadError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
+        this.uploadError.set(
+          this.translocoService.translate('documents.error.fileTooLarge', { maxSize: this.maxFileSizeMB }),
+        );
       } else if (error instanceof DocumentUnsupportedFileTypeError) {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-        this.uploadError.set(`Dateityp .${ext} wird nicht unterstützt.`);
+        this.uploadError.set(this.translocoService.translate('documents.error.unsupportedType', { ext }));
       } else if (error instanceof DocumentRelationshipNotFoundError) {
-        this.uploadError.set('Dokumentverknüpfung nicht gefunden. Upload nicht möglich.');
+        this.uploadError.set(this.translocoService.translate('documents.error.relationshipNotFoundUpload'));
       } else {
         const detail = error instanceof DocumentUploadError && error.detail ? error.detail : '';
         console.error('[Documents] Upload failed:', error);
-        this.uploadError.set(detail ? `Fehler beim Hochladen: ${detail}` : 'Fehler beim Hochladen des Dokuments.');
+        this.uploadError.set(
+          detail
+            ? this.translocoService.translate('documents.error.uploadDetail', { detail })
+            : this.translocoService.translate('documents.error.uploadGeneric'),
+        );
       }
     }
   }
@@ -395,14 +406,16 @@ export class DocumentsTabComponent implements OnDestroy {
       this.rehighlight();
     } catch (error) {
       if (error instanceof DocumentFileTooLargeError) {
-        this.editError.set(`Die Datei ist zu gross (max. ${this.maxFileSizeMB} MB).`);
+        this.editError.set(
+          this.translocoService.translate('documents.error.fileTooLarge', { maxSize: this.maxFileSizeMB }),
+        );
       } else if (error instanceof DocumentUnsupportedFileTypeError) {
         const ext = this.editFile()?.name.split('.').pop()?.toLowerCase() ?? '';
-        this.editError.set(`Dateityp .${ext} wird nicht unterstützt.`);
+        this.editError.set(this.translocoService.translate('documents.error.unsupportedType', { ext }));
       } else if (error instanceof DocumentEditError) {
-        this.editError.set('Fehler beim Speichern der Änderungen.');
+        this.editError.set(this.translocoService.translate('documents.error.saveChanges'));
       } else {
-        this.editError.set('Fehler beim Bearbeiten des Dokuments.');
+        this.editError.set(this.translocoService.translate('documents.error.editGeneric'));
       }
     }
   }

@@ -26,10 +26,10 @@ export class HierarchyEffects {
           if (result.tree) {
             this.store.setResult(result.tree, result.relatedParents);
           } else {
-            this.store.setError('No hierarchy found');
+            this.store.setError('error.hierarchy.not-found');
           }
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Failed to load hierarchy';
+          const message = error instanceof Error ? error.message : 'error.hierarchy.load';
           this.store.setError(message);
         }
       });

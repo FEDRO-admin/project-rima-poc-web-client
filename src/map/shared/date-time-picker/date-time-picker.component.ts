@@ -2,9 +2,11 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, input, output, signal, OnInit } from
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-input-time-picker';
 import '@esri/calcite-components/dist/components/calcite-button';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'rima-date-time-picker',
+  imports: [TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './date-time-picker.component.html',
   styleUrl: './date-time-picker.component.scss',

@@ -1,153 +1,168 @@
-<button
-  id="history-toggle-button"
-  class="history-toggle"
-  [class.active]="historyStore.active()"
-  (click)="toggleMenu()"
-  [attr.aria-label]="historyStore.active() ? 'Historical view active' : 'Historical moments'"
->
-  <calcite-icon icon="clock" scale="s"></calcite-icon>
-</button>
-
-<calcite-popover
-  reference-element="history-toggle-button"
-  placement="left-start"
-  auto-close
-  label="Historical moments"
-  [attr.open]="menuOpen() ? '' : null"
-  (calcitePopoverClose)="closeMenu()"
->
-  <div class="history-menu">
-    @if (historyStore.active()) {
-      <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()"
-        >Return to Present</calcite-button
-      >
-      <span class="active-date">Viewing: {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span>
-    }
-
-    <calcite-button appearance="outline" kind="neutral" icon-start="clock" width="full" (click)="togglePanel()"
-      >Historical Moments</calcite-button
-    >
-
-    <calcite-button appearance="outline" kind="neutral" icon-start="calendar" width="full" (click)="toggleCustomPanel()"
-      >Custom Date &amp; Time</calcite-button
-    >
-  </div>
-</calcite-popover>
-
-<calcite-dialog
-  heading="Historical Moments"
-  [attr.open]="panelExpanded() ? '' : null"
-  modal
-  width-scale="s"
-  (calciteDialogClose)="closeMomentsDialog()"
->
-  <calcite-button
-    slot="header-actions-end"
-    appearance="transparent"
-    kind="brand"
-    icon-start="plus"
-    scale="s"
-    (click)="showAddForm()"
-  ></calcite-button>
-  <div class="dialog-content">
-    @if (historyStore.errorMessage()) {
-      <calcite-notice open kind="danger" closable (calciteNoticeClose)="dismissError()">
-        <span slot="message">{{ historyStore.errorMessage() }}</span>
-      </calcite-notice>
-    }
-
-    @if (addFormVisible()) {
-      <div class="add-form">
-        <calcite-input-text
-          placeholder="Marker name"
-          (calciteInputTextInput)="onNewNameChange($event)"
-        ></calcite-input-text>
-        <calcite-input-date-picker
-          layout="horizontal"
-          lang="de-CH"
-          (calciteInputDatePickerChange)="onNewDateChange($event)"
-        ></calcite-input-date-picker>
-        <calcite-input-time-picker
-          step="60"
-          hour-format="24"
-          (calciteInputTimePickerChange)="onNewTimeChange($event)"
-        ></calcite-input-time-picker>
-        <div class="add-form-actions">
-          <calcite-button appearance="outline" kind="neutral" width="full" (click)="cancelAdd()">Cancel</calcite-button>
-          <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="submitAdd()"
-            >Save</calcite-button
-          >
-        </div>
-      </div>
-    }
-
-    @if (historyStore.momentsState() === 'loading') {
-      <div class="loading"><calcite-loader inline></calcite-loader> Loading...</div>
-    } @else if (historyStore.moments().length === 0) {
-      <div class="empty-message">No historical markers found</div>
-    } @else {
-      <calcite-list selection-mode="single">
-        @for (moment of historyStore.moments(); track moment.name) {
-          <calcite-list-item
-            [label]="moment.name"
-            [description]="moment.date | date: 'dd.MM.yyyy HH:mm'"
-            [attr.selected]="historyStore.selectedMoment() === moment ? '' : null"
-            (calciteListItemSelect)="selectMoment(moment)"
-          >
-            <calcite-button
-              slot="actions-end"
-              appearance="transparent"
-              kind="danger"
-              icon-start="trash"
-              (click)="confirmDelete(moment); $event.stopPropagation()"
-            ></calcite-button>
-          </calcite-list-item>
-        }
-      </calcite-list>
-    }
-
-    @if (historyStore.confirmingDelete()) {
-      <div class="confirm-delete">
-        <span>Delete "{{ historyStore.confirmingDelete()!.name }}"?</span>
-        <div class="confirm-actions">
-          <calcite-button appearance="outline" kind="neutral" scale="s" (click)="cancelDelete()">Cancel</calcite-button>
-          <calcite-button appearance="solid" kind="danger" scale="s" (click)="executeDelete()">Delete</calcite-button>
-        </div>
-      </div>
-    }
-  </div>
-  <calcite-button
-    slot="footer-end"
-    appearance="solid"
-    kind="brand"
-    icon-start="check"
-    width="full"
-    [attr.disabled]="historyStore.selectedMoment() ? null : ''"
-    (click)="applySelectedMoment()"
-    >Apply</calcite-button
+﻿<ng-container *transloco="let t">
+  <button
+    id="history-toggle-button"
+    class="history-toggle"
+    [class.active]="historyStore.active()"
+    (click)="toggleMenu()"
+    [attr.aria-label]="historyStore.active() ? t('history.view-active') : t('history.moments')"
   >
-</calcite-dialog>
+    <calcite-icon icon="clock" scale="s"></calcite-icon>
+  </button>
 
-<calcite-dialog
-  heading="Custom Date &amp; Time"
-  [attr.open]="customExpanded() ? '' : null"
-  modal
-  width-scale="s"
-  (calciteDialogClose)="closeCustomDialog()"
->
-  <div class="dialog-content">
-    <calcite-input-date-picker
-      layout="horizontal"
-      lang="de-CH"
-      (calciteInputDatePickerChange)="onCustomDateChange($event)"
-    ></calcite-input-date-picker>
-    <calcite-input-time-picker
-      step="60"
-      hour-format="24"
-      (calciteInputTimePickerChange)="onCustomTimeChange($event)"
-    ></calcite-input-time-picker>
-    <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()"
-      >Apply</calcite-button
+  <calcite-popover
+    reference-element="history-toggle-button"
+    placement="left-start"
+    auto-close
+    [attr.label]="t('history.moments')"
+    [attr.open]="menuOpen() ? '' : null"
+    (calcitePopoverClose)="closeMenu()"
+  >
+    <div class="history-menu">
+      @if (historyStore.active()) {
+        <calcite-button appearance="solid" kind="danger" icon-start="reset" width="full" (click)="returnToPresent()">{{
+          t('history.return-to-present')
+        }}</calcite-button>
+        <span class="active-date"
+          >{{ t('history.viewing') }} {{ historyStore.selectedDate() | date: 'dd.MM.yyyy HH:mm' }}</span
+        >
+      }
+
+      <calcite-button appearance="outline" kind="neutral" icon-start="clock" width="full" (click)="togglePanel()">{{
+        t('history.historical-moments')
+      }}</calcite-button>
+
+      <calcite-button
+        appearance="outline"
+        kind="neutral"
+        icon-start="calendar"
+        width="full"
+        (click)="toggleCustomPanel()"
+        >{{ t('history.custom-date-time') }}</calcite-button
+      >
+    </div>
+  </calcite-popover>
+
+  <calcite-dialog
+    [attr.heading]="t('history.historical-moments')"
+    [attr.open]="panelExpanded() ? '' : null"
+    modal
+    width-scale="s"
+    (calciteDialogClose)="closeMomentsDialog()"
+  >
+    <calcite-button
+      slot="header-actions-end"
+      appearance="transparent"
+      kind="brand"
+      icon-start="plus"
+      scale="s"
+      (click)="showAddForm()"
+    ></calcite-button>
+    <div class="dialog-content">
+      @if (historyStore.errorMessage()) {
+        <calcite-notice open kind="danger" closable (calciteNoticeClose)="dismissError()">
+          <span slot="message">{{ historyStore.errorMessage() }}</span>
+        </calcite-notice>
+      }
+
+      @if (addFormVisible()) {
+        <div class="add-form">
+          <calcite-input-text
+            [attr.placeholder]="t('history.marker-name')"
+            (calciteInputTextInput)="onNewNameChange($event)"
+          ></calcite-input-text>
+          <calcite-input-date-picker
+            layout="horizontal"
+            lang="de-CH"
+            (calciteInputDatePickerChange)="onNewDateChange($event)"
+          ></calcite-input-date-picker>
+          <calcite-input-time-picker
+            step="60"
+            hour-format="24"
+            (calciteInputTimePickerChange)="onNewTimeChange($event)"
+          ></calcite-input-time-picker>
+          <div class="add-form-actions">
+            <calcite-button appearance="outline" kind="neutral" width="full" (click)="cancelAdd()">{{
+              t('history.cancel')
+            }}</calcite-button>
+            <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="submitAdd()">{{
+              t('history.save')
+            }}</calcite-button>
+          </div>
+        </div>
+      }
+
+      @if (historyStore.momentsState() === 'loading') {
+        <div class="loading"><calcite-loader inline></calcite-loader> {{ t('history.loading') }}</div>
+      } @else if (historyStore.moments().length === 0) {
+        <div class="empty-message">{{ t('history.no-markers') }}</div>
+      } @else {
+        <calcite-list selection-mode="single">
+          @for (moment of historyStore.moments(); track moment.name) {
+            <calcite-list-item
+              [label]="moment.name"
+              [description]="moment.date | date: 'dd.MM.yyyy HH:mm'"
+              [attr.selected]="historyStore.selectedMoment() === moment ? '' : null"
+              (calciteListItemSelect)="selectMoment(moment)"
+            >
+              <calcite-button
+                slot="actions-end"
+                appearance="transparent"
+                kind="danger"
+                icon-start="trash"
+                (click)="confirmDelete(moment); $event.stopPropagation()"
+              ></calcite-button>
+            </calcite-list-item>
+          }
+        </calcite-list>
+      }
+
+      @if (historyStore.confirmingDelete()) {
+        <div class="confirm-delete">
+          <span>{{ t('history.delete-confirm', { name: historyStore.confirmingDelete()!.name }) }}</span>
+          <div class="confirm-actions">
+            <calcite-button appearance="outline" kind="neutral" scale="s" (click)="cancelDelete()">{{
+              t('history.cancel')
+            }}</calcite-button>
+            <calcite-button appearance="solid" kind="danger" scale="s" (click)="executeDelete()">{{
+              t('history.delete')
+            }}</calcite-button>
+          </div>
+        </div>
+      }
+    </div>
+    <calcite-button
+      slot="footer-end"
+      appearance="solid"
+      kind="brand"
+      icon-start="check"
+      width="full"
+      [attr.disabled]="historyStore.selectedMoment() ? null : ''"
+      (click)="applySelectedMoment()"
+      >{{ t('history.apply') }}</calcite-button
     >
-  </div>
-</calcite-dialog>
+  </calcite-dialog>
+
+  <calcite-dialog
+    [attr.heading]="t('history.custom-date-time')"
+    [attr.open]="customExpanded() ? '' : null"
+    modal
+    width-scale="s"
+    (calciteDialogClose)="closeCustomDialog()"
+  >
+    <div class="dialog-content">
+      <calcite-input-date-picker
+        layout="horizontal"
+        lang="de-CH"
+        (calciteInputDatePickerChange)="onCustomDateChange($event)"
+      ></calcite-input-date-picker>
+      <calcite-input-time-picker
+        step="60"
+        hour-format="24"
+        (calciteInputTimePickerChange)="onCustomTimeChange($event)"
+      ></calcite-input-time-picker>
+      <calcite-button appearance="solid" kind="brand" icon-start="check" width="full" (click)="applyCustomDate()">{{
+        t('history.apply')
+      }}</calcite-button>
+    </div>
+  </calcite-dialog>
+</ng-container>

@@ -1,28 +1,31 @@
 import { RecoverableError } from '../../error-handling/base-error';
 
 export class LayerNameNotFoundError extends RecoverableError {
-  public override message: string;
+  public override message = 'error.layer.name-not-found';
+  public override translationArguments: Record<'layerName', string>;
 
   constructor(layerName: string) {
     super();
-    this.message = `Layer name "${layerName}" not found in any registered feature service`;
+    this.translationArguments = { layerName };
   }
 }
 
 export class LayerIdNotFoundError extends RecoverableError {
-  public override message: string;
+  public override message = 'error.layer.id-not-found';
+  public override translationArguments: Record<'layerId', string>;
 
   constructor(layerId: number) {
     super();
-    this.message = `Layer ID ${layerId} not found in any registered feature service`;
+    this.translationArguments = { layerId: String(layerId) };
   }
 }
 
 export class LayerNameCollisionError extends RecoverableError {
-  public override message: string;
+  public override message = 'error.layer.name-collision';
+  public override translationArguments: Record<'layerName', string>;
 
   constructor(layerName: string) {
     super();
-    this.message = `Layer name "${layerName}" exists in multiple feature services with different IDs`;
+    this.translationArguments = { layerName };
   }
 }

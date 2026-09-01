@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { TranslocoModule } from '@jsverse/transloco';
 import { ViewStore } from '../view.store';
 import { ViewService } from '../view.service';
 
 @Component({
   selector: 'rima-scene-toggle',
-  standalone: true,
+  imports: [TranslocoModule],
   templateUrl: './scene-toggle.component.html',
   styleUrl: './scene-toggle.component.scss',
 })

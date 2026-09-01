@@ -1,199 +1,219 @@
-@if (store.available()) {
-  @if (!viewStore.historic() && store.showCreateButton()) {
-    <rima-action-bar>
-      <rima-action-bar-button
-        icon="plus"
-        label="Add"
-        variant="primary"
-        [disabled]="store.saving()"
-        (triggered)="startCreate()"
-      />
-    </rima-action-bar>
-  }
+﻿<ng-container *transloco="let t">
+  @if (store.available()) {
+    @if (!viewStore.historic() && store.showCreateButton()) {
+      <rima-action-bar>
+        <rima-action-bar-button
+          icon="plus"
+          [label]="t('status.add')"
+          variant="primary"
+          [disabled]="store.saving()"
+          (triggered)="startCreate()"
+        />
+      </rima-action-bar>
+    }
 
-  <div class="status-section">
-    @if (store.loading()) {
-      <div class="status-loading">Loading status...</div>
-    } @else {
-      @if (store.creating()) {
-        <div class="status-create-form">
-          <div class="status-create-header">New Status</div>
-          <rima-attribute-form
-            [fields]="service.getFields()"
-            [values]="store.editedAttributes()"
-            [disabled]="store.saving()"
-            idPrefix="status-new"
-            (fieldChange)="onFieldChange($event)"
-          />
+    <div class="status-section">
+      @if (store.loading()) {
+        <div class="status-loading">{{ t('status.loading') }}</div>
+      } @else {
+        @if (store.creating()) {
+          <div class="status-create-form">
+            <div class="status-create-header">{{ t('status.new-status') }}</div>
+            <rima-attribute-form
+              [fields]="service.getFields()"
+              [values]="store.editedAttributes()"
+              [disabled]="store.saving()"
+              idPrefix="status-new"
+              (fieldChange)="onFieldChange($event)"
+            />
 
-          <div class="geometry-section">
-            <span class="geometry-section__label">Geometrie (optional)</span>
-            @if (geometryStore.placingActive()) {
-              <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
-              <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
-                Abbrechen
-              </calcite-button>
-            } @else if (geometryStore.placedGeometry(); as geo) {
-              <p class="geometry-section__coords">
-                X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
-              </p>
-              <div class="geometry-section__actions">
-                <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()"> Verschieben </calcite-button>
-                <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
-                  Entfernen
+            <div class="geometry-section">
+              <span class="geometry-section__label">{{ t('geometry.optional') }}</span>
+              @if (geometryStore.placingActive()) {
+                <p class="geometry-section__status">{{ t('geometry.click-to-place') }}</p>
+                <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+                  {{ t('common.cancel') }}
                 </calcite-button>
-              </div>
-            } @else {
-              <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
-                Auf Karte platzieren
-              </calcite-button>
-            }
-          </div>
-
-          <rima-dialog-actions [message]="confirmMessage()">
-            @if (confirmAction() === 'save') {
-              <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
-              <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
-            } @else if (confirmAction() === 'cancel') {
-              <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
-              <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
-            } @else {
-              <rima-dialog-action label="Cancel" (triggered)="requestCancelCreate()" />
-              <rima-dialog-action
-                [label]="store.saving() ? 'Saving...' : 'Save Status'"
-                variant="primary"
-                [disabled]="!hasAnyPendingChanges() || store.saving()"
-                (triggered)="requestSave()"
-              />
-            }
-          </rima-dialog-actions>
-        </div>
-      }
-
-      @if (store.hasRecords()) {
-        <div class="status-list">
-          @for (record of store.records(); track record.objectId) {
-            <div class="status-item" [class.status-item--expanded]="isExpanded(record.objectId)">
-              <button class="status-item-summary" (click)="toggleExpand(record)">
-                @if (service.getZustandsklasseForRecord(record); as klasse) {
-                  <div
-                    class="status-klasse-badge"
-                    [style.background-color]="service.getZustandsklasseColorForRecord(record)"
-                  >
-                    {{ klasse }}
-                  </div>
-                }
-                <span class="status-item-date">
-                  {{ service.getBewertungsdatumDisplay(record) ?? '–' }}
-                </span>
-                <span class="status-item-spacer"></span>
-                <calcite-icon
-                  [icon]="isExpanded(record.objectId) ? 'chevron-up' : 'chevron-down'"
-                  scale="s"
-                ></calcite-icon>
-              </button>
-
-              @if (isExpanded(record.objectId)) {
-                <div class="status-item-detail">
-                  @if (store.activeEditId() === record.objectId) {
-                    <rima-attribute-form
-                      [fields]="service.getFields()"
-                      [values]="store.editedAttributes()"
-                      [disabled]="store.saving()"
-                      [idPrefix]="'status-' + record.objectId"
-                      (fieldChange)="onFieldChange($event)"
-                    />
-
-                    <div class="geometry-section">
-                      <span class="geometry-section__label">Geometrie (optional)</span>
-                      @if (geometryStore.placingActive()) {
-                        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
-                        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
-                          Abbrechen
-                        </calcite-button>
-                      } @else if (getEffectiveEditGeometry(record); as geo) {
-                        <p class="geometry-section__coords">
-                          X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
-                        </p>
-                        <div class="geometry-section__actions">
-                          <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()">
-                            Verschieben
-                          </calcite-button>
-                          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
-                            Entfernen
-                          </calcite-button>
-                        </div>
-                      } @else {
-                        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
-                          Auf Karte platzieren
-                        </calcite-button>
-                      }
-                    </div>
-
-                    <rima-dialog-actions [message]="confirmMessage()">
-                      @if (confirmAction() === 'save') {
-                        <rima-dialog-action label="Cancel" (triggered)="dismissConfirm()" />
-                        <rima-dialog-action label="Save" variant="primary" (triggered)="onConfirmPrimary()" />
-                      } @else if (confirmAction() === 'cancel') {
-                        <rima-dialog-action label="Keep Editing" (triggered)="dismissConfirm()" />
-                        <rima-dialog-action label="Discard" variant="destructive" (triggered)="onConfirmPrimary()" />
-                      } @else {
-                        <rima-dialog-action label="Cancel" (triggered)="requestCancel()" />
-                        <rima-dialog-action
-                          [label]="store.saving() ? 'Saving...' : 'Save Status'"
-                          variant="primary"
-                          [disabled]="!hasAnyPendingChanges() || store.saving()"
-                          (triggered)="requestSave()"
-                        />
-                      }
-                    </rima-dialog-actions>
-                  } @else {
-                    <table class="status-attributes-table">
-                      @for (field of service.getDisplayFieldsForRecord(record); track field.label) {
-                        <tr>
-                          <td class="status-attr-key">{{ field.label }}</td>
-                          <td class="status-attr-value" [class.status-attr-value--null]="field.value == null">
-                            {{ field.value == null ? 'null' : field.value }}
-                          </td>
-                        </tr>
-                      }
-                    </table>
-                    @if (!viewStore.historic()) {
-                      <div class="status-item-actions">
-                        <button
-                          class="status-item-action-btn"
-                          [disabled]="store.saving() || store.isEditing()"
-                          (click)="startEdit(record)"
-                        >
-                          <calcite-icon icon="pencil" scale="s"></calcite-icon>
-                          Edit
-                        </button>
-                        <button
-                          class="status-item-action-btn status-item-action-btn--destructive"
-                          [disabled]="store.saving() || store.isEditing()"
-                          (click)="requestDelete(record.objectId!)"
-                        >
-                          <calcite-icon icon="trash" scale="s"></calcite-icon>
-                          Delete
-                        </button>
-                      </div>
-                    }
-
-                    @if (confirmingDeleteId() === record.objectId) {
-                      <rima-dialog-actions message="Are you sure you want to delete this status record?">
-                        <rima-dialog-action label="Cancel" (triggered)="cancelDeleteConfirm()" />
-                        <rima-dialog-action label="Delete" variant="destructive" (triggered)="onDeleteConfirm()" />
-                      </rima-dialog-actions>
-                    }
-                  }
+              } @else if (geometryStore.placedGeometry(); as geo) {
+                <p class="geometry-section__coords">
+                  X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
+                </p>
+                <div class="geometry-section__actions">
+                  <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()">
+                    {{ t('geometry.move') }}
+                  </calcite-button>
+                  <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
+                    {{ t('geometry.remove') }}
+                  </calcite-button>
                 </div>
+              } @else {
+                <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
+                  {{ t('geometry.place-on-map') }}
+                </calcite-button>
               }
             </div>
-          }
-        </div>
-      } @else if (!store.creating()) {
-        <div class="status-empty">No status records.</div>
+
+            <rima-dialog-actions [message]="confirmMessage()">
+              @if (confirmAction() === 'save') {
+                <rima-dialog-action [label]="t('common.cancel')" (triggered)="dismissConfirm()" />
+                <rima-dialog-action [label]="t('common.save')" variant="primary" (triggered)="onConfirmPrimary()" />
+              } @else if (confirmAction() === 'cancel') {
+                <rima-dialog-action [label]="t('common.keep-editing')" (triggered)="dismissConfirm()" />
+                <rima-dialog-action
+                  [label]="t('common.discard')"
+                  variant="destructive"
+                  (triggered)="onConfirmPrimary()"
+                />
+              } @else {
+                <rima-dialog-action [label]="t('common.cancel')" (triggered)="requestCancelCreate()" />
+                <rima-dialog-action
+                  [label]="store.saving() ? t('common.saving') : t('status.save-status')"
+                  variant="primary"
+                  [disabled]="!hasAnyPendingChanges() || store.saving()"
+                  (triggered)="requestSave()"
+                />
+              }
+            </rima-dialog-actions>
+          </div>
+        }
+
+        @if (store.hasRecords()) {
+          <div class="status-list">
+            @for (record of store.records(); track record.objectId) {
+              <div class="status-item" [class.status-item--expanded]="isExpanded(record.objectId)">
+                <button class="status-item-summary" (click)="toggleExpand(record)">
+                  @if (service.getZustandsklasseForRecord(record); as klasse) {
+                    <div
+                      class="status-klasse-badge"
+                      [style.background-color]="service.getZustandsklasseColorForRecord(record)"
+                    >
+                      {{ klasse }}
+                    </div>
+                  }
+                  <span class="status-item-date">
+                    {{ service.getBewertungsdatumDisplay(record) ?? 'â€“' }}
+                  </span>
+                  <span class="status-item-spacer"></span>
+                  <calcite-icon
+                    [icon]="isExpanded(record.objectId) ? 'chevron-up' : 'chevron-down'"
+                    scale="s"
+                  ></calcite-icon>
+                </button>
+
+                @if (isExpanded(record.objectId)) {
+                  <div class="status-item-detail">
+                    @if (store.activeEditId() === record.objectId) {
+                      <rima-attribute-form
+                        [fields]="service.getFields()"
+                        [values]="store.editedAttributes()"
+                        [disabled]="store.saving()"
+                        [idPrefix]="'status-' + record.objectId"
+                        (fieldChange)="onFieldChange($event)"
+                      />
+
+                      <div class="geometry-section">
+                        <span class="geometry-section__label">{{ t('geometry.optional') }}</span>
+                        @if (geometryStore.placingActive()) {
+                          <p class="geometry-section__status">{{ t('geometry.click-to-place') }}</p>
+                          <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+                            {{ t('common.cancel') }}
+                          </calcite-button>
+                        } @else if (getEffectiveEditGeometry(record); as geo) {
+                          <p class="geometry-section__coords">
+                            X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}
+                          </p>
+                          <div class="geometry-section__actions">
+                            <calcite-button appearance="outline" scale="s" (click)="adjustGeometry()">
+                              {{ t('geometry.move') }}
+                            </calcite-button>
+                            <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeGeometry()">
+                              {{ t('geometry.remove') }}
+                            </calcite-button>
+                          </div>
+                        } @else {
+                          <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startPlacing()">
+                            {{ t('geometry.place-on-map') }}
+                          </calcite-button>
+                        }
+                      </div>
+
+                      <rima-dialog-actions [message]="confirmMessage()">
+                        @if (confirmAction() === 'save') {
+                          <rima-dialog-action [label]="t('common.cancel')" (triggered)="dismissConfirm()" />
+                          <rima-dialog-action
+                            [label]="t('common.save')"
+                            variant="primary"
+                            (triggered)="onConfirmPrimary()"
+                          />
+                        } @else if (confirmAction() === 'cancel') {
+                          <rima-dialog-action [label]="t('common.keep-editing')" (triggered)="dismissConfirm()" />
+                          <rima-dialog-action
+                            [label]="t('common.discard')"
+                            variant="destructive"
+                            (triggered)="onConfirmPrimary()"
+                          />
+                        } @else {
+                          <rima-dialog-action [label]="t('common.cancel')" (triggered)="requestCancel()" />
+                          <rima-dialog-action
+                            [label]="store.saving() ? t('common.saving') : t('status.save-status')"
+                            variant="primary"
+                            [disabled]="!hasAnyPendingChanges() || store.saving()"
+                            (triggered)="requestSave()"
+                          />
+                        }
+                      </rima-dialog-actions>
+                    } @else {
+                      <table class="status-attributes-table">
+                        @for (field of service.getDisplayFieldsForRecord(record); track field.label) {
+                          <tr>
+                            <td class="status-attr-key">{{ field.label }}</td>
+                            <td class="status-attr-value" [class.status-attr-value--null]="field.value == null">
+                              {{ field.value == null ? t('common.null-value') : field.value }}
+                            </td>
+                          </tr>
+                        }
+                      </table>
+                      @if (!viewStore.historic()) {
+                        <div class="status-item-actions">
+                          <button
+                            class="status-item-action-btn"
+                            [disabled]="store.saving() || store.isEditing()"
+                            (click)="startEdit(record)"
+                          >
+                            <calcite-icon icon="pencil" scale="s"></calcite-icon>
+                            {{ t('status.edit') }}
+                          </button>
+                          <button
+                            class="status-item-action-btn status-item-action-btn--destructive"
+                            [disabled]="store.saving() || store.isEditing()"
+                            (click)="requestDelete(record.objectId!)"
+                          >
+                            <calcite-icon icon="trash" scale="s"></calcite-icon>
+                            {{ t('status.delete') }}
+                          </button>
+                        </div>
+                      }
+
+                      @if (confirmingDeleteId() === record.objectId) {
+                        <rima-dialog-actions [message]="t('status.confirm.delete')">
+                          <rima-dialog-action [label]="t('common.cancel')" (triggered)="cancelDeleteConfirm()" />
+                          <rima-dialog-action
+                            [label]="t('status.delete')"
+                            variant="destructive"
+                            (triggered)="onDeleteConfirm()"
+                          />
+                        </rima-dialog-actions>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else if (!store.creating()) {
+          <div class="status-empty">{{ t('status.no-records') }}</div>
+        }
       }
-    }
-  </div>
-}
+    </div>
+  }
+</ng-container>

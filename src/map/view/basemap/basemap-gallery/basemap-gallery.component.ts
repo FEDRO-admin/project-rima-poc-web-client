@@ -10,11 +10,12 @@ import {
 } from '@angular/core';
 import '@arcgis/map-components/dist/components/arcgis-basemap-gallery';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import { TranslocoModule } from '@jsverse/transloco';
 import { ViewService } from '../../view.service';
 
 @Component({
   selector: 'rima-basemap-gallery',
-  standalone: true,
+  imports: [TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './basemap-gallery.component.html',
   styleUrl: './basemap-gallery.component.scss',

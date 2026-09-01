@@ -31,6 +31,7 @@ import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-act
 import { ViewStore } from '../../view/view.store';
 import { ActionBarComponent } from '../../../shared/action-bar/action-bar.component';
 import { ActionBarButtonComponent } from '../../../shared/action-bar/action-bar-button.component';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 type StatusConfirmAction = 'save' | 'cancel' | null;
 
@@ -43,6 +44,7 @@ type StatusConfirmAction = 'save' | 'cancel' | null;
     DialogActionComponent,
     ActionBarComponent,
     ActionBarButtonComponent,
+    TranslocoModule,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
@@ -64,6 +66,7 @@ export class StatusComponent implements OnDestroy {
   protected readonly geometryService = inject(PointPlacementService);
   protected readonly viewStore = inject(ViewStore);
   private readonly viewService = inject(ViewService);
+  private readonly translocoService = inject(TranslocoService);
   protected readonly confirmingDeleteId = signal<number | undefined>(undefined);
   protected readonly confirmAction = signal<StatusConfirmAction>(null);
 
@@ -72,8 +75,8 @@ export class StatusComponent implements OnDestroy {
 
   protected readonly confirmMessage = computed(() => {
     const action = this.confirmAction();
-    if (action === 'save') return 'Are you sure you want to save the status changes?';
-    if (action === 'cancel') return 'You have unsaved changes. Are you sure you want to discard them?';
+    if (action === 'save') return this.translocoService.translate('status.confirm.save');
+    if (action === 'cancel') return this.translocoService.translate('status.confirm.discard');
     return undefined;
   });
 

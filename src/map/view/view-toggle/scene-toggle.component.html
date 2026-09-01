@@ -1,3 +1,9 @@
-<button class="scene-toggle" (click)="toggle()" [attr.aria-label]="isScene() ? 'Switch to 2D' : 'Switch to 3D'">
-  {{ isScene() ? '2D' : '3D' }}
-</button>
+<ng-container *transloco="let t">
+  <button
+    class="scene-toggle"
+    (click)="toggle()"
+    [attr.aria-label]="isScene() ? t('scene-toggle.switch-to-2d') : t('scene-toggle.switch-to-3d')"
+  >
+    {{ isScene() ? '2D' : '3D' }}
+  </button>
+</ng-container>

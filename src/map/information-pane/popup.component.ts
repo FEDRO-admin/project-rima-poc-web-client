@@ -13,11 +13,19 @@ import '@esri/calcite-components/dist/components/calcite-action-bar';
 import { DialogActionsComponent } from '../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action.component';
 import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
+import { TranslocoModule } from '@jsverse/transloco';
+import { TranslocoService } from '@jsverse/transloco';
 import { buildFeatureDisplayLabel, buildFeatureListLabel } from '../shared/display-label';
 
 @Component({
   selector: 'rima-popup',
-  imports: [PopupContentComponent, DialogActionsComponent, DialogActionComponent, AttributesTabComponent],
+  imports: [
+    PopupContentComponent,
+    DialogActionsComponent,
+    DialogActionComponent,
+    AttributesTabComponent,
+    TranslocoModule,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './popup.component.html',
   styleUrl: './popup.component.scss',
@@ -29,14 +37,19 @@ export class PopupComponent {
   protected readonly activeTab = signal<PopupTab>('attributes');
   private readonly deleteService = inject(AttributeDeleteService);
   private readonly editService = inject(AttributeEditService);
+  private readonly translocoService = inject(TranslocoService);
 
-  private static readonly TAB_LABELS: Record<PopupTab, string> = {
-    attributes: 'Attributes',
-    reference: 'Reference Points',
-    status: 'Zustand',
-    hierarchy: 'Hierarchy',
-    documents: 'Documents',
-  };
+  protected readonly activeTabLabel = computed(() => {
+    const tab = this.activeTab();
+    const labels: Record<PopupTab, string> = {
+      attributes: this.translocoService.translate('popup.tab.attributes'),
+      reference: this.translocoService.translate('popup.tab.reference-points'),
+      status: this.translocoService.translate('popup.tab.status'),
+      hierarchy: this.translocoService.translate('popup.tab.hierarchy'),
+      documents: this.translocoService.translate('popup.tab.documents'),
+    };
+    return labels[tab];
+  });
 
   protected readonly activeGraphicTitle = computed(() => {
     const graphic = this.store.selectedGraphic();
@@ -45,8 +58,6 @@ export class PopupComponent {
   });
 
   protected readonly activeGraphicSubtitle = computed(() => this.store.selectedGraphic()?.layer?.title ?? '');
-
-  protected readonly activeTabLabel = computed(() => PopupComponent.TAB_LABELS[this.activeTab()]);
 
   protected readonly actionBarExpanded = signal(false);
 

@@ -372,7 +372,7 @@ export class ReferencePointComponentService implements OnDestroy {
     }
 
     if (!this.displayLayer) {
-      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'Referenzpunkte' });
+      this.displayLayer = new GraphicsLayer({ listMode: 'hide', title: 'reference-points.title' });
       view.map.add(this.displayLayer);
     }
 
@@ -481,7 +481,7 @@ export class ReferencePointComponentService implements OnDestroy {
     if (this.highlightLayer) return;
     const view = this.viewService.activeView();
     if (!view?.map) return;
-    this.highlightLayer = new GraphicsLayer({ title: 'Reference Point Highlights', listMode: 'hide' });
+    this.highlightLayer = new GraphicsLayer({ title: 'reference-points.title', listMode: 'hide' });
     view.map.add(this.highlightLayer);
   }
 }

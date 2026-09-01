@@ -3,6 +3,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Graphic from '@arcgis/core/Graphic';
 import type { GraphicHit } from '@arcgis/core/views/types';
 import { ViewService } from '../view/view.service';
+import { TranslocoService } from '@jsverse/transloco';
 
 export interface GuidPickerCandidate {
   graphic: Graphic;
@@ -19,6 +20,7 @@ export interface GuidPickerResult {
 @Injectable()
 export class GuidPickerService implements OnDestroy {
   private readonly viewService = inject(ViewService);
+  private readonly translocoService = inject(TranslocoService);
 
   readonly active = signal(false);
   readonly candidates = signal<GuidPickerCandidate[]>([]);
@@ -80,7 +82,7 @@ export class GuidPickerService implements OnDestroy {
 
   private buildCandidate(graphic: Graphic): GuidPickerCandidate {
     const layer = graphic.layer as FeatureLayer;
-    const layerTitle = layer?.title ?? 'Unknown Layer';
+    const layerTitle: string = layer?.title || this.translocoService.translate('guid-picker.unknown-layer');
 
     const idField = layer?.fields?.find((f) => f.type === 'global-id' || f.name.toLowerCase() === 'id');
     const idValue = idField
@@ -93,7 +95,7 @@ export class GuidPickerService implements OnDestroy {
   }
 
   private buildDisplayLabel(graphic: Graphic, layer: FeatureLayer): string {
-    if (!layer?.fields || !graphic.attributes) return 'Feature';
+    if (!layer?.fields || !graphic.attributes) return this.translocoService.translate('display-label.feature');
 
     const displayField = layer.displayField;
     if (displayField && graphic.attributes[displayField] != null) {
@@ -111,6 +113,6 @@ export class GuidPickerService implements OnDestroy {
       return String(graphic.attributes[stringField.name]);
     }
 
-    return `OID: ${graphic.attributes[layer.objectIdField] ?? 'unknown'}`;
+    return `OID: ${graphic.attributes[layer.objectIdField] ?? this.translocoService.translate('guid-picker.unknown-layer')}`;
   }
 }

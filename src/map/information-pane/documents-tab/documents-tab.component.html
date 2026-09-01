@@ -1,320 +1,351 @@
-@if (!viewStore.historic() && !formActive()) {
-  <rima-action-bar>
-    <rima-action-bar-button icon="plus" label="Add" variant="primary" (triggered)="openUploadForm()" />
-  </rima-action-bar>
-}
-@if (documentsStore.isLoading() && !formActive()) {
-  <div class="documents-loading">
-    <calcite-loader scale="m"></calcite-loader>
-  </div>
-}
-
-@if (documentsStore.hasError() && !formActive()) {
-  <p class="documents-error">{{ documentsStore.error() }}</p>
-}
-
-@if (documentsStore.isEmpty() && !formActive()) {
-  <p class="documents-empty">Keine Dokumente vorhanden.</p>
-}
-
-@if (uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing') {
-  <div class="documents-uploading">
-    <div class="documents-uploading__info">
-      <calcite-loader scale="s"></calcite-loader>
-      <span>
-        @if (uploadProgress().state === 'uploading') {
-          Dokument wird hochgeladen... {{ uploadProgress().percent }}%
-        } @else {
-          Freigabe wird gesetzt...
-        }
-      </span>
-    </div>
-    <div class="documents-uploading__bar">
-      <div class="documents-uploading__bar-fill" [style.width.%]="uploadProgress().percent"></div>
-    </div>
-  </div>
-}
-
-@if (showUploadForm()) {
-  <div class="upload-form">
-    <h4 class="upload-form__title">Neues Dokument hochladen</h4>
-
-    <div class="upload-form__field">
-      <label for="doc-file">Datei</label>
-      <input id="doc-file" type="file" (change)="onFileSelected($event)" />
-      <span class="upload-form__hint">Max. {{ maxFileSizeMB }} MB</span>
-    </div>
-
-    <rima-attribute-form
-      [fields]="documentsService.resolveEditableFields()"
-      [values]="uploadAttributes()"
-      idPrefix="doc-upload"
-      (fieldChange)="onUploadFieldChange($event)"
-    />
-
-    <div class="upload-form__sharing">
-      <span class="upload-form__sharing-label">Freigabe</span>
-
-      <div class="upload-form__sharing-options">
-        <label class="upload-form__radio">
-          <input
-            type="radio"
-            name="sharing-access"
-            value="private"
-            [checked]="uploadAccess() === 'private'"
-            (change)="uploadAccess.set('private')"
-          />
-          Besitzer
-        </label>
-        <label class="upload-form__radio">
-          <input
-            type="radio"
-            name="sharing-access"
-            value="org"
-            [checked]="uploadAccess() === 'org'"
-            (change)="uploadAccess.set('org')"
-          />
-          Organisation
-        </label>
-        <label class="upload-form__radio">
-          <input
-            type="radio"
-            name="sharing-access"
-            value="public"
-            [checked]="uploadAccess() === 'public'"
-            (change)="uploadAccess.set('public')"
-          />
-          Öffentlich
-        </label>
-      </div>
-    </div>
-
-    <div class="geometry-section">
-      <span class="geometry-section__label">Geometrie (optional)</span>
-      @if (geometryStore.placingActive()) {
-        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
-        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
-          Abbrechen
-        </calcite-button>
-      } @else if (geometryStore.placedGeometry(); as geo) {
-        <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
-        <div class="geometry-section__actions">
-          <calcite-button appearance="outline" scale="s" (click)="adjustUploadGeometry()"> Verschieben </calcite-button>
-          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeUploadGeometry()">
-            Entfernen
-          </calcite-button>
-        </div>
-      } @else {
-        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startUploadPlacing()">
-          Auf Karte platzieren
-        </calcite-button>
-      }
-    </div>
-
-    @if (uploadError()) {
-      <p class="upload-form__error">{{ uploadError() }}</p>
-    }
-  </div>
-
-  <rima-dialog-actions [message]="confirmMessage()">
-    @if (confirmAction() === 'upload') {
-      <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
-      <rima-dialog-action label="Hochladen" variant="primary" (triggered)="onConfirmPrimary()" />
-    } @else if (confirmAction() === 'cancel-upload') {
-      <rima-dialog-action label="Weiter bearbeiten" (triggered)="dismissConfirm()" />
-      <rima-dialog-action label="Verwerfen" variant="destructive" (triggered)="onConfirmPrimary()" />
-    } @else {
-      <rima-dialog-action label="Abbrechen" (triggered)="cancelUpload()" />
-      <rima-dialog-action
-        label="Hochladen"
+﻿<ng-container *transloco="let t">
+  @if (!viewStore.historic() && !formActive()) {
+    <rima-action-bar>
+      <rima-action-bar-button
+        icon="plus"
+        [label]="t('documents.add')"
         variant="primary"
-        [disabled]="
-          !uploadFile() ||
-          !uploadAttributes()['titel'] ||
-          uploadProgress().state === 'uploading' ||
-          uploadProgress().state === 'sharing'
-        "
-        (triggered)="requestUpload()"
+        (triggered)="openUploadForm()"
       />
-    }
-  </rima-dialog-actions>
-}
-
-@if (documentsStore.documents().length > 0 && !formActive()) {
-  <div class="documents-list">
-    @for (doc of documentsStore.documents(); track doc.objectId) {
-      <div class="document-item">
-        <div class="document-item__header">
-          <span class="document-item__title">{{ getDocTitle(doc) }}</span>
-          <span class="document-item__meta">
-            {{ doc.attributes['typ'] }}
-            @if (doc.attributes['groesse']) {
-              · {{ formatFileSize(+doc.attributes['groesse']!) }}
-            }
-            @if (doc.attributes['letzte_aenderung']) {
-              · {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
-            }
-          </span>
-        </div>
-        <rima-action-bar class="document-item__actions">
-          @if (isViewable(doc)) {
-            <rima-action-bar-button icon="view-visible" label="Anzeigen" (triggered)="openDocument(doc)" />
-          }
-          <rima-action-bar-button icon="download" label="Herunterladen" (triggered)="downloadDocument(doc)" />
-          <rima-action-bar-button
-            [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
-            label="Details"
-            (triggered)="toggleDetails(doc.objectId)"
-          />
-          @if (!viewStore.historic()) {
-            <rima-action-bar-button icon="pencil" label="Bearbeiten" (triggered)="openEditForm(doc)" />
-            <rima-action-bar-button
-              icon="trash"
-              label="Löschen"
-              variant="destructive"
-              (triggered)="requestDelete(doc)"
-            />
-          }
-        </rima-action-bar>
-        @if (expandedDocId() === doc.objectId) {
-          <div class="document-item__details">
-            @for (field of documentsService.resolveEditableFields(); track field.name) {
-              @if (doc.attributes[field.name] != null && doc.attributes[field.name] !== '') {
-                <div class="document-item__detail">
-                  <span class="document-item__detail-label">{{ field.alias }}</span>
-                  <span class="document-item__detail-value">{{ doc.attributes[field.name] }}</span>
-                </div>
-              }
-            }
-            @if (doc.attributes['name']) {
-              <div class="document-item__detail">
-                <span class="document-item__detail-label">Dateiname</span>
-                <span class="document-item__detail-value">{{ doc.attributes['name'] }}</span>
-              </div>
-            }
-          </div>
-        }
-      </div>
-    }
-  </div>
-}
-
-@if (documentsStore.isDeleting()) {
-  <div class="documents-uploading">
-    <calcite-loader scale="s"></calcite-loader>
-    <span>Dokument wird gelöscht...</span>
-  </div>
-}
-
-@if (documentToDelete()) {
-  <rima-dialog-actions [message]="confirmMessage()">
-    <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
-    <rima-dialog-action label="Löschen" variant="destructive" (triggered)="onConfirmPrimary()" />
-  </rima-dialog-actions>
-}
-
-@if (editingDocument(); as editDoc) {
-  <div class="upload-form">
-    <h4 class="upload-form__title">Dokument bearbeiten</h4>
-
-    <div class="upload-form__field">
-      <label for="edit-file">Datei ersetzen (optional)</label>
-      <input id="edit-file" type="file" (change)="onEditFileSelected($event)" />
-      <span class="upload-form__hint"
-        >Aktuelle Datei: {{ editDoc.attributes['name'] }} · Max. {{ maxFileSizeMB }} MB</span
-      >
+    </rima-action-bar>
+  }
+  @if (documentsStore.isLoading() && !formActive()) {
+    <div class="documents-loading">
+      <calcite-loader scale="m"></calcite-loader>
     </div>
+  }
 
-    <rima-attribute-form
-      [fields]="documentsService.resolveEditableFields()"
-      [values]="editAttributes()"
-      idPrefix="doc-edit"
-      (fieldChange)="onEditFieldChange($event)"
-    />
+  @if (documentsStore.hasError() && !formActive()) {
+    <p class="documents-error">{{ documentsStore.error() }}</p>
+  }
 
-    @if (editFile()) {
+  @if (documentsStore.isEmpty() && !formActive()) {
+    <p class="documents-empty">{{ t('documents.empty') }}</p>
+  }
+
+  @if (uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing') {
+    <div class="documents-uploading">
+      <div class="documents-uploading__info">
+        <calcite-loader scale="s"></calcite-loader>
+        <span>
+          @if (uploadProgress().state === 'uploading') {
+            {{ t('documents.upload.progress') }} {{ uploadProgress().percent }}%
+          } @else {
+            {{ t('documents.upload.sharing-progress') }}
+          }
+        </span>
+      </div>
+      <div class="documents-uploading__bar">
+        <div class="documents-uploading__bar-fill" [style.width.%]="uploadProgress().percent"></div>
+      </div>
+    </div>
+  }
+
+  @if (showUploadForm()) {
+    <div class="upload-form">
+      <h4 class="upload-form__title">{{ t('documents.upload.title') }}</h4>
+
+      <div class="upload-form__field">
+        <label for="doc-file">{{ t('documents.upload.file') }}</label>
+        <input id="doc-file" type="file" (change)="onFileSelected($event)" />
+        <span class="upload-form__hint">Max. {{ maxFileSizeMB }} MB</span>
+      </div>
+
+      <rima-attribute-form
+        [fields]="documentsService.resolveEditableFields()"
+        [values]="uploadAttributes()"
+        idPrefix="doc-upload"
+        (fieldChange)="onUploadFieldChange($event)"
+      />
+
       <div class="upload-form__sharing">
-        <span class="upload-form__sharing-label">Freigabe (neue Datei)</span>
+        <span class="upload-form__sharing-label">{{ t('documents.upload.sharing') }}</span>
 
         <div class="upload-form__sharing-options">
           <label class="upload-form__radio">
             <input
               type="radio"
-              name="edit-sharing-access"
+              name="sharing-access"
               value="private"
-              [checked]="editAccess() === 'private'"
-              (change)="editAccess.set('private')"
+              [checked]="uploadAccess() === 'private'"
+              (change)="uploadAccess.set('private')"
             />
-            Besitzer
+            {{ t('documents.upload.sharing.owner') }}
           </label>
           <label class="upload-form__radio">
             <input
               type="radio"
-              name="edit-sharing-access"
+              name="sharing-access"
               value="org"
-              [checked]="editAccess() === 'org'"
-              (change)="editAccess.set('org')"
+              [checked]="uploadAccess() === 'org'"
+              (change)="uploadAccess.set('org')"
             />
-            Organisation
+            {{ t('documents.upload.sharing.organization') }}
           </label>
           <label class="upload-form__radio">
             <input
               type="radio"
-              name="edit-sharing-access"
+              name="sharing-access"
               value="public"
-              [checked]="editAccess() === 'public'"
-              (change)="editAccess.set('public')"
+              [checked]="uploadAccess() === 'public'"
+              (change)="uploadAccess.set('public')"
             />
-            Öffentlich
+            {{ t('documents.upload.sharing.public') }}
           </label>
         </div>
       </div>
-    }
 
-    <div class="geometry-section">
-      <span class="geometry-section__label">Geometrie (optional)</span>
-      @if (geometryStore.placingActive()) {
-        <p class="geometry-section__status">Klicken Sie auf die Karte, um einen Punkt zu setzen...</p>
-        <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
-          Abbrechen
-        </calcite-button>
-      } @else if (effectiveEditGeometry; as geo) {
-        <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
-        <div class="geometry-section__actions">
-          <calcite-button appearance="outline" scale="s" (click)="adjustEditGeometry()"> Verschieben </calcite-button>
-          <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeEditGeometry()">
-            Entfernen
+      <div class="geometry-section">
+        <span class="geometry-section__label">{{ t('geometry.optional') }}</span>
+        @if (geometryStore.placingActive()) {
+          <p class="geometry-section__status">{{ t('geometry.click-to-place') }}</p>
+          <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+            {{ t('common.cancel') }}
           </calcite-button>
-        </div>
-      } @else {
-        <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startEditPlacing()">
-          Auf Karte platzieren
-        </calcite-button>
+        } @else if (geometryStore.placedGeometry(); as geo) {
+          <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
+          <div class="geometry-section__actions">
+            <calcite-button appearance="outline" scale="s" (click)="adjustUploadGeometry()">
+              {{ t('geometry.move') }}
+            </calcite-button>
+            <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeUploadGeometry()">
+              {{ t('geometry.remove') }}
+            </calcite-button>
+          </div>
+        } @else {
+          <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startUploadPlacing()">
+            {{ t('geometry.place-on-map') }}
+          </calcite-button>
+        }
+      </div>
+
+      @if (uploadError()) {
+        <p class="upload-form__error">{{ uploadError() }}</p>
       }
     </div>
 
-    @if (editError()) {
-      <p class="upload-form__error">{{ editError() }}</p>
-    }
-  </div>
+    <rima-dialog-actions [message]="confirmMessage()">
+      @if (confirmAction() === 'upload') {
+        <rima-dialog-action [label]="t('common.cancel')" (triggered)="dismissConfirm()" />
+        <rima-dialog-action
+          [label]="t('documents.confirm.upload')"
+          variant="primary"
+          (triggered)="onConfirmPrimary()"
+        />
+      } @else if (confirmAction() === 'cancel-upload') {
+        <rima-dialog-action [label]="t('common.keep-editing')" (triggered)="dismissConfirm()" />
+        <rima-dialog-action [label]="t('common.discard')" variant="destructive" (triggered)="onConfirmPrimary()" />
+      } @else {
+        <rima-dialog-action [label]="t('common.cancel')" (triggered)="cancelUpload()" />
+        <rima-dialog-action
+          [label]="t('documents.confirm.upload')"
+          variant="primary"
+          [disabled]="
+            !uploadFile() ||
+            !uploadAttributes()['titel'] ||
+            uploadProgress().state === 'uploading' ||
+            uploadProgress().state === 'sharing'
+          "
+          (triggered)="requestUpload()"
+        />
+      }
+    </rima-dialog-actions>
+  }
 
-  <rima-dialog-actions [message]="confirmMessage()">
-    @if (confirmAction() === 'save') {
-      <rima-dialog-action label="Abbrechen" (triggered)="dismissConfirm()" />
-      <rima-dialog-action label="Speichern" variant="primary" (triggered)="onConfirmPrimary()" />
-    } @else if (confirmAction() === 'cancel-edit') {
-      <rima-dialog-action label="Weiter bearbeiten" (triggered)="dismissConfirm()" />
-      <rima-dialog-action label="Verwerfen" variant="destructive" (triggered)="onConfirmPrimary()" />
-    } @else {
-      <rima-dialog-action label="Abbrechen" (triggered)="cancelEdit()" />
+  @if (documentsStore.documents().length > 0 && !formActive()) {
+    <div class="documents-list">
+      @for (doc of documentsStore.documents(); track doc.objectId) {
+        <div class="document-item">
+          <div class="document-item__header">
+            <span class="document-item__title">{{ getDocTitle(doc) }}</span>
+            <span class="document-item__meta">
+              {{ doc.attributes['typ'] }}
+              @if (doc.attributes['groesse']) {
+                Â· {{ formatFileSize(+doc.attributes['groesse']!) }}
+              }
+              @if (doc.attributes['letzte_aenderung']) {
+                Â· {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
+              }
+            </span>
+          </div>
+          <rima-action-bar class="document-item__actions">
+            @if (isViewable(doc)) {
+              <rima-action-bar-button
+                icon="view-visible"
+                [label]="t('documents.action.view')"
+                (triggered)="openDocument(doc)"
+              />
+            }
+            <rima-action-bar-button
+              icon="download"
+              [label]="t('documents.action.download')"
+              (triggered)="downloadDocument(doc)"
+            />
+            <rima-action-bar-button
+              [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
+              [label]="t('documents.details')"
+              (triggered)="toggleDetails(doc.objectId)"
+            />
+            @if (!viewStore.historic()) {
+              <rima-action-bar-button
+                icon="pencil"
+                [label]="t('documents.action.edit')"
+                (triggered)="openEditForm(doc)"
+              />
+              <rima-action-bar-button
+                icon="trash"
+                [label]="t('documents.action.delete')"
+                variant="destructive"
+                (triggered)="requestDelete(doc)"
+              />
+            }
+          </rima-action-bar>
+          @if (expandedDocId() === doc.objectId) {
+            <div class="document-item__details">
+              @for (field of documentsService.resolveEditableFields(); track field.name) {
+                @if (doc.attributes[field.name] != null && doc.attributes[field.name] !== '') {
+                  <div class="document-item__detail">
+                    <span class="document-item__detail-label">{{ field.alias }}</span>
+                    <span class="document-item__detail-value">{{ doc.attributes[field.name] }}</span>
+                  </div>
+                }
+              }
+              @if (doc.attributes['name']) {
+                <div class="document-item__detail">
+                  <span class="document-item__detail-label">{{ t('documents.filename') }}</span>
+                  <span class="document-item__detail-value">{{ doc.attributes['name'] }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (documentsStore.isDeleting()) {
+    <div class="documents-uploading">
+      <calcite-loader scale="s"></calcite-loader>
+      <span>{{ t('documents.delete.progress') }}</span>
+    </div>
+  }
+
+  @if (documentToDelete()) {
+    <rima-dialog-actions [message]="t('documents.delete.message', { name: getDocTitle(documentToDelete()!) })">
+      <rima-dialog-action [label]="t('common.cancel')" (triggered)="dismissConfirm()" />
       <rima-dialog-action
-        label="Speichern"
-        variant="primary"
-        [disabled]="
-          !editAttributes()['titel'] || uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing'
-        "
-        (triggered)="requestSave()"
+        [label]="t('documents.action.delete')"
+        variant="destructive"
+        (triggered)="onConfirmPrimary()"
       />
-    }
-  </rima-dialog-actions>
-}
+    </rima-dialog-actions>
+  }
+
+  @if (editingDocument(); as editDoc) {
+    <div class="upload-form">
+      <h4 class="upload-form__title">{{ t('documents.edit.title') }}</h4>
+
+      <div class="upload-form__field">
+        <label for="edit-file">{{ t('documents.edit.replace-file') }}</label>
+        <input id="edit-file" type="file" (change)="onEditFileSelected($event)" />
+        <span class="upload-form__hint"
+          >{{ t('documents.edit.current-file') }} {{ editDoc.attributes['name'] }} · Max. {{ maxFileSizeMB }} MB</span
+        >
+      </div>
+
+      <rima-attribute-form
+        [fields]="documentsService.resolveEditableFields()"
+        [values]="editAttributes()"
+        idPrefix="doc-edit"
+        (fieldChange)="onEditFieldChange($event)"
+      />
+
+      @if (editFile()) {
+        <div class="upload-form__sharing">
+          <span class="upload-form__sharing-label">{{ t('documents.upload.sharing-new-file') }}</span>
+
+          <div class="upload-form__sharing-options">
+            <label class="upload-form__radio">
+              <input
+                type="radio"
+                name="edit-sharing-access"
+                value="private"
+                [checked]="editAccess() === 'private'"
+                (change)="editAccess.set('private')"
+              />
+              {{ t('documents.upload.sharing.owner') }}
+            </label>
+            <label class="upload-form__radio">
+              <input
+                type="radio"
+                name="edit-sharing-access"
+                value="org"
+                [checked]="editAccess() === 'org'"
+                (change)="editAccess.set('org')"
+              />
+              {{ t('documents.upload.sharing.organization') }}
+            </label>
+            <label class="upload-form__radio">
+              <input
+                type="radio"
+                name="edit-sharing-access"
+                value="public"
+                [checked]="editAccess() === 'public'"
+                (change)="editAccess.set('public')"
+              />
+              {{ t('documents.upload.sharing.public') }}
+            </label>
+          </div>
+        </div>
+      }
+
+      <div class="geometry-section">
+        <span class="geometry-section__label">{{ t('geometry.optional') }}</span>
+        @if (geometryStore.placingActive()) {
+          <p class="geometry-section__status">{{ t('geometry.click-to-place') }}</p>
+          <calcite-button appearance="outline" scale="s" (click)="geometryService.cancelPlacing()">
+            {{ t('common.cancel') }}
+          </calcite-button>
+        } @else if (effectiveEditGeometry; as geo) {
+          <p class="geometry-section__coords">X: {{ geo.x | number: '1.1-1' }} / Y: {{ geo.y | number: '1.1-1' }}</p>
+          <div class="geometry-section__actions">
+            <calcite-button appearance="outline" scale="s" (click)="adjustEditGeometry()">
+              {{ t('geometry.move') }}
+            </calcite-button>
+            <calcite-button appearance="outline" scale="s" kind="danger" (click)="removeEditGeometry()">
+              {{ t('geometry.remove') }}
+            </calcite-button>
+          </div>
+        } @else {
+          <calcite-button appearance="outline" scale="s" icon-start="pin-plus" (click)="startEditPlacing()">
+            {{ t('geometry.place-on-map') }}
+          </calcite-button>
+        }
+      </div>
+
+      @if (editError()) {
+        <p class="upload-form__error">{{ editError() }}</p>
+      }
+    </div>
+
+    <rima-dialog-actions [message]="confirmMessage()">
+      @if (confirmAction() === 'save') {
+        <rima-dialog-action [label]="t('common.cancel')" (triggered)="dismissConfirm()" />
+        <rima-dialog-action [label]="t('documents.confirm.save')" variant="primary" (triggered)="onConfirmPrimary()" />
+      } @else if (confirmAction() === 'cancel-edit') {
+        <rima-dialog-action [label]="t('common.keep-editing')" (triggered)="dismissConfirm()" />
+        <rima-dialog-action [label]="t('common.discard')" variant="destructive" (triggered)="onConfirmPrimary()" />
+      } @else {
+        <rima-dialog-action [label]="t('common.cancel')" (triggered)="cancelEdit()" />
+        <rima-dialog-action
+          [label]="t('documents.confirm.save')"
+          variant="primary"
+          [disabled]="
+            !editAttributes()['titel'] || uploadProgress().state === 'uploading' || uploadProgress().state === 'sharing'
+          "
+          (triggered)="requestSave()"
+        />
+      }
+    </rima-dialog-actions>
+  }
+</ng-container>

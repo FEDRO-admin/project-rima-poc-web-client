@@ -14,11 +14,12 @@ import { AttributeEditService } from './attribute-edit.service';
 import { AttributeDeleteService } from './attribute-delete.service';
 import { resolveCreatableFields } from './attribute-field-utils';
 import { type DrawingToolOption, getDrawingToolsForGeometryType } from './attributes-config';
+import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { ActionBarComponent } from '../../../shared/action-bar/action-bar.component';
 import { ActionBarButtonComponent } from '../../../shared/action-bar/action-bar-button.component';
-import { AttributeFormComponent } from '../../shared/attribute-form/attribute-form.component';
 import { DialogActionsComponent } from '../../../shared/dialog-actions/dialog-actions.component';
 import { DialogActionComponent } from '../../../shared/dialog-actions/dialog-action.component';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import type { AttributeEditField } from '../../shared/attribute-edit-field';
 import type { AttributeValue } from '../../shared/attribute-value-conversion';
 import { GradeService } from '../../grade/grade.service';
@@ -39,6 +40,7 @@ interface FieldEntry {
     AttributeFormComponent,
     DialogActionsComponent,
     DialogActionComponent,
+    TranslocoModule,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './attributes-tab.component.html',
@@ -53,6 +55,7 @@ export class AttributesTabComponent {
   private readonly editService = inject(AttributeEditService);
   private readonly deleteService = inject(AttributeDeleteService);
   private readonly gradeService = inject(GradeService);
+  private readonly translocoService = inject(TranslocoService);
 
   protected readonly confirmAction = signal<ConfirmAction>(null);
   protected readonly activeTool = signal<CreateTool | undefined>(undefined);
@@ -200,10 +203,10 @@ export class AttributesTabComponent {
     const action = this.confirmAction();
     if (action === 'save') {
       return this.editStore.isCreating()
-        ? 'Are you sure you want to create this feature?'
-        : 'Are you sure you want to save the changes to this feature?';
+        ? this.translocoService.translate('attributes-tab.confirm.create')
+        : this.translocoService.translate('attributes-tab.confirm.save');
     }
-    if (action === 'cancel') return 'You have unsaved changes. Are you sure you want to discard them?';
+    if (action === 'cancel') return this.translocoService.translate('attributes-tab.confirm.discard');
     return undefined;
   });
 

@@ -42,7 +42,7 @@ export class ErrorHandlerService implements ErrorHandler {
         if (isOfTypeRimaError(error)) {
           // Ensure Transloco has loaded a language before attempting translation
           await firstValueFrom(this.translocoService.langChanges$);
-          return this.translocoService.translate(error.message);
+          return this.translocoService.translate(error.message, error.translationArguments ?? {});
         } else {
           return error.message;
         }
@@ -50,8 +50,11 @@ export class ErrorHandlerService implements ErrorHandler {
         return JSON.stringify(error);
       }
     } catch {
-      // an error within an error - this is the worst case. Keep the logic as simple as possible
-      return 'Unknown error';
+      try {
+        return this.translocoService.translate('error.unknown');
+      } catch {
+        return 'Unbekannter Fehler';
+      }
     }
   }
 

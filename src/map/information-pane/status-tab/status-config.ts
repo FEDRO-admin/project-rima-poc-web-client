@@ -23,9 +23,9 @@ export const ZUSTANDSKLASSE_COLORS: Record<number, string> = {
 };
 
 export const ZUSTANDSKLASSE_LABELS: Record<number, string> = {
-  1: 'sehr gut',
-  2: 'mittel/akzeptabel',
-  3: 'ausreichend/beschädigt',
-  4: 'kritisch/schlecht',
-  5: 'schlecht/alarmierend',
+  1: 'status.class.1',
+  2: 'status.class.2',
+  3: 'status.class.3',
+  4: 'status.class.4',
+  5: 'status.class.5',
 };

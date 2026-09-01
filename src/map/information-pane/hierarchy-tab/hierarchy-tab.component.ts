@@ -6,6 +6,7 @@ import '@esri/calcite-components/dist/components/calcite-tree';
 import '@esri/calcite-components/dist/components/calcite-tree-item';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import { HierarchyStore } from './hierarchy.store';
+import { TranslocoModule } from '@jsverse/transloco';
 import { HierarchyNode, RelatedParent } from './hierarchy-node';
 import type FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 import { ViewService } from '../../view/view.service';
@@ -16,7 +17,7 @@ interface HighlightHandle {
 
 @Component({
   selector: 'rima-hierarchy-tab',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, TranslocoModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './hierarchy-tab.component.html',
   styleUrl: './hierarchy-tab.component.scss',
