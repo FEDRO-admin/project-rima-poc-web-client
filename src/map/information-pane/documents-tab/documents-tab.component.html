@@ -161,10 +161,10 @@
             <span class="document-item__meta">
               {{ doc.attributes['typ'] }}
               @if (doc.attributes['groesse']) {
-                Â· {{ formatFileSize(+doc.attributes['groesse']!) }}
+                · {{ formatFileSize(+doc.attributes['groesse']!) }}
               }
               @if (doc.attributes['letzte_aenderung']) {
-                Â· {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
+                · {{ $any(doc.attributes['letzte_aenderung']) | date: 'dd.MM.yyyy' }}
               }
             </span>
           </div>
