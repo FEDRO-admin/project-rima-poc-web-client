@@ -1,4 +1,4 @@
-import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, inject, signal } from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, inject, signal, untracked } from '@angular/core';
 import { PopupStore } from './popup.store';
 import { PopupContentComponent, type PopupTab } from './popup-content.component';
 import { AttributeDeleteService } from './attributes-tab/attribute-delete.service';
@@ -15,6 +15,7 @@ import { DialogActionComponent } from '../../shared/dialog-actions/dialog-action
 import { AttributesTabComponent } from './attributes-tab/attributes-tab.component';
 import { TranslocoModule } from '@jsverse/transloco';
 import { TranslocoService } from '@jsverse/transloco';
+import { ViewStore } from '../view/view.store';
 import { buildFeatureDisplayLabel, buildFeatureListLabel } from '../shared/display-label';
 
 @Component({
@@ -34,10 +35,15 @@ export class PopupComponent {
   protected readonly store = inject(PopupStore);
   protected readonly deleteStore = inject(AttributeDeleteStore);
   protected readonly editStore = inject(AttributeEditStore);
+  protected readonly viewStore = inject(ViewStore);
   protected readonly activeTab = signal<PopupTab>('attributes');
   private readonly deleteService = inject(AttributeDeleteService);
   private readonly editService = inject(AttributeEditService);
   private readonly translocoService = inject(TranslocoService);
+
+  constructor() {
+    this.resetTabOnModeChange();
+  }
 
   protected readonly activeTabLabel = computed(() => {
     const tab = this.activeTab();
@@ -101,5 +107,16 @@ export class PopupComponent {
 
   getFeatureLabel(graphic: Graphic): string {
     return buildFeatureListLabel(graphic);
+  }
+
+  // The scene view offers no tab action bar, so any other tab would be unreachable.
+  private resetTabOnModeChange(): void {
+    effect(() => {
+      this.viewStore.mode();
+      untracked(() => {
+        this.activeTab.set('attributes');
+        this.actionBarExpanded.set(false);
+      });
+    });
   }
 }

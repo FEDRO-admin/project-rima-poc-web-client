@@ -39,7 +39,7 @@
       </div>
 
       <div class="popup-body">
-        @if (!editStore.isCreating() && store.showDetail() && isFeatureLayerSelected()) {
+        @if (!editStore.isCreating() && store.showDetail() && isFeatureLayerSelected() && viewStore.mode() === 'map') {
           <calcite-action-bar scale="s" class="popup-action-bar" (calciteActionBarToggle)="onActionBarToggle($event)">
             <calcite-action
               icon="information"
