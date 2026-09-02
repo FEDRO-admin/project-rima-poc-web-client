@@ -220,6 +220,7 @@
   "documents.error.uploadGeneric": "Erreur lors du téléchargement du document.",
   "documents.error.saveChanges": "Erreur lors de l'enregistrement des modifications.",
   "documents.error.editGeneric": "Erreur lors de la modification du document.",
+  "documents.error.download": "Le document n'a pas pu être téléchargé.",
 
   "display-label.feature": "Objet",
   "guid-picker.unknown-layer": "Couche inconnue",

@@ -15,6 +15,7 @@ import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-icon';
+import '@esri/calcite-components/dist/components/calcite-notice';
 import { DocumentsStore } from './documents.store';
 import { DocumentsService } from './documents.service';
 import { DocumentUploadService } from './document-upload.service';
@@ -85,6 +86,8 @@ export class DocumentsTabComponent implements OnDestroy {
   protected readonly showUploadForm = signal(false);
   protected readonly documentToDelete = signal<DocumentRecord | undefined>(undefined);
   protected readonly expandedDocId = signal<number | undefined>(undefined);
+  protected readonly busyDocumentIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly downloadErrorMessage = signal<string | undefined>(undefined);
 
   protected readonly uploadFile = signal<File | undefined>(undefined);
   protected readonly uploadAccess = signal<DocumentAccessLevel>('org');
@@ -187,13 +190,48 @@ export class DocumentsTabComponent implements OnDestroy {
     return (record.attributes['titel'] as string) || (record.attributes['name'] as string) || '';
   }
 
-  protected openDocument(record: DocumentRecord): void {
-    const url = this.documentsService.getDownloadUrl(record);
-    window.open(url, '_blank', 'noopener,noreferrer');
+  protected async openDocument(record: DocumentRecord): Promise<void> {
+    this.setBusy(record.objectId, true);
+    try {
+      const url = await this.documentsService.openDocument(record);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      this.setDownloadError(error);
+    } finally {
+      this.setBusy(record.objectId, false);
+    }
   }
 
   protected async downloadDocument(record: DocumentRecord): Promise<void> {
-    await this.documentsService.downloadDocument(record);
+    this.setBusy(record.objectId, true);
+    try {
+      await this.documentsService.downloadDocument(record);
+    } catch (error) {
+      this.setDownloadError(error);
+    } finally {
+      this.setBusy(record.objectId, false);
+    }
+  }
+
+  protected dismissDownloadError(): void {
+    this.downloadErrorMessage.set(undefined);
+  }
+
+  private setBusy(objectId: number, busy: boolean): void {
+    this.busyDocumentIds.update((ids) => {
+      const next = new Set(ids);
+      if (busy) {
+        next.add(objectId);
+      } else {
+        next.delete(objectId);
+      }
+      return next;
+    });
+  }
+
+  private setDownloadError(error: unknown): void {
+    console.error('[Documents] Download failed:', error);
+    this.downloadErrorMessage.set(this.translocoService.translate('documents.error.download'));
   }
 
   protected isViewable(record: DocumentRecord): boolean {

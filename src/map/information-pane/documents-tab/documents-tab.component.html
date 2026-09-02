@@ -19,6 +19,12 @@
     <p class="documents-error">{{ documentsStore.error() }}</p>
   }
 
+  @if (downloadErrorMessage()) {
+    <calcite-notice open kind="danger" closable (calciteNoticeClose)="dismissDownloadError()">
+      <span slot="message">{{ downloadErrorMessage() }}</span>
+    </calcite-notice>
+  }
+
   @if (documentsStore.isEmpty() && !formActive()) {
     <p class="documents-empty">{{ t('documents.empty') }}</p>
   }
@@ -173,14 +179,19 @@
               <rima-action-bar-button
                 icon="view-visible"
                 [label]="t('documents.action.view')"
+                [disabled]="busyDocumentIds().has(doc.objectId)"
                 (triggered)="openDocument(doc)"
               />
             }
             <rima-action-bar-button
               icon="download"
               [label]="t('documents.action.download')"
+              [disabled]="busyDocumentIds().has(doc.objectId)"
               (triggered)="downloadDocument(doc)"
             />
+            @if (busyDocumentIds().has(doc.objectId)) {
+              <calcite-loader scale="s" inline></calcite-loader>
+            }
             <rima-action-bar-button
               [icon]="expandedDocId() === doc.objectId ? 'chevron-up' : 'information'"
               [label]="t('documents.details')"

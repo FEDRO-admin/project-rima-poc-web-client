@@ -221,6 +221,7 @@
   "documents.error.uploadGeneric": "Fehler beim Hochladen des Dokuments.",
   "documents.error.saveChanges": "Fehler beim Speichern der Änderungen.",
   "documents.error.editGeneric": "Fehler beim Bearbeiten des Dokuments.",
+  "documents.error.download": "Das Dokument konnte nicht heruntergeladen werden.",
 
   "display-label.feature": "Feature",
   "guid-picker.unknown-layer": "Unbekannter Layer",

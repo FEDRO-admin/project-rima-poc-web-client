@@ -39,3 +39,7 @@ export class DocumentUnsupportedFileTypeError extends RecoverableError {
     this.message = `documents.error.unsupportedFileType: .${extension}`;
   }
 }
+
+export class DocumentDownloadError extends RecoverableError {
+  override readonly message = 'documents.error.download';
+}

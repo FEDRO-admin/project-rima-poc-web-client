@@ -14,13 +14,17 @@ import { DocumentUploadService } from './document-upload.service';
 import { DocumentEditPayload, DocumentRecord, DocumentUploadPayload } from './document-types';
 import {
   DOCUMENT_AUTO_POPULATED_FIELDS,
+  DOCUMENT_SOURCE_CDE_BUND,
+  DOCUMENT_SOURCE_FIELD,
   DOCUMENTS_LAYER_NAME,
   DOCUMENTS_MAP_LAYER_TITLE,
   DOCUMENTS_MAX_FILE_SIZE_MB,
   DOCUMENTS_VIEWABLE_TYPES,
+  DOWNLOAD_FROM_CDE_BUND_URL,
 } from './documents-config';
 import {
   DocumentDeleteError,
+  DocumentDownloadError,
   DocumentEditError,
   DocumentFileTooLargeError,
   DocumentQueryError,
@@ -263,10 +267,8 @@ export class DocumentsService {
   }
 
   async downloadDocument(record: DocumentRecord): Promise<void> {
-    const pfad = (record.attributes['pfad'] as string) ?? '';
     const name = (record.attributes['name'] as string) || '';
-    const response = await esriRequest(pfad, { responseType: 'native' });
-    const blob = await (response.data as Response).blob();
+    const blob = await this.fetchDocumentBlob(record);
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -277,8 +279,33 @@ export class DocumentsService {
     URL.revokeObjectURL(blobUrl);
   }
 
-  getDownloadUrl(record: DocumentRecord): string {
-    return this.uploadService.getAuthenticatedUrl((record.attributes['pfad'] as string) ?? '');
+  /** Resolves the URL to open a document in a new tab, fetching a blob URL for CDE Bund documents. */
+  async openDocument(record: DocumentRecord): Promise<string> {
+    if (!this.isCdeBundSource(record)) {
+      return this.uploadService.getAuthenticatedUrl((record.attributes['pfad'] as string) ?? '');
+    }
+    const blob = await this.fetchDocumentBlob(record);
+    return URL.createObjectURL(blob);
+  }
+
+  private isCdeBundSource(record: DocumentRecord): boolean {
+    return record.attributes[DOCUMENT_SOURCE_FIELD] === DOCUMENT_SOURCE_CDE_BUND;
+  }
+
+  private async fetchDocumentBlob(record: DocumentRecord): Promise<Blob> {
+    try {
+      // Binary endpoints cannot return a JSON 499, so the token must ride on the first request.
+      const response = this.isCdeBundSource(record)
+        ? await esriRequest(DOWNLOAD_FROM_CDE_BUND_URL, {
+            query: { documentId: (record.attributes['pfad'] as string) ?? '', f: 'bin' },
+            authMode: 'immediate',
+            responseType: 'native',
+          })
+        : await esriRequest((record.attributes['pfad'] as string) ?? '', { responseType: 'native' });
+      return await (response.data as Response).blob();
+    } catch (error) {
+      throw new DocumentDownloadError(error);
+    }
   }
 
   isViewable(record: DocumentRecord): boolean {

@@ -1,6 +1,18 @@
-import { DOCUMENTS_LAYER_NAME, DOCUMENTS_MAP_LAYER_TITLE } from '../../map-config';
+import { DOCUMENTS_LAYER_NAME, DOCUMENTS_MAP_LAYER_TITLE, RIMA_SOE_BASE_URL } from '../../map-config';
 
 export { DOCUMENTS_LAYER_NAME, DOCUMENTS_MAP_LAYER_TITLE };
+
+/** Coded-value domain field name for the document source on the documents layer. */
+export const DOCUMENT_SOURCE_FIELD = 'document_source';
+
+/** Coded value for documents sourced from CDE Bund (domain label: "CDE Bund"). */
+export const DOCUMENT_SOURCE_CDE_BUND = 'BUND_CDE';
+
+/** Coded value for documents uploaded to the ESRI Portal (domain label: "ESRI Portal"). */
+export const DOCUMENT_SOURCE_ESRI_PORTAL = 'ESRI_PORTAL';
+
+/** SOE endpoint that streams a document's binary content from CDE Bund. */
+export const DOWNLOAD_FROM_CDE_BUND_URL = `${RIMA_SOE_BASE_URL}/downloadFromCdeBund`;
 
 // Fields set programmatically by the service — excluded from the edit form
 export const DOCUMENT_AUTO_POPULATED_FIELDS: readonly string[] = [

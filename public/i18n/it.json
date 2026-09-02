@@ -220,6 +220,7 @@
   "documents.error.uploadGeneric": "Errore durante il caricamento del documento.",
   "documents.error.saveChanges": "Errore durante il salvataggio delle modifiche.",
   "documents.error.editGeneric": "Errore durante la modifica del documento.",
+  "documents.error.download": "Impossibile scaricare il documento.",
 
   "display-label.feature": "Oggetto",
   "guid-picker.unknown-layer": "Livello sconosciuto",
