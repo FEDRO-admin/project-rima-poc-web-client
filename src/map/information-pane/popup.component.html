@@ -44,30 +44,35 @@
             <calcite-action
               icon="information"
               [text]="t('popup.tab.attributes')"
+              [attr.title]="t('popup.tab.attributes')"
               [attr.active]="activeTab() === 'attributes' ? '' : null"
               (click)="selectTab('attributes')"
             ></calcite-action>
             <calcite-action
               icon="pin"
               [text]="t('popup.tab.reference-points')"
+              [attr.title]="t('popup.tab.reference-points')"
               [attr.active]="activeTab() === 'reference' ? '' : null"
               (click)="selectTab('reference')"
             ></calcite-action>
             <calcite-action
               icon="check-circle"
               [text]="t('popup.tab.status')"
+              [attr.title]="t('popup.tab.status')"
               [attr.active]="activeTab() === 'status' ? '' : null"
               (click)="selectTab('status')"
             ></calcite-action>
             <calcite-action
               icon="folder-open"
               [text]="t('popup.tab.hierarchy')"
+              [attr.title]="t('popup.tab.hierarchy')"
               [attr.active]="activeTab() === 'hierarchy' ? '' : null"
               (click)="selectTab('hierarchy')"
             ></calcite-action>
             <calcite-action
               icon="attachment"
               [text]="t('popup.tab.documents')"
+              [attr.title]="t('popup.tab.documents')"
               [attr.active]="activeTab() === 'documents' ? '' : null"
               (click)="selectTab('documents')"
             ></calcite-action>
